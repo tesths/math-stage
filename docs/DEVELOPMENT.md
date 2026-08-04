@@ -311,8 +311,9 @@ GitHub: tesths/math-stage（main 分支）
               → 聚合产物 deploy/
 Cloudflare Pages 输出目录 deploy/
   /       门户（index.html，相对链接 ./g1/ ./g5/）
-  /g1/*   一年级（_redirects: /g1/* → /g1/200.html 200 兜底）
-  /g5/*   五年级（_redirects: /g5/* → /g5/200.html 200 兜底）
+  /g1/*   一年级（111 页全量预渲染，直接命中静态文件）
+  /g5/*   五年级（55 页全量预渲染，直接命中静态文件）
+  404     由各子应用自带 404.html 兜底
 ```
 
 ### 7.2 关键配置点
@@ -321,7 +322,9 @@ Cloudflare Pages 输出目录 deploy/
   `nitro.prerender.crawlLinks = true`（静态导出时自动爬取全部路由）。
 - **`nuxi generate` 输出到 `dist/`**（cloudflare-pages preset），聚合脚本复制 `dist/gX` 到 `deploy/gX`。
 - **`scripts/site-build.mjs`**：清空 deploy → 对两个子应用 `npm ci`（本地已装则跳过）→
-  `BASE_URL=... npm run generate:site` → 复制 portal 与子路径 → 写 `_redirects`/`_headers`。
+  `BASE_URL=... npm run generate:site` → 复制 portal 与子路径 → 写 `_redirects`（仅注释）/`_headers`。
+  ⚠️ 不要在 `_redirects` 里加 `/g1/* → /g1/200.html 200` 这类 SPA 重写：
+  它会在 Cloudflare 上抢在静态文件前命中目录请求，被 clean URL 解析成 `/g1/200`，造成 308 循环（线上事故记录）。
 - 根 `package.json`（无依赖，仅脚本）：`build:site` / `build:site:local`（跳过安装）/ `preview`。
 
 ### 7.3 Cloudflare Pages 配置（一次）
