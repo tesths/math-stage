@@ -6,7 +6,24 @@
       class="print:hidden"
     >
       <template #right>
-        <UButton to="/" variant="ghost" color="neutral" icon="i-heroicons-home" label="首页" />
+        <!-- 切换至五年级：必须用原生 <a>（UButton as=a 会被 Nuxt 改写 href 成 /g1/g5/；
+             UButton to 走客户端路由 404） -->
+        <a
+          href="/g5/"
+          rel="external"
+          class="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-(--ui-primary) transition-colors hover:bg-(--ui-bg-elevated)"
+        >
+          <UIcon name="i-heroicons-arrow-right-circle" class="size-4" />
+          五年级
+        </a>
+        <a
+          href="/"
+          rel="external"
+          class="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-(--ui-text-muted) transition-colors hover:bg-(--ui-bg-elevated)"
+        >
+          <UIcon name="i-heroicons-home" class="size-4" />
+          首页
+        </a>
       </template>
     </UHeader>
 

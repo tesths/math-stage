@@ -7,6 +7,14 @@
     >
       <template #right>
         <div class="flex items-center gap-1">
+          <a
+            href="/g1/"
+            rel="external"
+            class="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-(--ui-primary) transition-colors hover:bg-(--ui-bg-elevated)"
+          >
+            <UIcon name="i-heroicons-arrow-left-circle" class="size-4" />
+            一年级
+          </a>
           <UButton
             to="/games"
             variant="ghost"
@@ -14,7 +22,14 @@
             icon="i-heroicons-cube"
             label="训练游戏"
           />
-          <UButton to="/" variant="ghost" color="neutral" icon="i-heroicons-home" label="首页" />
+          <a
+            href="/"
+            rel="external"
+            class="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-(--ui-text-muted) transition-colors hover:bg-(--ui-bg-elevated)"
+          >
+            <UIcon name="i-heroicons-home" class="size-4" />
+            首页
+          </a>
         </div>
       </template>
     </UHeader>

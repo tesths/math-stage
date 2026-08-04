@@ -11,6 +11,11 @@ export default defineNuxtConfig({
     preset: 'cloudflare-pages',
     prerender: {
       crawlLinks: true,
+      // 顶栏跨年级切换链接会被 crawler 爬到并 404（对端路由不存在）——
+      // 忽略匹配 + 不因 404 中断构建（真实页面仍全量预渲染）
+      failOnError: false,
+      // 顶栏有跨年级切换链接（/g5/），本应用没有该路由，crawler 会 404 报错 —— 忽略
+      ignore: ['**/g5/**'],
     },
   },
   ui: {
