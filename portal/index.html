@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>小学数学互动学习平台</title>
+  <meta name="description" content="人教版一年级 · 苏教版五年级 —— 例题可视化与训练小游戏总入口" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="bg-decor">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="blob blob-3"></span>
+  </div>
+
+  <header class="hero">
+    <p class="hero-badge">📚 义务教育教科书 · 配套互动学习</p>
+    <h1>小学数学互动学习平台</h1>
+    <p class="hero-sub">例题可视化 · 参数可调 · 训练小游戏 —— 选择你的年级开始探索</p>
+  </header>
+
+  <main class="cards">
+    <!-- 一年级卡片 -->
+    <a class="card card-g1" href="./g1/" aria-label="进入一年级">
+      <div class="card-head">
+        <span class="grade-badge">一年级</span>
+        <span class="book-badge">人教版 · 2022 课标</span>
+      </div>
+      <h2>数感启蒙 · 例题答题游戏</h2>
+      <ul class="features">
+        <li>🔢 9 个单元 · 78 道例题小游戏</li>
+        <li>🎮 20 个课本主题小游戏（抢10 / 数独 / 火柴棒…）</li>
+        <li>🧸 数一数 / 加减法 / 图形 / 位置 … 适合零基础</li>
+      </ul>
+      <span class="enter-btn">进入一年级 →</span>
+    </a>
+
+    <!-- 五年级卡片 -->
+    <a class="card card-g5" href="./g5/" aria-label="进入五年级">
+      <div class="card-head">
+        <span class="grade-badge">五年级</span>
+        <span class="book-badge">苏教版 · 2022 课标</span>
+      </div>
+      <h2>例题可视化 · 参数实验室</h2>
+      <ul class="features">
+        <li>📐 8 个单元 · 33 个可调参数 Lab</li>
+        <li>🧊 three.js 三视图 · chart.js 统计图 · 面积剪拼动画</li>
+        <li>🎯 10 个训练小游戏（面积速算 / 质数快抢 / 三视图配对…）</li>
+      </ul>
+      <span class="enter-btn">进入五年级 →</span>
+    </a>
+  </main>
+
+  <footer class="foot">
+    <p>基于 Nuxt UI · three.js · animejs · chart.js 构建 · 部署于 Cloudflare Pages</p>
+  </footer>
+</body>
+</html>

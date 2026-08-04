@@ -9,6 +9,9 @@ export default defineNuxtConfig({
   ssr: true,
   nitro: {
     preset: 'cloudflare-pages',
+    prerender: {
+      crawlLinks: true,
+    },
   },
   ui: {
     fonts: false,
@@ -19,6 +22,8 @@ export default defineNuxtConfig({
     },
   },
   app: {
+    // BASE_URL 供单 Pages 项目子路径部署（如 /g5/）；本地默认 /
+    baseURL: process.env.BASE_URL ?? '/',
     head: {
       htmlAttrs: { lang: 'zh-CN' },
       title: '五年级数学例题可视化',

@@ -1,0 +1,11 @@
+{
+  "name": "math-portal",
+  "private": true,
+  "type": "module",
+  "description": "小学数学互动学习平台：门户 + 一年级（人教版）+ 五年级（苏教版）单 Pages 聚合构建",
+  "scripts": {
+    "build:site": "node scripts/site-build.mjs",
+    "build:site:local": "node scripts/site-build.mjs --skip-install",
+    "preview": "npx serve deploy"
+  }
+}

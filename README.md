@@ -4,6 +4,7 @@
 
 | 年级 | 课本 | 位置 | 内容 |
 | --- | --- | --- | --- |
+| 门户 | — | `portal/`（纯静态）+ 聚合脚本 `scripts/site-build.mjs` | **单 Cloudflare Pages 部署**：`/` 门户、`/g1/` 一年级、`/g5/` 五年级（详见文末部署章节） |
 | 一年级（人教版·2022 课标） | 一年级上册扫描 PDF | `data/` + `game/` | 78 道例题答题游戏 + 20 个小游戏（详见下） |
 | 五年级（苏教版·2022 课标） | 最新【苏教版】5年级数学课本•上册.pdf | `g5/`（独立文件夹） | **33 个可调参数例题可视化 Lab**（three.js 三视图可拖拽、chart.js 统计图、多边形面积剪拼等）+ 10 个训练小游戏（详见 `g5/README.md`） |
 
@@ -143,6 +144,48 @@ npm run generate      # 静态导出 dist/（含 units/、play/、games/ 全部�
 - 游戏元数据 `src/lib/arcade/index.ts` 的 `chapters` 字段标注适用单元（c1~c9），
   驱动首页按单元分组和 `/games` 卡片徽章；增删游戏务必同步该字段与 `unitNoOf()` 测试
   （`test/unit/arcade/games.test.ts` 最后一组 describe），缺口会让首页分组/徽章失真。
+
+## 单 Cloudflare Pages 部署（门户 + 一年级 + 五年级）
+
+一个 GitHub 仓库、**一个** Cloudflare Pages 项目，门户在 `/`、一年级在 `/g1/`、五年级在 `/g5/`。
+两个年级仍是独立 Nuxt 工程（管理上分开），构建时聚合为一个产物 `deploy/`。
+
+```
+部署产物 deploy/
+├── index.html    门户（portal/，链接 ./g1/ 与 ./g5/）
+├── g1/           一年级（game/，BASE_URL=/g1/ 静态导出，111 页）
+├── g5/           五年级（g5/game/，BASE_URL=/g5/ 静态导出，55 页）
+└── _redirects    SPA 兜底（/g1/* → 200.html、/g5/* → 200.html）
+```
+
+### 本地构建与预览
+
+```bash
+npm run build:site:local   # 聚合构建（跳过子应用依赖安装）
+npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
+```
+
+### Cloudflare Pages 配置（一次）
+
+1. 把本仓库推送到 GitHub。
+2. Cloudflare Dashboard → Workers & Pages → Create → **Pages → Connect to Git**，选本仓库。
+3. 构建设置：
+   | 项 | 值 |
+   | --- | --- |
+   | 框架预设 | None |
+   | 构建命令 | `npm run build:site`（脚本内自动对 game/、g5/game/ 执行 `npm ci` 并分别 `nuxi generate`） |
+   | 构建输出目录 | `deploy` |
+4. 保存并部署。以后推送 `main` 分支即自动构建。
+
+> 首次构建需要安装两个子应用的依赖，约 8~15 分钟（免费额度 20 分钟以内）。
+> 若超时，可在两个子应用各自提交后，把 `scripts/site-build.mjs` 中 `npm ci` 改为
+> `npm install`（Cloudflare 构建缓存命中后更快），或拆分触发。
+
+### 新增年级（三年级等）
+
+1. 新建独立 Nuxt 工程（如 `g3/`，管理上独立），同样配置 `BASE_URL` 与 `nitro.prerender.crawlLinks`。
+2. `scripts/site-build.mjs` 的 `APPS` 数组加一项 `{ dir: 'g3', base: '/g3/' }`。
+3. `portal/index.html` 加一张年级卡片，链接 `./g3/`。
 
 ## 维护提示
 
