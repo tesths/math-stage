@@ -1,0 +1,55 @@
+import type { GameQuestion } from '../schema/example'
+
+/** 三、生活中的位置（书页 32-34） */
+export const c3Examples: GameQuestion[] = [
+  {
+    id: 'c3-position-01',
+    chapter: 'c3',
+    source: '例题',
+    page: 32,
+    title: '认识左右',
+    prompt: '同学们站成一排（从左往右）：月月、贝贝、兰兰。贝贝的左边是谁？',
+    type: 'position',
+    config: { type: 'position', items: ['月月', '贝贝', '兰兰'], target: '贝贝', position: '左', answer: '月月' },
+  },
+  {
+    id: 'c3-position-02',
+    chapter: 'c3',
+    source: '例题',
+    page: 32,
+    title: '认识前后',
+    prompt: '月月站在队伍最前面，红红站在月月的后面。月月的后面是谁？',
+    type: 'position',
+    config: { type: 'position', items: ['月月', '红红', '亮亮'], target: '月月', position: '后', answer: '红红' },
+  },
+  {
+    id: 'c3-position-03',
+    chapter: 'c3',
+    source: '例题',
+    page: 33,
+    title: '认识上下',
+    prompt: '教室前面的墙上，国旗在黑板的上面。黑板的上面是什么？',
+    type: 'position',
+    config: { type: 'position', items: ['国旗', '黑板'], target: '黑板', position: '上', answer: '国旗' },
+  },
+  {
+    id: 'c3-position-04',
+    chapter: 'c3',
+    source: '例题',
+    page: 34,
+    title: '认识上下',
+    prompt: '小鸟在树上，小猫在鸟的下面。小猫在鸟的哪一边？',
+    type: 'position',
+    config: { type: 'position', items: ['鸟', '猫'], target: '鸟', position: '下', answer: '猫' },
+  },
+  {
+    id: 'c3-ordinal-01',
+    chapter: 'c3',
+    source: '例题',
+    page: 32,
+    title: '我在教室里的位置',
+    prompt: '从前往后数，5个小朋友排队（🐭在最前面）。🐯排在第几个？',
+    type: 'ordinal',
+    config: { type: 'ordinal', items: ['🐭', '🐮', '🐯', '🐰', '🐲'], target: '🐯', answer: 3 },
+  },
+]
