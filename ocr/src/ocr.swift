@@ -2,19 +2,28 @@ import Foundation
 import Vision
 import PDFKit
 
-// 用法: ocr <pdfPath> <startPage> <endPage>
+// 用法: ocr <pdfPath> <startPage> <endPage> [outputDir]
 // 输出:
-//   ocr/pages/pNNN.txt   每页 OCR 文字
-//   ocr/pages/pNNN.png   每页渲染整版图片（图文对照）
-//   ocr/pages/pNNN-*.png 自动识别出的插图/图片区域（白底小图之外）
+//   <outputDir>/pNNN.txt   每页 OCR 文字
+//   <outputDir>/pNNN.png   每页渲染整版图片（图文对照）
+//   <outputDir>/pNNN-*.png 自动识别出的插图/图片区域（白底小图之外）
+// outputDir 缺省为 ocr/pages（相对当前目录）
 let args = CommandLine.arguments
-guard args.count == 4,
+guard args.count >= 4,
       let pageStart = Int(args[2]),
       let pageEnd = Int(args[3]) else {
-    print("usage: ocr <pdfPath> <startPage> <endPage>")
+    print("usage: ocr <pdfPath> <startPage> <endPage> [outputDir]")
     exit(1)
 }
 let pdfPath = args[1]
+
+let pagesDir: URL
+if args.count >= 5 {
+    pagesDir = URL(fileURLWithPath: args[4])
+} else {
+    pagesDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        .appendingPathComponent("ocr/pages")
+}
 
 guard let doc = PDFDocument(url: URL(fileURLWithPath: pdfPath)) else {
     print("cannot open pdf: \(pdfPath)")
@@ -22,10 +31,7 @@ guard let doc = PDFDocument(url: URL(fileURLWithPath: pdfPath)) else {
 }
 
 let total = doc.pageCount
-print("total pages: \(total)")
-
-let pagesDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-    .appendingPathComponent("ocr/pages")
+print("total pages: \(total), output: \(pagesDir.path)")
 try? FileManager.default.createDirectory(at: pagesDir, withIntermediateDirectories: true)
 
 let languages = ["zh-Hans", "en-US"]

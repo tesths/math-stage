@@ -1,0 +1,77 @@
+import type { LabDef } from '../schema/lab'
+
+/** 四 小数乘法和除法（一）（书页 55-64） */
+export const c4Labs: LabDef[] = [
+  {
+    id: 'g5-c4-dmul-pencil',
+    chapter: 'c4',
+    page: 56,
+    source: '例题',
+    title: '小数乘整数 · 买铅笔',
+    prompt: '铅笔每支 0.6 元，买 3 支要多少元？拖动单价和数量，观察 0.6×3 是怎样算的（3 个 0.6 相加）。',
+    kind: 'decimal-mul',
+    params: [
+      { key: 'price', label: '单价', min: 0.1, max: 9.9, step: 0.1, default: 0.6, unit: '元' },
+      { key: 'count', label: '数量', min: 1, max: 12, step: 1, default: 3, unit: '支' },
+    ],
+    formula: '总价 = 单价 × 数量',
+    tip: '小数乘整数：先按整数乘法算，再看因数里有几位小数，就从积的右边起数出几位点上小数点。',
+  },
+  {
+    id: 'g5-c4-dmul-ballpen',
+    chapter: 'c4',
+    page: 57,
+    source: '例题',
+    title: '小数乘整数 · 买圆珠笔',
+    prompt: '圆珠笔每支 6.25 元，买 12 支要多少元？拖动数量和单价，观察竖式计算与小数点位置。',
+    kind: 'decimal-mul',
+    params: [
+      { key: 'price', label: '单价', min: 0.1, max: 9.9, step: 0.05, default: 6.25, unit: '元' },
+      { key: 'count', label: '数量', min: 1, max: 20, step: 1, default: 12, unit: '支' },
+    ],
+    formula: '总价 = 单价 × 数量',
+  },
+  {
+    id: 'g5-c4-dmul-paper',
+    chapter: 'c4',
+    page: 58,
+    source: '例题',
+    title: '小数点移动 · A4 纸厚度',
+    prompt: '10 张 A4 纸厚约 0.001 米。100 张、1000 张、10000 张呢？拖动张数，观察小数点怎样移动。',
+    kind: 'decimal-point',
+    params: [
+      { key: 'power', label: '倍数', min: 1, max: 6, step: 1, default: 2, unit: '10^n 张' },
+    ],
+    fixed: { base: 0.001 },
+    formula: '厚度 = 0.001 × 10^倍数（米）',
+    tip: '一个小数乘 10、100、1000…，小数点就分别向右移动一位、两位、三位……位数不够时用 0 补足。',
+  },
+  {
+    id: 'g5-c4-ddiv-eraser',
+    chapter: 'c4',
+    page: 60,
+    source: '例题',
+    title: '小数除以整数 · 橡皮单价',
+    prompt: '9.6 元买 3 块橡皮，平均每块多少元？拖动总价和数量，观察竖式中“余下的数添 0 继续除”。',
+    kind: 'decimal-div',
+    params: [
+      { key: 'total', label: '总价', min: 0.1, max: 99.9, step: 0.1, default: 9.6, unit: '元' },
+      { key: 'count', label: '数量', min: 1, max: 9, step: 1, default: 3, unit: '块' },
+    ],
+    formula: '单价 = 总价 ÷ 数量',
+    tip: '小数除以整数：按整数除法除，商的小数点要和被除数的小数点对齐；余数添 0 继续除。',
+  },
+  {
+    id: 'g5-c4-ddiv-sugarcane',
+    chapter: 'c4',
+    page: 62,
+    source: '例题',
+    title: '小数点移动 · 甘蔗制糖',
+    prompt: '1 吨甘蔗可制糖 135 千克。100 千克、10 千克、1 千克甘蔗各能制糖多少千克？',
+    kind: 'decimal-point',
+    params: [{ key: 'power', label: '倍数', min: 1, max: 6, step: 1, default: 3, unit: '10^n 千克' }],
+    fixed: { base: 135, divide: 1 },
+    formula: '制糖量 = 135 ÷ 10^倍数（千克）',
+    tip: '一个小数除以 10、100、1000…，小数点就分别向左移动一位、两位、三位……',
+  },
+]

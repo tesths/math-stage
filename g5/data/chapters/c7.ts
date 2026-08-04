@@ -1,0 +1,58 @@
+import type { LabDef } from '../schema/lab'
+
+/** 七 用字母表示数量关系（一）（书页 96-109） */
+export const c7Labs: LabDef[] = [
+  {
+    id: 'g5-c7-frog-song',
+    chapter: 'c7',
+    page: 96,
+    source: '例题',
+    title: '青蛙歌 · 用字母表示数',
+    prompt: '1 只青蛙 1 张嘴，2 只眼睛 4 条腿。拖动青蛙只数，观察嘴、眼睛、腿的数量怎样用字母式表示。',
+    kind: 'frog',
+    params: [{ key: 'n', label: '青蛙只数', min: 1, max: 30, step: 1, default: 4, unit: '只' }],
+    formula: 'n 只青蛙：n 张嘴，2n 只眼睛，4n 条腿',
+    tip: '用字母 n 表示青蛙的只数，眼睛数 = 2n、腿数 = 4n；字母式可以简洁地表示数量关系。',
+  },
+  {
+    id: 'g5-c7-square-formula',
+    chapter: 'c7',
+    page: 99,
+    source: '例题',
+    title: '正方形 · 周长与面积',
+    prompt: '正方形的边长是 a 厘米。拖动边长，观察周长 = 4a、面积 = a×a 的字母式与数值变化。',
+    kind: 'square',
+    params: [{ key: 'a', label: '边长', min: 1, max: 20, step: 1, default: 5, unit: '厘米' }],
+    formula: 'C = 4a；S = a × a',
+    tip: '正方形的周长 = 边长 × 4，面积 = 边长 × 边长，用字母 a 表示边长可写成 C = 4a，S = a²。',
+  },
+  {
+    id: 'g5-c7-speed-car',
+    chapter: 'c7',
+    page: 100,
+    source: '例题',
+    title: '路程 · 速度与时间',
+    prompt: '玩具汽车的速度是 15 米/分，t 分钟能行驶多少米？拖动速度和行驶时间，观察路程 = 速度 × 时间。',
+    kind: 'speed',
+    params: [
+      { key: 'v', label: '速度', min: 5, max: 120, step: 5, default: 15, unit: '米/分' },
+      { key: 't', label: '时间', min: 1, max: 30, step: 1, default: 3, unit: '分' },
+    ],
+    formula: '路程 s = v × t',
+    tip: '路程 = 速度 × 时间，用字母表示：s = v × t；已知其中两个量可以求出第三个量。',
+  },
+  {
+    id: 'g5-c7-speed-train',
+    chapter: 'c7',
+    page: 102,
+    source: '练习',
+    title: '路程 · 动车组',
+    prompt: '动车组平均每小时行驶 250 千米，3 小时后到达乙地。拖动速度和小时数，求甲、乙两地铁路长。',
+    kind: 'speed',
+    params: [
+      { key: 'v', label: '速度', min: 50, max: 400, step: 10, default: 250, unit: '千米/时' },
+      { key: 't', label: '时间', min: 1, max: 24, step: 1, default: 3, unit: '时' },
+    ],
+    formula: '路程 s = v × t',
+  },
+]

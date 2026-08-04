@@ -1,0 +1,47 @@
+import { defineNuxtConfig } from 'nuxt/config'
+import { fileURLToPath } from 'node:url'
+
+export default defineNuxtConfig({
+  compatibilityDate: '2025-07-15',
+  srcDir: 'src/',
+  modules: ['@nuxt/ui'],
+  css: ['~/assets/css/main.css'],
+  ssr: true,
+  nitro: {
+    preset: 'cloudflare-pages',
+  },
+  ui: {
+    fonts: false,
+  },
+  icon: {
+    clientBundle: {
+      scan: true,
+    },
+  },
+  app: {
+    head: {
+      htmlAttrs: { lang: 'zh-CN' },
+      title: '五年级数学例题可视化',
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: '根据苏教版五年级上册数学书例题制作的可调参数可视化与训练小游戏' },
+      ],
+    },
+  },
+  appConfig: {
+    ui: {
+      colors: {
+        primary: 'emerald',
+        neutral: 'slate',
+      },
+    },
+  },
+  alias: {
+    '@data': fileURLToPath(new URL('../data', import.meta.url)),
+  },
+  vite: {
+    optimizeDeps: {
+      include: ['three', 'jsxgraph', 'animejs'],
+    },
+  },
+})

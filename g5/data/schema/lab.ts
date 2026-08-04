@@ -1,0 +1,104 @@
+/**
+ * 五年级 Lab 数据 Schema（苏教版五年级上册 · 2022 课标修订）
+ *
+ * 设计原则：
+ * - 一个"Lab" = 一个可调参数的可视化例题（例题/试一试/练一练等）
+ * - 数据只声明：所属单元、书页、题源、参数定义、公式展示
+ * - 计算与渲染逻辑在 g5/game/src/lib/labs/ 与 components/labs/ 中
+ */
+
+export type ChapterId =
+  | 'c1' // 图形的运动
+  | 'c2' // 统计表和条形统计图（二）
+  | 'c3' // 多边形的面积
+  | 'c4' // 小数乘法和除法（一）
+  | 'c5' // 可能性
+  | 'c6' // 因数与倍数
+  | 'c7' // 用字母表示数量关系（一）
+  | 'c8' // 观察物体（三）
+
+export interface ChapterMeta {
+  id: ChapterId
+  /** 单元序号 */
+  no: number
+  title: string
+  /** 课本目录序号（一~八） */
+  tocLabel: string
+  /** 书页码起止 */
+  pageStart: number
+  pageEnd: number
+  /** 展示用 emoji */
+  icon: string
+  /** 一句话简介 */
+  summary: string
+}
+
+/** 题源小节 */
+export type SourceKind = '例题' | '试一试' | '练一练' | '练习' | '探索' | '综合实践'
+
+/** 可调参数定义（滑块） */
+export interface LabParam {
+  /** 参数名（公式里的字母，如 a / h） */
+  key: string
+  label: string
+  min: number
+  max: number
+  step: number
+  default: number
+  /** 单位（米/厘米/千米/格/°…） */
+  unit?: string
+}
+
+/** 可视化 Lab 类型 */
+export type LabKind =
+  // 一 图形的运动
+  | 'translate' // 图形的平移（方向 + 格数）
+  | 'rotate' // 图形的旋转（角度 + 方向）
+  | 'axis' // 轴对称
+  // 三 多边形的面积
+  | 'area' // 平行四边形 / 三角形 / 梯形（shape 参数区分）
+  | 'hectare' // 公顷与平方千米
+  | 'composite' // 组合图形的面积
+  // 四 小数乘法和除法（一）
+  | 'decimal-mul' // 小数乘整数
+  | 'decimal-div' // 小数除以整数
+  | 'decimal-point' // 小数点移动引起大小变化
+  // 五 可能性
+  | 'spinner' // 转盘可能性
+  | 'marble' // 摸球实验
+  // 六 因数与倍数
+  | 'factors' // 因数可视化
+  | 'multiples' // 倍数数轴
+  | 'prime' // 质数与合数（筛法）
+  | 'gcdlcm' // 公因数与公倍数
+  // 七 用字母表示数量关系（一）
+  | 'frog' // 青蛙歌
+  | 'square' // 正方形的周长与面积
+  | 'speed' // 路程 = 速度 × 时间
+  // 探索规律
+  | 'pinboard' // 钉子板上的多边形（皮克定理）
+  // 八 观察物体（三）
+  | 'views3d' // three.js 三视图
+
+export interface LabDef {
+  id: string
+  chapter: ChapterId
+  /** 书页码 */
+  page: number
+  source: SourceKind
+  title: string
+  /** 题干文字 */
+  prompt: string
+  kind: LabKind
+  /** 可调参数 */
+  params: LabParam[]
+  /** 隐藏常量（不显示为滑块，但参与计算），如小数点移动的基数与方向 */
+  fixed?: Record<string, number>
+  /** 展示用公式模板（组件实时代入数值） */
+  formula: string
+  /** 教学提示 */
+  tip?: string
+}
+
+/** 参数表类型：key → 当前值 */
+export type ParamValues = Record<string, number>
