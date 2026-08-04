@@ -54,14 +54,15 @@ for (const app of APPS) {
 console.log('\n=== 复制 portal/ → deploy/ ===')
 cpSync(join(root, 'portal'), OUT, { recursive: true })
 
-// 4. 根级路由文件：SPA 兜底（预渲染页面之外的深层路径交给客户端路由）
-console.log('\n=== 生成 _redirects ===')
+// 4. 根级路由文件（所有真实页面均已预渲染，无需 SPA 200 重写 ——
+//    历史教训：/g1/* → /g1/200.html 200 会抢在静态文件前命中目录请求，
+//    被 Cloudflare clean URL 解析成 /g1/200 造成 308 循环）
+console.log('\n=== 生成 _redirects / _headers ===')
 writeFileSync(
   join(OUT, '_redirects'),
   [
-    '# 子应用 SPA 兜底（Cloudflare Pages 200 重写）',
-    '/g1/*  /g1/200.html  200',
-    '/g5/*  /g5/200.html  200',
+    '# 子应用静态站：全部真实页面已预渲染，直接命中静态文件。',
+    '# 未预渲染路径由各子应用自带的 404.html 兜底。',
     '',
   ].join('\n'),
 )
