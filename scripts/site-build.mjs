@@ -50,9 +50,16 @@ for (const app of APPS) {
   cpSync(join(root, app.dir, app.dist), join(OUT, app.base.slice(1, -1)), { recursive: true })
 }
 
-// 3. 门户页
-console.log('\n=== 复制 portal/ → deploy/ ===')
-cpSync(join(root, 'portal'), OUT, { recursive: true })
+// 3. 门户（Nuxt 应用，BASE_URL=/ 部署在根路径）
+const portalDir = join(root, 'portal')
+if (!SKIP_INSTALL && !existsSync(join(portalDir, 'node_modules'))) {
+  run('npm ci --no-audit --no-fund', 'portal')
+} else {
+  console.log('\n> [portal] 已存在 node_modules，跳过 npm install')
+}
+run('npm run generate:site', 'portal', { BASE_URL: '/' })
+console.log('\n> 复制 portal/dist → deploy/')
+cpSync(join(portalDir, 'dist'), OUT, { recursive: true })
 
 // 4. 根级路由文件（所有真实页面均已预渲染，无需 SPA 200 重写 ——
 //    历史教训：/g1/* → /g1/200.html 200 会抢在静态文件前命中目录请求，

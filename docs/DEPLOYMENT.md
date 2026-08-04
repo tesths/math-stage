@@ -17,7 +17,7 @@ Cloudflare Pages 构建机
    │      └─ node scripts/site-build.mjs
    │           ├─ game/   : npm ci → BASE_URL=/g1/ nuxi generate → game/dist/g1（111 页）
    │           ├─ g5/game/: npm ci → BASE_URL=/g5/ nuxi generate → g5/game/dist/g5（55 页）
-   │           ├─ portal/ : 直接复制（index.html + style.css）
+   │           ├─ portal/ : npm ci → BASE_URL=/ nuxi generate → portal/dist（门户 Nuxt 应用）
    │           └─ 写出 _redirects / _headers
    ▼
 deploy/（聚合产物 = 面板配置的"构建输出目录"）
@@ -52,8 +52,8 @@ Cloudflare 边缘网络 → 用户浏览器
 | 10 | 静态导出爬取 | `nitro.prerender.crawlLinks` | `true` | 决定是否预渲染全部路由 | 改 nuxt.config |
 | 11 | 部署预设 | `nitro.preset` | `cloudflare-pages` | 构建产物形态 | 一般不改 |
 | 12 | SPA 兜底规则 | 脚本生成的 `deploy/_redirects` | `/g1/* → /g1/200.html 200` | 未预渲染路径交给客户端路由 | 改脚本 §4.4 |
-| 13 | 门户年级链接 | `portal/index.html` | `./g1/`、`./g5/` | 门户卡片跳转 | 改 HTML |
-| 14 | 门户样式 | `portal/style.css` | — | 卡片/配色/响应式 | 改 CSS |
+| 13 | 门户年级链接 | `portal/pages/index.vue` | `to="/g1/"`、`to="/g5/"` | 门户卡片跳转 | 改 Vue 模板 |
+| 14 | 门户样式 | `portal/nuxt.config.ts` + `pages/index.vue` | primary: sky | 与年级一致的 Nuxt UI 风格 | 改 Vue/配置 |
 | 15 | 依赖安装方式 | 脚本内 | `npm ci` | 用 lock 文件安装（更快更稳） | 改脚本；超时可换 `npm install` |
 | 16 | 产物忽略 | 根 `.gitignore` | `deploy/`、`dist/`、`node_modules/` 等 | 构建产物不提交 | 一般不改 |
 
@@ -130,7 +130,7 @@ const OUT = join(root, 'deploy')
 | `OUT` | 聚合输出目录，**必须与 Cloudflare 面板的 Build output directory 完全一致** | 改成 `dist-site` 时，面板也要填 `dist-site` |
 
 > ⚠️ **改 `base` 的三个联动**：① `APPS` 里的 `base` + `dist`；② 脚本末尾 `_redirects` 里的 `/g1/*` 规则；
-> ③ `portal/index.html` 的卡片链接 `./g1/`。三处不同步会导致资源 404 或跳转失效。
+> ③ `portal/pages/index.vue` 的卡片链接 `to="/g1/"`。三处不同步会导致资源 404 或跳转失效。
 
 ### 4.2 根 `package.json` —— 脚本入口
 
@@ -177,16 +177,22 @@ Cloudflare 的 200 重写会抢在静态文件之前命中 `/g1/` 目录请求�
 正确做法：所有真实页面全量预渲染（crawlLinks）直接命中；
 不存在的路径由各子应用自带的 `404.html` 兜底。
 
-### 4.5 `portal/index.html` —— 门户卡片
+### 4.5 `portal/pages/index.vue` —— 门户卡片
 
-```html
-<a class="card card-g1" href="./g1/">…进入一年级…</a>
-<a class="card card-g5" href="./g5/">…进入五年级…</a>
+```vue
+<NuxtLink to="/g1/">
+  <UCard>
+    <UBadge color="orange">一年级 · 2022 版课标</UBadge>
+    …
+    <UButton color="orange" trailing icon="i-heroicons-arrow-right-circle">进入一年级</UButton>
+  </UCard>
+</NuxtLink>
 ```
 
-- 用**相对链接 `./g1/`**（不是 `/g1/`）：这样门户部署在任意域名/子路径下都能跳对。
-- 新增年级：复制一张卡片，改 `href="./g3/"` 和文案。
-- 配色：`portal/style.css` 里 `--g1`（橙）/`--g5`（绿）两个变量 + `.card-gX` 类。
+- 门户是 **Nuxt 4 + Nuxt UI 应用**（风格与两个年级一致），链接用 `<NuxtLink to="/g1/">`（门户在根路径）。
+- 新增年级：复制卡片，改 `to="/g3/"`、`UBadge`/`UButton` 的 `color` 与文案。
+- 门户 `nuxt.config.ts` 的 `prerender` 必须是 `crawlLinks: false + routes: ['/']`：
+  开 crawlLinks 会爬 `/g1/`、`/g5/` 链接，在门户应用里 404 → 构建失败（已踩坑）。
 
 ### 4.6 `.gitignore`（防误提交）
 
@@ -213,14 +219,14 @@ node_modules/  .nuxt/  .output/  dist/  test-results/  coverage/  deploy/  *.pdf
    ]
    ```
    （`_redirects` 会随 APPS 自动？——不会，需手动加 `/g3/*` 规则，见 §4.4）
-3. `portal/index.html` 加第三张卡片 `href="./g3/"`。
+3. `portal/pages/index.vue` 加第三张卡片 `to="/g3/"`。
 4. Cloudflare 面板**无需改动**（构建命令/输出目录不变），推送即部署。
 
 ### 5.2 改子路径（如 /g1/ → /grade1/）
 
 1. `scripts/site-build.mjs`：`base: '/grade1/'`，`dist: 'dist/grade1'`。
 2. 同文件 `_redirects`：`/grade1/*  /grade1/200.html  200`。
-3. `portal/index.html`：`href="./grade1/"`。
+3. `portal/pages/index.vue`：`to="/grade1/"`。
 4. 推送重新构建。**旧链接 /g1/* 会失效**，介意的话在 `_redirects` 加一条
    `/g1/*  /grade1/:splat  301`。
 
