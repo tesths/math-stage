@@ -15,8 +15,9 @@
     </div>
 
     <div class="mx-auto mt-10 grid max-w-4xl gap-5 md:grid-cols-2">
-      <!-- 一年级 -->
-      <NuxtLink to="/g1/" class="block h-full">
+      <!-- 一年级（用原生 <a> 强制整页导航，不能用 NuxtLink：
+           门户应用没有 /g1/ 路由，客户端路由会显示门户自己的 404） -->
+      <a href="/g1/" class="block h-full">
         <UCard
           class="h-full transition-colors hover:bg-(--ui-bg-elevated)"
           :ui="{ root: 'h-full' }"
@@ -39,10 +40,10 @@
             </div>
           </div>
         </UCard>
-      </NuxtLink>
+      </a>
 
       <!-- 五年级 -->
-      <NuxtLink to="/g5/" class="block h-full">
+      <a href="/g5/" class="block h-full">
         <UCard
           class="h-full transition-colors hover:bg-(--ui-bg-elevated)"
           :ui="{ root: 'h-full' }"
@@ -65,7 +66,7 @@
             </div>
           </div>
         </UCard>
-      </NuxtLink>
+      </a>
     </div>
 
     <p class="mt-10 text-center text-xs text-(--ui-text-muted)">
