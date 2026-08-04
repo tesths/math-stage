@@ -7,9 +7,9 @@ describe('五年级 Lab 数据', () => {
     expect(validateLabs()).toEqual([])
   })
 
-  it('覆盖 7 个有 Lab 的单元，共 31 个 Lab', () => {
-    expect(totalLabs).toBe(31)
-    expect(byChapter.filter((c) => c.labs.length > 0).length).toBe(7)
+  it('覆盖 8 个有 Lab 的单元，共 33 个 Lab', () => {
+    expect(totalLabs).toBe(33)
+    expect(byChapter.filter((c) => c.labs.length > 0).length).toBe(8)
   })
 
   it('findLabById 能取到每个 Lab', () => {

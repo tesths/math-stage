@@ -33,6 +33,33 @@ function resetParams() {
 
 const result = computed(() => computeLab(lab.value!.kind, values))
 
+/** animejs：结果变化时数值滚动 + 结果框弹跳 + 步骤交错淡入 */
+const resultBoxRef = ref<HTMLElement | null>(null)
+const stepListRef = ref<HTMLElement | null>(null)
+let lastResultText = ''
+watch(result, (r) => {
+  if (r.text === lastResultText) return
+  lastResultText = r.text
+  if (resultBoxRef.value) {
+    animate(resultBoxRef.value, {
+      scale: [1.04, 1],
+      translateY: [3, 0],
+      duration: 320,
+      easing: 'easeOutQuad',
+    })
+  }
+  if (stepListRef.value) {
+    const items = stepListRef.value.querySelectorAll('li')
+    animate(items, {
+      opacity: [0, 1],
+      translateX: [-8, 0],
+      delay: 80,
+      duration: 350,
+      easing: 'easeOutQuad',
+    })
+  }
+})
+
 const stageRef = ref<HTMLElement | null>(null)
 function animateIn() {
   const el = stageRef.value
@@ -142,7 +169,7 @@ watch(labId, () => {
               </div>
             </div>
 
-            <div class="result-box">
+            <div ref="resultBoxRef" class="result-box">
               <p class="text-xs text-(--ui-text-muted)">{{ lab.formula }}</p>
               <p class="mt-1 text-2xl font-bold text-(--ui-primary)">{{ result.text }}</p>
             </div>
@@ -156,7 +183,7 @@ watch(labId, () => {
         <!-- 分步计算 -->
         <div class="mt-5 border-t border-(--ui-border) pt-4">
           <p class="mb-2 text-sm font-semibold text-(--ui-text-highlighted)">分步思考</p>
-          <ol class="space-y-1.5">
+          <ol ref="stepListRef" class="space-y-1.5">
             <li
               v-for="(s, i) in result.steps"
               :key="i"

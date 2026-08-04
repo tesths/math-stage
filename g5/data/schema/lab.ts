@@ -55,6 +55,9 @@ export type LabKind =
   | 'translate' // 图形的平移（方向 + 格数）
   | 'rotate' // 图形的旋转（角度 + 方向）
   | 'axis' // 轴对称
+  // 二 统计表和条形统计图（二）
+  | 'stats-table' // 复式统计表（chart.js 分组条形图）
+  | 'stats-chart' // 复式条形统计图（chart.js）
   // 三 多边形的面积
   | 'area' // 平行四边形 / 三角形 / 梯形（shape 参数区分）
   | 'hectare' // 公顷与平方千米
@@ -92,7 +95,7 @@ export interface LabDef {
   kind: LabKind
   /** 可调参数 */
   params: LabParam[]
-  /** 隐藏常量（不显示为滑块，但参与计算），如小数点移动的基数与方向 */
+  /** 隐藏常量（不显示为滑块，但参与计算），如小数点移动的基数/方向、面积图形形状代码 */
   fixed?: Record<string, number>
   /** 展示用公式模板（组件实时代入数值） */
   formula: string

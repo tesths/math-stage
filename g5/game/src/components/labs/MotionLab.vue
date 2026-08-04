@@ -11,6 +11,16 @@ const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 const CELL = 36
 const GRID = 10
 
+/** 平移专用：动态格宽，保证最大格数（含上下移动）也落在 viewBox 内 */
+const tCell = computed(() => {
+  const g = Math.max(1, grid.value)
+  return Math.min(CELL, 168 / g)
+})
+const gridCols = computed(() => {
+  if (isRotate.value || isAxis.value) return GRID
+  return Math.ceil(360 / tCell.value)
+})
+
 const boatPath =
   'M0,0 L0,1.6 L1.6,1.6 L2.2,0.6 L3.2,0.6 L3.8,1.6 L6,1.6 L6,0 L5.4,-0.9 L4.8,-1.8 L2.4,-1.8 L0.6,-0.9 Z'
 const houseHalfPath = 'M0,0 L0,-2 L2.4,-3.6 L4.8,-2 L4.8,0 Z'
@@ -21,10 +31,10 @@ const grid = computed(() => Math.round(props.values.grid ?? 0))
 
 /** 平移向量（格 → px） */
 const dx = computed(() =>
-  dir.value === 'right' ? grid.value * CELL : dir.value === 'left' ? -grid.value * CELL : 0,
+  dir.value === 'right' ? grid.value * tCell.value : dir.value === 'left' ? -grid.value * tCell.value : 0,
 )
 const dy = computed(() =>
-  dir.value === 'down' ? grid.value * CELL : dir.value === 'up' ? -grid.value * CELL : 0,
+  dir.value === 'down' ? grid.value * tCell.value : dir.value === 'up' ? -grid.value * tCell.value : 0,
 )
 
 const angle = computed(() => Math.round(props.values.angle ?? 0))
@@ -32,16 +42,16 @@ const clockwise = computed(() => Math.round(props.values.dir ?? 0) === 0)
 const rotateDeg = computed(() => (clockwise.value ? angle.value : -angle.value))
 
 const sym = computed(() => Math.round(props.values.sym ?? 1))
-const axisX = computed(() => 150 + sym.value * 60)
+const axisX = computed(() => 150 + sym.value * 30)
 
 const isRotate = computed(() => props.lab.kind === 'rotate')
 const isAxis = computed(() => props.lab.kind === 'axis')
 
-/** 平移演示：原形上的对应点（格坐标） */
+/** 平移演示：小船上的对应点（船体局部像素偏移，船体位于 (2*tCell, 180)） */
 const originPts = [
-  { x: 0, y: 0 },
-  { x: 2, y: -1.5 },
-  { x: 4, y: -1.2 },
+  { x: 30, y: 4 }, // 船头
+  { x: 0, y: 4 }, // 船尾
+  { x: 15, y: -9 }, // 桅杆顶
 ]
 
 /** 旋转弧终点（模板用） */
@@ -57,27 +67,27 @@ const arcEnd = computed(() => {
       <!-- 网格 -->
       <g class="grid-lines">
         <line
-          v-for="i in GRID + 1"
+          v-for="i in gridCols"
           :key="'v' + i"
-          :x1="i * CELL"
+          :x1="(i - 1) * (isRotate || isAxis ? CELL : tCell)"
           :y1="0"
-          :x2="i * CELL"
+          :x2="(i - 1) * (isRotate || isAxis ? CELL : tCell)"
           :y2="GRID * CELL"
         />
         <line
           v-for="i in GRID + 1"
           :key="'h' + i"
           :x1="0"
-          :y1="i * CELL"
+          :y1="(i - 1) * CELL"
           :x2="GRID * CELL"
-          :y2="i * CELL"
+          :y2="(i - 1) * CELL"
         />
       </g>
 
       <!-- 平移 -->
       <template v-if="lab.kind === 'translate'">
         <g class="shape-original">
-          <path :d="boatPath" transform="translate(36, 90) scale(5)" class="fill-original" />
+          <path :d="boatPath" :transform="`translate(${2 * tCell}, 180) scale(5)`" class="fill-original" />
         </g>
         <!-- 平移后的形状 -->
         <g
@@ -87,33 +97,28 @@ const arcEnd = computed(() => {
             transition: 'transform 0.5s cubic-bezier(.4,0,.2,1)',
           }"
         >
-          <path :d="boatPath" transform="translate(36, 90) scale(5)" class="fill-target" />
+          <path :d="boatPath" :transform="`translate(${2 * tCell}, 180) scale(5)`" class="fill-target" />
         </g>
         <!-- 对应点 -->
         <g v-if="grid > 0" class="corr-points">
           <g v-for="(p, i) in originPts" :key="i">
+            <circle :cx="2 * tCell + p.x" :cy="180 + p.y" r="5" class="fill-original" />
             <circle
-              :cx="(p.x + 2) * CELL"
-              :cy="(5 - p.y) * CELL"
-              r="5"
-              class="fill-original"
-            />
-            <circle
-              :cx="(p.x + 2) * CELL + dx"
-              :cy="(5 - p.y) * CELL + dy"
+              :cx="2 * tCell + p.x + dx"
+              :cy="180 + p.y + dy"
               r="5"
               class="fill-target"
             />
             <line
-              :x1="(p.x + 2) * CELL"
-              :y1="(5 - p.y) * CELL"
-              :x2="(p.x + 2) * CELL + dx"
-              :y2="(5 - p.y) * CELL + dy"
+              :x1="2 * tCell + p.x"
+              :y1="180 + p.y"
+              :x2="2 * tCell + p.x + dx"
+              :y2="180 + p.y + dy"
               class="corr-line"
             />
             <text
-              :x="((p.x + 2) * CELL + dx) / 2"
-              :y="(5 - p.y) * CELL + dy / 2 - 8"
+              :x="2 * tCell + p.x + dx / 2"
+              :y="180 + p.y + dy / 2 - 8"
               class="corr-label"
             >
               {{ grid }}格

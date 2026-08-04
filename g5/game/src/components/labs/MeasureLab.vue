@@ -25,12 +25,12 @@ const h2 = computed(() => props.values.h2 ?? 90)
 const sRect = computed(() => w.value * h1.value)
 const sTrap = computed(() => ((w.value + w.value / 2) * h2.value) / 2)
 const total = computed(() => sRect.value + sTrap.value)
-/** 组合图形顶点：矩形（左上）+ 梯形（右下） */
+/** 组合图形顶点：矩形（左上）+ 梯形（右下），整体缩放保证在 viewBox 内 */
+const W = 150
+const H1 = computed(() => (h1.value / 120) * 105)
+const H2 = computed(() => (h2.value / 200) * 105)
 const pondPts = computed(() => {
-  const W = 220
-  const H1 = (h1.value / 140) * 120
-  const H2 = (h2.value / 200) * 130
-  return `60,40 ${60 + W},40 ${60 + W},${40 + H1} ${60 + W + W / 2},${40 + H1} ${60 + W + W / 2},${40 + H1 + H2} 60,${40 + H1 + H2}`
+  return `60,40 ${60 + W},40 ${60 + W},${40 + H1.value} ${60 + W + W / 2},${40 + H1.value} ${60 + W + W / 2},${40 + H1.value + H2.value} 60,${40 + H1.value + H2.value}`
 })
 </script>
 
@@ -80,15 +80,12 @@ const pondPts = computed(() => {
 
     <!-- 组合图形 -->
     <template v-else>
-      <svg viewBox="0 0 340 260" class="w-full">
+      <svg viewBox="0 0 340 290" class="w-full">
         <!-- 分割线（虚线）：长方形 | 梯形 -->
-        <line :x1="60 + 220" :y1="40" :x2="60 + 220" :y2="40 + 120" class="split-line" />
+        <line :x1="60 + W" :y1="40" :x2="60 + W" :y2="40 + H1" class="split-line" />
         <polygon :points="pondPts" class="pond-fill" />
-        <text x="170" y="95" text-anchor="middle" class="dim-label">长方形</text>
-        <text x="265" y="150" text-anchor="middle" class="dim-label">梯形</text>
-        <text x="60" y="172" text-anchor="start" class="dim-label">长 {{ w }} m</text>
-        <text x="295" y="60" class="dim-label">宽 {{ h1 }} m</text>
-        <text x="308" y="180" class="dim-label">高 {{ h2 }} m</text>
+        <text :x="60 + W / 2" :y="40 + H1 / 2" text-anchor="middle" class="dim-label">长方形</text>
+        <text :x="60 + W + W / 4" :y="40 + H1 + H2 / 2" text-anchor="middle" class="dim-label">梯形</text>
       </svg>
       <div class="formula-row">
         <span class="formula-chip">S长方形 = {{ w }} × {{ h1 }} = {{ toFixed2(sRect) }} m²</span>

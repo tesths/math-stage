@@ -120,8 +120,8 @@ function restart() {
       <div class="move-stage">
         <svg viewBox="0 0 320 220" class="move-svg">
           <g class="grid-lines">
-            <line v-for="i in 17" :key="'v' + i" :x1="i * 20" :y1="0" :x2="i * 20" :y2="220" />
-            <line v-for="i in 12" :key="'h' + i" :x1="0" :y1="i * 20" :x2="320" :y2="i * 20" />
+            <line v-for="i in 16" :key="'v' + i" :x1="(i - 1) * 20" :y1="0" :x2="(i - 1) * 20" :y2="220" />
+            <line v-for="i in 11" :key="'h' + i" :x1="0" :y1="(i - 1) * 20" :x2="320" :y2="(i - 1) * 20" />
           </g>
           <path :d="START" class="shape-original" />
           <g

@@ -1,18 +1,24 @@
 <script setup lang="ts">
 /**
  * 训练游戏：抛硬币统计（100 次，观察正反面次数接近一半）
+ * animejs 3D 翻转动画
  */
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { animate } from 'animejs'
 import { playClick, playWin } from '@/lib/sound'
 
 const results = ref<('正面' | '反面')[]>([])
 const flipping = ref(false)
 const finished = ref(false)
+const coinRef = ref<HTMLElement | null>(null)
+const face = ref<'正面' | '反面'>('正面')
 
 const flips = computed(() => results.value.length)
 const heads = computed(() => results.value.filter((x) => x === '正面').length)
 const tails = computed(() => flips.value - heads.value)
 const headPct = computed(() => (heads.value / Math.max(1, flips.value)) * 100)
+
+let flipTween: { cancel: () => void } | null = null
 
 function doFlips(k: number) {
   if (finished.value || flipping.value) return
@@ -20,20 +26,38 @@ function doFlips(k: number) {
   playClick()
   const r: ('正面' | '反面')[] = []
   for (let i = 0; i < k; i++) r.push(Math.random() < 0.5 ? '正面' : '反面')
-  results.value = [...results.value, ...r]
+  const outcome = r[0]!
+  face.value = outcome
+  // animejs：硬币翻转 3 圈 + 上抛回落
+  const el = coinRef.value
+  flipTween?.cancel()
+  if (el) {
+    flipTween = animate(el, {
+      rotateX: [0, 360 * 3],
+      translateY: [0, -26, 0],
+      duration: 700,
+      easing: 'easeOutCubic',
+    })
+  }
   setTimeout(() => {
+    results.value = [...results.value, ...r]
     flipping.value = false
     if (results.value.length >= 100) {
       finished.value = true
       playWin()
     }
-  }, 300)
+  }, 750)
 }
 
 function reset() {
   results.value = []
   finished.value = false
 }
+
+onMounted(() => {
+  if (coinRef.value) coinRef.value.style.transform = 'rotateX(0)'
+})
+onBeforeUnmount(() => flipTween?.cancel())
 
 function tallyChars(n: number): string {
   let out = ''
@@ -58,8 +82,11 @@ function tallyChars(n: number): string {
 
     <template v-else>
       <div class="coin-stage">
-        <span class="coin" :class="{ flipping }">🪙</span>
+        <span ref="coinRef" class="coin" :class="face === '正面' ? 'coin-head' : 'coin-tail'">
+          {{ face === '正面' ? '🪙' : '🪙' }}
+        </span>
         <p class="ask">硬币落下后，正面朝上还是反面朝上？抛 {{ 100 - flips }} 次就结束</p>
+        <p class="face-label">上次结果：{{ face }}</p>
       </div>
 
       <div class="btn-row">
@@ -104,14 +131,19 @@ function tallyChars(n: number): string {
 .coin {
   font-size: 3.5rem;
   display: inline-block;
+  transform-style: preserve-3d;
 }
-.coin.flipping {
-  animation: coin-flip 0.3s ease-in-out;
+.coin-head {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
 }
-@keyframes coin-flip {
-  0% { transform: rotateX(0); }
-  50% { transform: rotateX(180deg) scale(1.1); }
-  100% { transform: rotateX(360deg); }
+.coin-tail {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25)) hue-rotate(40deg);
+}
+.face-label {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ui-primary);
 }
 .ask {
   margin-top: 0.4rem;

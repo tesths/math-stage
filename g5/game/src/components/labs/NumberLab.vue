@@ -68,10 +68,11 @@ const lcmLine = computed(() => {
           <div
             class="mini-grid"
             :style="{
-              gridTemplateColumns: `repeat(${Math.min(p.w, 8)}, 13px)`,
+              gridTemplateColumns: `repeat(${Math.min(p.w, 6)}, 13px)`,
             }"
           >
-            <span v-for="c in Math.min(p.w * p.h, 64)" :key="c" class="mini-cell" />
+            <span v-for="c in Math.min(p.w, 6) * Math.min(p.h, 6)" :key="c" class="mini-cell" />
+            <span v-if="p.w * p.h > 36" class="mini-more">…</span>
           </div>
           <p class="pair-label">{{ p.w }} × {{ p.h }} = {{ n }}</p>
         </div>
@@ -221,6 +222,12 @@ const lcmLine = computed(() => {
   height: 13px;
   background: color-mix(in srgb, var(--ui-primary) 45%, white);
   border-radius: 1px;
+}
+.mini-more {
+  font-size: 0.7rem;
+  color: var(--ui-text-muted);
+  grid-column: 1 / -1;
+  text-align: center;
 }
 .pair-label {
   font-size: 0.75rem;

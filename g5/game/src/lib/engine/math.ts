@@ -5,6 +5,8 @@ export const KIND_LABELS: Record<LabKind, string> = {
   translate: '图形的平移',
   rotate: '图形的旋转',
   axis: '轴对称图形',
+  'stats-table': '复式统计表',
+  'stats-chart': '复式条形统计图',
   area: '多边形面积',
   hectare: '公顷与平方千米',
   composite: '组合图形的面积',
@@ -39,8 +41,14 @@ export function trapezoidArea(p: ParamValues): number {
   return ((p.a! + p.b!) * p.h!) / 2
 }
 
-export const AREA_SHAPES = ['parallelogram', 'triangle', 'trapezoid'] as const
-export type AreaShape = (typeof AREA_SHAPES)[number]
+const SHAPE_NAMES = ['parallelogram', 'triangle', 'trapezoid'] as const
+export type AreaShape = (typeof SHAPE_NAMES)[number]
+export const AREA_SHAPES = SHAPE_NAMES
+
+/** 面积图形：data fixed.shape 数值代码 0/1/2 */
+export function shapeFromCode(code: number | undefined): AreaShape {
+  return SHAPE_NAMES[Math.round(code ?? 0) % 3]!
+}
 
 export function areaOf(shape: AreaShape, p: ParamValues): number {
   switch (shape) {

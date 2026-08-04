@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import type { LabKind } from '@data/schema/lab'
 import MotionLab from '@/components/labs/MotionLab.vue'
+import ChartLab from '@/components/labs/ChartLab.vue'
 import AreaLab from '@/components/labs/AreaLab.vue'
 import MeasureLab from '@/components/labs/MeasureLab.vue'
 import DecimalLab from '@/components/labs/DecimalLab.vue'
@@ -15,6 +16,8 @@ export const LAB_COMPONENTS: Record<LabKind, Component> = {
   translate: MotionLab,
   rotate: MotionLab,
   axis: MotionLab,
+  'stats-table': ChartLab,
+  'stats-chart': ChartLab,
   area: AreaLab,
   hectare: MeasureLab,
   composite: MeasureLab,

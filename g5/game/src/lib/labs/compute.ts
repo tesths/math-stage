@@ -6,6 +6,7 @@ import {
   isPrime,
   lcm,
   primesUpTo,
+  shapeFromCode,
   toFixed2,
   type AreaShape,
 } from '@/lib/engine/math'
@@ -52,6 +53,45 @@ function divSteps(total: number, count: number): LabStep[] {
 
 export function computeLab(kind: LabKind, p: ParamValues): LabResult {
   switch (kind) {
+    case 'stats-table': {
+      const boys = [p.a1 ?? 0, p.a2 ?? 0, p.a3 ?? 0, p.a4 ?? 0]
+      const girls = [p.b1 ?? 0, p.b2 ?? 0, p.b3 ?? 0, p.b4 ?? 0]
+      const totals = boys.map((b, i) => b + girls[i]!)
+      const sum = (arr: number[]) => arr.reduce((acc, x) => acc + x, 0)
+      const grand = sum(totals)
+      return {
+        value: grand,
+        text: `总计 ${grand} 人（男生 ${sum(boys)}，女生 ${sum(girls)}）`,
+        steps: [
+          { expr: `一班合计 = ${boys[0]} + ${girls[0]}`, result: `${totals[0]} 人` },
+          { expr: `二班合计 = ${boys[1]} + ${girls[1]}`, result: `${totals[1]} 人` },
+          { expr: `三班合计 = ${boys[2]} + ${girls[2]}`, result: `${totals[2]} 人` },
+          { expr: `四班合计 = ${boys[3]} + ${girls[3]}`, result: `${totals[3]} 人` },
+          { expr: `总计 = 各班合计之和`, result: `${grand} 人` },
+        ],
+        conclusion: `男生一共 ${sum(boys)} 人，女生一共 ${sum(girls)} 人，总计 ${grand} 人。`,
+      }
+    }
+    case 'stats-chart': {
+      const names = ['做家务', '做作业', '体育锻炼', '课外阅读', '看电视']
+      const self = [p.s1 ?? 0, p.s2 ?? 0, p.s3 ?? 0, p.s4 ?? 0, p.s5 ?? 0]
+      const desk = [p.d1 ?? 0, p.d2 ?? 0, p.d3 ?? 0, p.d4 ?? 0, p.d5 ?? 0]
+      const maxIdx = self.reduce((mi, v, i) => (v > self[mi]! ? i : mi), 0)
+      const maxDIdx = desk.reduce((mi, v, i) => (v > desk[mi]! ? i : mi), 0)
+      const selfTotal = self.reduce((a, b) => a + b, 0)
+      const deskTotal = desk.reduce((a, b) => a + b, 0)
+      return {
+        value: Math.max(selfTotal, deskTotal),
+        text: `自己 ${fmt(selfTotal)} 时 / 同桌 ${fmt(deskTotal)} 时`,
+        steps: [
+          { expr: `自己共花时间`, result: `${fmt(selfTotal)} 时` },
+          { expr: `同桌共花时间`, result: `${fmt(deskTotal)} 时` },
+          { expr: `自己花时间最多的活动`, result: `${names[maxIdx]}（${fmt(self[maxIdx]!)} 时）` },
+          { expr: `同桌花时间最多的活动`, result: `${names[maxDIdx]}（${fmt(desk[maxDIdx]!)} 时）` },
+        ],
+        conclusion: `比较复式条形统计图中两组直条的长短，可以直观看出自己和同桌的时间安排差异。`,
+      }
+    }
     case 'translate': {
       const dirs = ['右', '下', '左', '上']
       const g = p.grid ?? 0
@@ -93,7 +133,7 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       }
     }
     case 'area': {
-      const shape = (p.shape as AreaShape) ?? 'parallelogram'
+      const shape = shapeFromCode(p.shape)
       const a = p.a ?? 0
       const b = p.b ?? 0
       const h = p.h ?? 0

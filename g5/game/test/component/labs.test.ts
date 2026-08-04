@@ -8,20 +8,20 @@ describe('Lab 组件渲染', () => {
   it('AreaLab：平行四边形默认参数渲染网格与公式', async () => {
     const lab = findLabById('g5-c3-area-parallelogram')!
     const wrapper = mount(AreaLab, {
-      props: { lab, values: { a: 6, h: 4, shape: 'parallelogram' } },
+      props: { lab, values: { a: 6, h: 4, shape: 0 } },
     })
     expect(wrapper.find('svg').exists()).toBe(true)
     expect(wrapper.find('.area-wrap').exists()).toBe(true)
     expect(wrapper.text()).toContain('底')
     // 改变参数后面积变化
-    await wrapper.setProps({ values: { a: 8, h: 4, shape: 'parallelogram' } })
+    await wrapper.setProps({ values: { a: 8, h: 4, shape: 0 } })
     expect(wrapper.find('.area-value strong').text()).toContain('32')
   })
 
   it('AreaLab：三角形剪拼按钮存在', () => {
     const lab = findLabById('g5-c3-area-triangle')!
     const wrapper = mount(AreaLab, {
-      props: { lab, values: { a: 8, h: 5, shape: 'triangle' } },
+      props: { lab, values: { a: 8, h: 5, shape: 1 } },
     })
     expect(wrapper.text()).toContain('拼一拼')
   })

@@ -1,25 +1,24 @@
 <script setup lang="ts">
 /**
  * 多边形面积 Lab：平行四边形 / 三角形 / 梯形
- * SVG 网格 + 剪拼演示动画（animejs 驱动），理解"转化"思想
+ * - 平行四边形：沿高剪下三角形 → 平移拼成长方形（滑动动画）
+ * - 三角形/梯形：两个全等图形镜像拼成平行四边形（滑入动画）
+ * 动态格宽保证任何参数下图形都在 viewBox 内
  */
 import { computed, ref } from 'vue'
 import { animate } from 'animejs'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { areaOf, type AreaShape } from '@/lib/engine/math'
+import { areaOf, shapeFromCode, type AreaShape } from '@/lib/engine/math'
 import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
-const CELL = 32
-const x0 = 40
-const y0 = 250
+const CELL = 34
+const X0 = 40
+const Y0 = 250
 
-/** 通过 values.shape（数据层 fixed 注入）判断形状 */
-const activeShape = computed<AreaShape>(() => {
-  const s = props.values.shape as AreaShape | undefined
-  return s ?? 'parallelogram'
-})
+/** 通过 values.shape（数据层 fixed 数值代码 0/1/2）判断形状 */
+const activeShape = computed<AreaShape>(() => shapeFromCode(props.values.shape))
 
 const a = computed(() => props.values.a ?? 0)
 const b = computed(() => props.values.b ?? 0)
@@ -29,97 +28,140 @@ const h = computed(() => props.values.h ?? 0)
 const isGrid = computed(() => !props.lab.params.some((p) => p.unit === '米'))
 const unit = computed(() => (isGrid.value ? '格' : '米'))
 
-/** 剪拼动画偏移（px，向负方向移动剪下的部分） */
+/** 动态格宽：保证垂直(2H/1H)与水平都在 viewBox 内 */
+const cellEff = computed(() => {
+  const vertLimit = activeShape.value === 'parallelogram' ? 150 : 78
+  const vert = vertLimit / Math.max(1, h.value)
+  const horiz =
+    activeShape.value === 'trapezoid' ? 360 / Math.max(1, a.value + b.value) : 360 / Math.max(1, a.value)
+  return Math.min(CELL, vert, horiz)
+})
+const px = (cells: number) => cells * cellEff.value
+
+/** 剪拼动画偏移（px）：平行四边形为水平滑移 */
 const cutOffset = ref(0)
 const animating = ref(false)
+/** 已拼合（三角形/梯形淡入显示，平行四边形已滑移） */
+const placed = ref(false)
 
 function runCut() {
   if (animating.value) return
   animating.value = true
   playClick()
-  animate(cutOffset, { value: -CELL, duration: 900, easing: 'easeInOutQuad', complete: () => { animating.value = false } })
+  if (activeShape.value === 'parallelogram') {
+    animate(cutOffset, {
+      value: -cellEff.value,
+      duration: 900,
+      easing: 'easeInOutQuad',
+      update: () => {
+        cutOffset.value = Math.round(cutOffset.value * 10) / 10
+      },
+      complete: () => {
+        animating.value = false
+        placed.value = true
+      },
+    })
+  } else {
+    // 三角形/梯形：第二个图形淡入，拼成平行四边形/长方形
+    const el = document.querySelector('.area-wrap .cut-solid')
+    if (el) {
+      animate(el, {
+        opacity: [0, 1],
+        duration: 800,
+        easing: 'easeOutQuad',
+        complete: () => {
+          animating.value = false
+          placed.value = true
+        },
+      })
+    } else {
+      placed.value = true
+      animating.value = false
+    }
+  }
 }
 
 function resetCut() {
   cutOffset.value = 0
+  placed.value = false
 }
 
-const sx = computed(() => Math.min(CELL, CELL * 0.5))
+const s = computed(() => cellEff.value * 0.5)
 
-/* ---------- 几何坐标（单元格 → px） ---------- */
-const px = (cells: number) => cells * CELL
+/* ---------- 几何坐标 ---------- */
+const W = computed(() => px(a.value))
+const H = computed(() => px(h.value))
+const B = computed(() => px(b.value))
 
 /** 平行四边形四点 */
 const paraPts = computed(() => {
-  const W = px(a.value)
-  const H = px(h.value)
-  const s = sx.value
-  return `${x0},${y0} ${x0 + W},${y0} ${x0 + W + s},${y0 - H} ${x0 + s},${y0 - H}`
+  const s2 = s.value
+  return `${X0},${Y0} ${X0 + W.value},${Y0} ${X0 + W.value + s2},${Y0 - H.value} ${X0 + s2},${Y0 - H.value}`
 })
 const paraRect = computed(() => {
-  const W = px(a.value)
-  const H = px(h.value)
-  return `${x0},${y0} ${x0 + W},${y0} ${x0 + W},${y0 - H} ${x0},${y0 - H}`
+  return `${X0},${Y0} ${X0 + W.value},${Y0} ${X0 + W.value},${Y0 - H.value} ${X0},${Y0 - H.value}`
 })
 /** 剪下的直角三角形（右侧），向左移 s 后补到左侧 */
 const cutTri = computed(() => {
-  const W = px(a.value)
-  const H = px(h.value)
-  const s = sx.value
-  return `${x0 + W},${y0 - H} ${x0 + W},${y0} ${x0 + W + s},${y0 - H}`
+  const s2 = s.value
+  return `${X0 + W.value},${Y0 - H.value} ${X0 + W.value},${Y0} ${X0 + W.value + s2},${Y0 - H.value}`
 })
 const cutTriMoved = computed(() => {
-  const W = px(a.value)
-  const H = px(h.value)
-  const s = sx.value
+  const s2 = s.value
   const off = cutOffset.value
-  return `${x0 + W + off},${y0 - H} ${x0 + W + off},${y0} ${x0 + W + s + off},${y0 - H}`
+  return `${X0 + W.value + off},${Y0 - H.value} ${X0 + W.value + off},${Y0} ${X0 + W.value + s2 + off},${Y0 - H.value}`
 })
 
-/** 三角形：底 a、高 h，两个全等三角形拼成平行四边形 */
+/** 三角形：左上三角（底 a、高 h） */
 const triPts = computed(() => {
-  const W = px(a.value)
-  const H = px(h.value)
-  return `${x0},${y0} ${x0 + W},${y0} ${x0 + W / 2},${y0 - H}`
+  return `${X0},${Y0} ${X0 + W.value},${Y0} ${X0},${Y0 - H.value}`
 })
-/** 第二个三角形（倒放，初始在下方，动画上移拼合） */
+/** 第二个三角形（镜像，拼成长方形） */
 const triPts2 = computed(() => {
-  const W = px(a.value)
-  const H = px(h.value)
-  const off = cutOffset.value
-  return `${x0},${y0 + H + off} ${x0 + W},${y0 + H + off} ${x0 + W / 2},${y0 + off}`
+  return `${X0 + W.value},${Y0} ${X0 + W.value},${Y0 - H.value} ${X0},${Y0 - H.value}`
 })
 
-/** 梯形：上底 a、下底 b、高 h */
+/** 梯形（左上直角梯形：下底 b、上底 a，左对齐） */
 const trapPts = computed(() => {
-  const A = px(a.value)
-  const B = px(b.value)
-  const H = px(h.value)
-  const shift = (B - A) / 2
-  return `${x0},${y0} ${x0 + B},${y0} ${x0 + B - shift},${y0 - H} ${x0 + shift},${y0 - H}`
+  return `${X0},${Y0} ${X0 + B.value},${Y0} ${X0 + W.value},${Y0 - H.value} ${X0},${Y0 - H.value}`
 })
+/** 第二个梯形（180° 旋转，拼成长方形：底 = 上底+下底） */
 const trapPts2 = computed(() => {
-  const A = px(a.value)
-  const B = px(b.value)
-  const H = px(h.value)
-  const shift = (B - A) / 2
-  const off = cutOffset.value
-  return `${x0},${y0 + H + off} ${x0 + B},${y0 + H + off} ${x0 + B - shift},${y0 + off} ${x0 + shift},${y0 + off}`
+  return `${X0 + B.value + W.value},${Y0 - H.value} ${X0 + W.value},${Y0 - H.value} ${X0 + B.value},${Y0} ${X0 + B.value + W.value},${Y0}`
 })
 
 const area = computed(() => areaOf(activeShape.value, { a: a.value, b: b.value, h: h.value }))
 
-const gridCols = computed(() => Math.max(a.value, b.value) + 3)
-const gridRows = computed(() => Math.ceil(h.value) + 3)
+/** 网格范围：上下都留一格余量，覆盖图形实际范围 */
+const gridTop = computed(() => Y0 - H.value - cellEff.value)
+const gridBottom = computed(() => Y0 + (activeShape.value === 'parallelogram' ? cellEff.value : H.value + cellEff.value))
+const gridCols = computed(() =>
+  activeShape.value === 'trapezoid' ? Math.ceil((a.value + b.value) / 2) + 2 : Math.ceil(a.value / 2) + 2,
+)
+const gridRows = computed(() => Math.ceil((gridBottom.value - gridTop.value) / cellEff.value) + 1)
 </script>
 
 <template>
   <div class="area-wrap">
-    <svg :viewBox="`0 0 420 300`" class="w-full">
+    <svg viewBox="0 0 420 430" class="w-full">
       <!-- 网格 -->
       <g v-if="isGrid" class="grid-lines">
-        <line v-for="i in gridCols" :key="'v' + i" :x1="x0 + i * CELL" :y1="40" :x2="x0 + i * CELL" :y2="280" />
-        <line v-for="i in gridRows" :key="'h' + i" :x1="10" :y1="y0 - i * CELL" :x2="410" :y2="y0 - i * CELL" />
+        <line
+          v-for="i in gridCols"
+          :key="'v' + i"
+          :x1="X0 + (i - 1) * cellEff"
+          :y1="gridTop"
+          :x2="X0 + (i - 1) * cellEff"
+          :y2="gridBottom"
+        />
+        <line
+          v-for="i in gridRows"
+          :key="'h' + i"
+          :x1="0"
+          :y1="gridTop + (i - 1) * cellEff"
+          :x2="410"
+          :y2="gridTop + (i - 1) * cellEff"
+        />
       </g>
 
       <!-- ===== 平行四边形 ===== -->
@@ -131,29 +173,45 @@ const gridRows = computed(() => Math.ceil(h.value) + 3)
         <!-- 剪下的三角形：原位（淡）与移动后（实） -->
         <polygon :points="cutTri" class="cut-fade" />
         <polygon :points="cutTriMoved" class="cut-solid" />
-        <text :x="x0 + px(a) / 2" :y="y0 + 18" text-anchor="middle" class="dim-label">底 a = {{ a }} {{ unit }}</text>
-        <text :x="x0 + px(a) + sx + 4" :y="y0 - px(h) / 2" class="dim-label">高 h = {{ h }} {{ unit }}</text>
+        <text :x="X0 + W / 2" :y="Y0 + 20" text-anchor="middle" class="dim-label">
+          底 a = {{ a }} {{ unit }}
+        </text>
+        <text :x="X0 + 6" :y="Y0 - H / 2" class="dim-label">高 h = {{ h }} {{ unit }}</text>
       </template>
 
       <!-- ===== 三角形 ===== -->
       <template v-else-if="activeShape === 'triangle'">
         <polygon :points="triPts" class="shape-fill" />
-        <polygon :points="triPts2" class="cut-solid" :class="{ placed: cutOffset < -1 }" />
-        <text :x="x0 + px(a) / 2" :y="y0 + 18" text-anchor="middle" class="dim-label">底 a = {{ a }} {{ unit }}</text>
-        <text :x="x0 + px(a) + 8" :y="y0 - px(h) / 2" class="dim-label">高 h = {{ h }} {{ unit }}</text>
-        <text v-if="cutOffset < -1" :x="x0 + px(a) / 2" :y="y0 + px(h) + 26" text-anchor="middle" class="ok-label">
-          ✓ 两个完全一样的三角形拼成平行四边形
+        <polygon :points="triPts2" class="cut-solid" :style="{ opacity: placed ? 1 : 0 }" />
+        <polygon
+          v-if="placed"
+          :points="`${X0},${Y0} ${X0 + W},${Y0} ${X0 + W},${Y0 - H} ${X0},${Y0 - H}`"
+          class="rect-ghost"
+        />
+        <text :x="X0 + W / 2" :y="Y0 + 20" text-anchor="middle" class="dim-label">
+          底 a = {{ a }} {{ unit }}
+        </text>
+        <text :x="X0 + W + 8" :y="Y0 - H / 2" class="dim-label">高 h = {{ h }} {{ unit }}</text>
+        <text v-if="placed" :x="X0 + W / 2" :y="Y0 + 24" text-anchor="middle" class="ok-label">
+          ✓ 两个完全一样的三角形拼成长方形
         </text>
       </template>
 
       <!-- ===== 梯形 ===== -->
       <template v-else>
         <polygon :points="trapPts" class="shape-fill" />
-        <polygon :points="trapPts2" class="cut-solid" :class="{ placed: cutOffset < -1 }" />
-        <text :x="x0 + px(b) / 2" :y="y0 + 18" text-anchor="middle" class="dim-label">下底 b = {{ b }} {{ unit }}</text>
-        <text :x="x0 + (px(b) - px(a)) / 2 - 10" :y="y0 - px(h) - 8" class="dim-label">上底 a = {{ a }} {{ unit }}</text>
-        <text :x="x0 + px(b) + 8" :y="y0 - px(h) / 2" class="dim-label">高 h = {{ h }} {{ unit }}</text>
-        <text v-if="cutOffset < -1" :x="x0 + px(b) / 2" :y="y0 + px(h) + 26" text-anchor="middle" class="ok-label">
+        <polygon :points="trapPts2" class="cut-solid" :style="{ opacity: placed ? 1 : 0 }" />
+        <polygon
+          v-if="placed"
+          :points="`${X0},${Y0} ${X0 + B + W},${Y0} ${X0 + B + W},${Y0 - H} ${X0},${Y0 - H}`"
+          class="rect-ghost"
+        />
+        <text :x="X0 + (B + W) / 2" :y="Y0 + 20" text-anchor="middle" class="dim-label">
+          下底 b = {{ b }} {{ unit }}
+        </text>
+        <text :x="X0 + W + 8" :y="Y0 - H + 14" class="dim-label">上底 a = {{ a }} {{ unit }}</text>
+        <text :x="X0 + B + W + 8" :y="Y0 - H / 2" class="dim-label">高 h = {{ h }} {{ unit }}</text>
+        <text v-if="placed" :x="X0 + (B + W) / 2" :y="Y0 - H - 10" text-anchor="middle" class="ok-label">
           ✓ 两个完全一样的梯形拼成平行四边形
         </text>
       </template>
@@ -170,7 +228,7 @@ const gridRows = computed(() => Math.ceil(h.value) + 3)
       >
         {{ activeShape === 'parallelogram' ? '剪一剪 · 拼成长方形' : activeShape === 'triangle' ? '拼一拼 · 两个三角形' : '拼一拼 · 两个梯形' }}
       </UButton>
-      <UButton v-if="cutOffset !== 0" size="sm" variant="outline" color="neutral" @click="resetCut">
+      <UButton v-if="cutOffset !== 0 || placed" size="sm" variant="outline" color="neutral" @click="resetCut">
         复位
       </UButton>
       <span class="area-value">
@@ -212,13 +270,10 @@ svg {
   stroke-dasharray: 4 3;
 }
 .cut-solid {
-  fill: color-mix(in srgb, var(--ui-secondary, var(--ui-primary)) 60%, white);
+  fill: color-mix(in srgb, var(--ui-primary) 60%, white);
   stroke: var(--ui-primary);
   stroke-width: 2;
-  transition: opacity 0.3s;
-}
-.cut-solid.placed {
-  opacity: 0.25;
+  transition: opacity 0.4s;
 }
 .dim-label,
 .ok-label {

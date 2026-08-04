@@ -42,7 +42,7 @@ describe('computeLab 各 kind', () => {
   })
 
   it('area：梯形面积', () => {
-    const r = computeLab('area', { a: 36, b: 54, h: 40, shape: 'trapezoid' })
+    const r = computeLab('area', { a: 36, b: 54, h: 40, shape: 2 })
     expect(r.value).toBe(1800)
   })
 
@@ -126,6 +126,20 @@ describe('computeLab 各 kind', () => {
     const r = computeLab('pinboard', { shape: 0 })
     expect(r.text).toContain('面积')
     expect(r.steps[0]!.expr).toContain('n')
+  })
+
+  it('stats-table：合计与总计', () => {
+    const r = computeLab('stats-table', { a1: 18, b1: 22, a2: 25, b2: 15, a3: 20, b3: 26, a4: 16, b4: 30 })
+    expect(r.value).toBe(172) // 40+40+46+46
+    expect(r.text).toContain('172')
+  })
+
+  it('stats-chart：自己与同桌总时间', () => {
+    const r = computeLab('stats-chart', {
+      s1: 1, d1: 0.5, s2: 2, d2: 3, s3: 1.5, d3: 1, s4: 1, d4: 0.5, s5: 0.5, d5: 1.5,
+    })
+    expect(r.text).toContain('自己 6')
+    expect(r.text).toContain('同桌 6.5')
   })
 
   it('views3d：观察方向', () => {

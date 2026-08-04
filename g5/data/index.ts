@@ -1,6 +1,7 @@
 import type { ChapterMeta, LabDef } from './schema/lab'
 import { chapters } from './chapters/meta'
 import { c1Labs } from './chapters/c1'
+import { c2Labs } from './chapters/c2'
 import { c3Labs } from './chapters/c3'
 import { c4Labs } from './chapters/c4'
 import { c5Labs } from './chapters/c5'
@@ -14,6 +15,7 @@ export type { ChapterMeta, LabDef, LabParam, LabKind, ParamValues, SourceKind } 
 /** 全部 Lab（按单元顺序；探索规律归入 c6 单元尾部） */
 export const allLabs: LabDef[] = [
   ...c1Labs,
+  ...c2Labs,
   ...c3Labs,
   ...c4Labs,
   ...c5Labs,
@@ -31,7 +33,7 @@ export interface ChapterLabs {
 /** 按单元聚合 */
 export const byChapter: ChapterLabs[] = [
   { meta: chapters[0]!, labs: c1Labs },
-  { meta: chapters[1]!, labs: [] },
+  { meta: chapters[1]!, labs: c2Labs },
   { meta: chapters[2]!, labs: c3Labs },
   { meta: chapters[3]!, labs: c4Labs },
   { meta: chapters[4]!, labs: c5Labs },

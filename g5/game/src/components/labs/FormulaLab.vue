@@ -20,7 +20,10 @@ const perimeter = computed(() => 4 * a.value)
 const squareArea = computed(() => a.value * a.value)
 const gridSize = 320
 const cell = computed(() => gridSize / Math.max(a.value, 1))
-const drawSize = computed(() => Math.min(a.value * cell.value, gridSize))
+/** 边长封顶 260，保证图形与文字都在 viewBox 内 */
+const drawSize = computed(() => Math.min(a.value * cell.value, 260))
+const sqX = computed(() => (340 - drawSize.value) / 2)
+const sqY = computed(() => (320 - drawSize.value) / 2)
 
 /* 路程 */
 const v = computed(() => props.values.v ?? 0)
@@ -56,18 +59,13 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
 
     <!-- 正方形 -->
     <template v-else-if="kind === 'square'">
-      <svg viewBox="0 0 340 300" class="w-full">
-        <rect :x="(340 - drawSize) / 2" :y="(300 - drawSize) / 2" :width="drawSize" :height="drawSize" class="square-fill" rx="3" />
-        <text
-          :x="340 / 2"
-          :y="(300 - drawSize) / 2 - 12"
-          text-anchor="middle"
-          class="dim-label"
-        >
+      <svg viewBox="0 0 340 320" class="w-full">
+        <rect :x="sqX" :y="sqY" :width="drawSize" :height="drawSize" class="square-fill" rx="3" />
+        <text :x="170" :y="sqY - 12" text-anchor="middle" class="dim-label">
           边长 a = {{ a }} 厘米
         </text>
-        <text :x="(340 + drawSize) / 2 + 10" :y="300 / 2 + 4" class="dim-label">a</text>
-        <text :x="340 / 2" :y="300 / 2" text-anchor="middle" class="area-label">
+        <text :x="sqX + drawSize + 10" :y="170 + 4" class="dim-label">a</text>
+        <text :x="170" :y="170" text-anchor="middle" class="area-label">
           S = a × a = {{ squareArea }}
         </text>
       </svg>
@@ -83,9 +81,9 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
         <line x1="20" y1="150" x2="340" y2="150" class="road" />
         <line v-for="i in 13" :key="i" :x1="20 + i * 25" :y1="150" :x2="20 + i * 25" :y2="158" class="road-mark" />
         <circle v-for="i in 13" :key="'c' + i" :cx="20 + i * 25" :cy="140" r="2.5" class="dist-dot" />
-        <text x="0" y="132" class="road-label">0</text>
-        <text x="300" y="132" class="road-label">s = {{ s }} {{ speedUnit }}</text>
-        <g :style="{ transform: `translate(${Math.min(320, s) * 2.6}px, 0)`, transition: 'transform .5s' }">
+        <text x="10" y="132" class="road-label">0</text>
+        <text x="238" y="132" class="road-label">s = {{ s }} {{ speedUnit }}</text>
+        <g :style="{ transform: `translate(${Math.min(320, s * 2.6)}px, 0)`, transition: 'transform .5s' }">
           <text x="0" y="120" font-size="34">🚗</text>
         </g>
       </svg>

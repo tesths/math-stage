@@ -4,6 +4,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import * as THREE from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { LabDef } from '@data/schema/lab'
 import { playCorrect, playWin } from '@/lib/sound'
 
@@ -114,6 +115,7 @@ const mountRef = ref<HTMLDivElement | null>(null)
 let renderer: THREE.WebGLRenderer | null = null
 let scene: THREE.Scene | null = null
 let camera: THREE.PerspectiveCamera | null = null
+let controls: OrbitControls | null = null
 let raf = 0
 
 function centerOf(cs: Cube[]): THREE.Vector3 {
@@ -178,17 +180,24 @@ onMounted(() => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(el.clientWidth, el.clientHeight)
   el.appendChild(renderer.domElement)
+  controls = new OrbitControls(camera, renderer.domElement)
+  controls.enableDamping = true
+  controls.dampingFactor = 0.1
+  controls.minDistance = 3
+  controls.maxDistance = 14
   buildScene(rd.value.cubes)
   animate()
 })
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
+  controls?.dispose()
   renderer?.dispose()
   if (renderer && mountRef.value) mountRef.value.removeChild(renderer.domElement)
   renderer = null
   scene = null
   camera = null
+  controls = null
 })
 
 function onPick(key: string) {
@@ -243,6 +252,7 @@ function restart() {
       </div>
 
       <p class="ask">从<b>{{ VIEW_NAMES[rd.view] }}</b>看这个物体，看到的是哪个图形？</p>
+      <p class="hint">🖱️ 可拖拽旋转 3D 模型，从不同角度观察</p>
 
       <div ref="mountRef" class="three-mount" />
 
@@ -300,6 +310,10 @@ function restart() {
 }
 .ask b {
   color: var(--ui-primary);
+}
+.hint {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
 }
 .three-mount {
   width: 100%;

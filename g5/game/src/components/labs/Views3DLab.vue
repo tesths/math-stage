@@ -7,6 +7,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as THREE from 'three'
+import { animate } from 'animejs'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 
@@ -89,6 +90,8 @@ function centerOf(): THREE.Vector3 {
   return new THREE.Vector3(cx / n, cy / n, cz / n)
 }
 
+let camTween: { cancel: () => void } | null = null
+
 function setCameraFor(v: number) {
   if (!camera || !controls) return
   const c = centerOf()
@@ -97,13 +100,27 @@ function setCameraFor(v: number) {
   if (v === 0) pos = new THREE.Vector3(c.x, c.y, c.z + dist) // 前面
   else if (v === 1) pos = new THREE.Vector3(c.x + dist, c.y, c.z) // 右面
   else pos = new THREE.Vector3(c.x, c.y + dist, c.z) // 上面
-  camera.position.copy(pos)
   controls.target.copy(c)
-  controls.update()
+  // animejs 补间：相机平滑飞到目标方位
+  const from = camera.position.clone()
+  camTween?.cancel()
+  const cam = { x: from.x, y: from.y, z: from.z }
+  camTween = animate(cam, {
+    x: [from.x, pos.x],
+    y: [from.y, pos.y],
+    z: [from.z, pos.z],
+    duration: 900,
+    easing: 'easeInOutQuad',
+    update: () => {
+      camera!.position.set(cam.x, cam.y, cam.z)
+      camera!.lookAt(c)
+      controls!.update()
+    },
+  })
 }
 
-function animate() {
-  raf = requestAnimationFrame(animate)
+function renderLoop() {
+  raf = requestAnimationFrame(renderLoop)
   if (renderer && scene && camera) renderer.render(scene, camera)
 }
 
@@ -166,13 +183,14 @@ onMounted(() => {
     renderer.setSize(w, h)
   })
   resizeObs.observe(el)
-  animate()
+  renderLoop()
 })
 
 watch(view, (v) => setCameraFor(v))
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
+  camTween?.cancel()
   resizeObs?.disconnect()
   controls?.dispose()
   renderer?.dispose()

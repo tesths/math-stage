@@ -33,6 +33,12 @@ const gridCells = computed(() => {
   }
   return { rows: out, perRow, total: Math.round(price.value * 100) * Math.min(count.value, 20) }
 })
+/** 格宽：保证 rows×cell ≤ 200 */
+const gridCellPx = computed(() => {
+  const rows = Math.max(10, gridCells.value.rows.length)
+  return Math.min(20, 200 / rows)
+})
+const gridSvgH = computed(() => gridCells.value.rows.length * gridCellPx.value + 8)
 
 /* ---------- 小数除以整数 ---------- */
 const total = computed(() => props.values.total ?? 0)
@@ -72,22 +78,20 @@ const resultChars = computed(() => toFixed2(pointResult.value).split(''))
           <div class="col-row result">{{ mulTotal }}</div>
           <p class="col-note">先按整数乘，再看因数共有几位小数，积就点几位小数</p>
         </div>
-        <svg v-if="mulShowGrid" viewBox="0 0 230 230" class="grid-svg">
+        <svg v-if="mulShowGrid" :viewBox="`0 0 210 ${gridSvgH}`" class="grid-svg">
           <g v-for="(row, r) in gridCells.rows" :key="r">
             <rect
               v-for="(on, c) in row"
               :key="c"
-              :x="c * 22 + 5"
-              :y="r * 22 + 5"
-              width="20"
-              height="20"
+              :x="c * gridCellPx + 5"
+              :y="r * gridCellPx + 4"
+              :width="gridCellPx - 1"
+              :height="gridCellPx - 1"
               :class="on ? 'cell-on' : 'cell-off'"
             />
           </g>
-          <text x="115" y="228" text-anchor="middle" class="grid-note">
-            一格 = 0.01 · 共 {{ gridCells.total }} 格 = {{ mulTotal }}
-          </text>
         </svg>
+        <p class="grid-note">一格 = 0.01 · 共 {{ gridCells.total }} 格 = {{ mulTotal }}</p>
       </div>
     </template>
 
@@ -213,7 +217,13 @@ const resultChars = computed(() => toFixed2(pointResult.value).split(''))
   text-align: center;
 }
 .grid-svg {
-  max-width: 220px;
+  max-width: 210px;
+  max-height: 220px;
+}
+.grid-note {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+  text-align: center;
 }
 .cell-on {
   fill: color-mix(in srgb, var(--ui-primary) 65%, white);
@@ -226,8 +236,7 @@ const resultChars = computed(() => toFixed2(pointResult.value).split(''))
 .grid-note {
   font-size: 11px;
   fill: var(--ui-text-muted);
-}
-.split-model {
+}.split-model {
   display: flex;
   gap: 0.8rem;
   flex-wrap: wrap;
