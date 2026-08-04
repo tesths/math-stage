@@ -21,12 +21,11 @@ Cloudflare Pages 构建机
    │           └─ 写出 _redirects / _headers
    ▼
 deploy/（聚合产物 = 面板配置的"构建输出目录"）
-   ├── index.html      门户
-   ├── style.css
-   ├── g1/…            一年级静态站（SPA fallback: g1/200.html）
-   ├── g5/…            五年级静态站（SPA fallback: g5/200.html）
-   ├── _redirects      /g1/* → /g1/200.html 200；/g5/* → /g5/200.html 200
-   └── _headers        安全响应头
+   ├── index.html + _nuxt/  门户（Nuxt 静态站）
+   ├── g1/…                 一年级静态站（111 页全量预渲染）
+   ├── g5/…                 五年级静态站（55 页全量预渲染）
+   ├── _redirects           仅注释（不要加 SPA 200 重写，会 308 循环）
+   └── _headers             安全响应头
    ▼
 Cloudflare 边缘网络 → 用户浏览器
    /       门户
@@ -51,7 +50,7 @@ Cloudflare 边缘网络 → 用户浏览器
 | 9 | 子路径前缀 | `nuxt.config.ts` 的 `app.baseURL` | `process.env.BASE_URL ?? '/'` | 资源/路由前缀（/g1/、/g5/） | 改脚本 BASE_URL 或配置文件 |
 | 10 | 静态导出爬取 | `nitro.prerender.crawlLinks` | `true` | 决定是否预渲染全部路由 | 改 nuxt.config |
 | 11 | 部署预设 | `nitro.preset` | `cloudflare-pages` | 构建产物形态 | 一般不改 |
-| 12 | SPA 兜底规则 | 脚本生成的 `deploy/_redirects` | `/g1/* → /g1/200.html 200` | 未预渲染路径交给客户端路由 | 改脚本 §4.4 |
+| 12 | `deploy/_redirects` | 脚本生成的 | 仅注释 | 全部页面已预渲染，无需重写；**禁止**加 200 SPA 重写（308 循环） | 改脚本 §4.4 |
 | 13 | 门户年级链接 | `portal/pages/index.vue` | `to="/g1/"`、`to="/g5/"` | 门户卡片跳转 | 改 Vue 模板 |
 | 14 | 门户样式 | `portal/nuxt.config.ts` + `pages/index.vue` | primary: sky | 与年级一致的 Nuxt UI 风格 | 改 Vue/配置 |
 | 15 | 依赖安装方式 | 脚本内 | `npm ci` | 用 lock 文件安装（更快更稳） | 改脚本；超时可换 `npm install` |
@@ -162,7 +161,7 @@ app: {
 | 参数 | 作用 | 注意事项 |
 | --- | --- | --- |
 | `app.baseURL` | 让资源路径变成 `/g1/_nuxt/…`、路由变成 `/g1/play/…` | 默认 `/`，本地 dev 不受影响；**不要硬编码 `/g1/`**，必须用 `process.env.BASE_URL`，否则本地开发也被迫加前缀 |
-| `nitro.prerender.crawlLinks` | `true` 才预渲染全部路由（一年级 111 页/五年级 55 页）；`false` 只有 2 页（SPA fallback） | 每个新年级都要开 |
+| `nitro.prerender.crawlLinks` | `true` 才全量预渲染路由（一年级 111 页/五年级 55 页） | 每个新年级都要开；跨年级链接会被爬 404 → 需配 `failOnError: false`（门户反之 `crawlLinks: false + routes: ['/']`） |
 | `nitro.preset` | `cloudflare-pages`：`nuxi generate` 输出到 `dist/` | 与 E2E 的 `NITRO_PRESET=node-server` 无关（e2e 单独覆盖） |
 
 ### 4.4 `_redirects`（脚本自动生成，一般不用手改）
@@ -225,8 +224,8 @@ node_modules/  .nuxt/  .output/  dist/  test-results/  coverage/  deploy/  *.pdf
 ### 5.2 改子路径（如 /g1/ → /grade1/）
 
 1. `scripts/site-build.mjs`：`base: '/grade1/'`，`dist: 'dist/grade1'`。
-2. 同文件 `_redirects`：`/grade1/*  /grade1/200.html  200`。
-3. `portal/pages/index.vue`：`to="/grade1/"`。
+2. 同文件 `_redirects`：无需加规则（页面全量预渲染直接命中）；如需要旧路径迁移可加 `301` 规则。
+3. `portal/pages/index.vue`：卡片 `<a href="/grade1/">`。
 4. 推送重新构建。**旧链接 /g1/* 会失效**，介意的话在 `_redirects` 加一条
    `/g1/*  /grade1/:splat  301`。
 
@@ -245,7 +244,7 @@ node_modules/  .nuxt/  .output/  dist/  test-results/  coverage/  deploy/  *.pdf
 
 1. Cloudflare 项目 → **Custom domains → Add**，输入域名（如 `math.example.com`）。
 2. DNS 记录自动创建（CNAME 到 pages.dev）。
-3. 无需改任何代码：门户在根域，`/g1/`、`/g5/` 自动可用（相对链接）。
+3. 无需改任何代码：门户在根域，`/g1/`、`/g5/` 自动可用（卡片用原生 `<a href>` 绝对路径）。
 
 ### 5.5 只想部署一个年级（临时）
 
@@ -303,4 +302,7 @@ cd deploy && python3 -m http.server 4100
 | 改 base 后跳转/资源全坏 | 三处没同步 | 见 §5.2（脚本 base+dist、_redirects、portal 链接） |
 | 构建超时 | npm ci 冷缓存慢 | 见 §5.3（开 Build cache / 改 npm install） |
 | 本地 e2e 连错站点 | 3000/3100 端口被旧服务占用 | `lsof -i :3000 -i :3100` 清掉再跑 |
-| 门户跳 /g1/ 但域名是子路径 | 用了绝对 `/g1/` 链接 | 门户必须用相对链接 `./g1/` |
+| 门户/顶栏点卡片进到 404（Nuxt 404 页） | 跨应用链接用了 NuxtLink/UButton（客户端路由/被 baseURL 改写） | 改原生 `<a href="/g5/">`，见 DEVELOPMENT.md §3.5/§4.5 四坑 |
+| 点击后 URL 变成 /g5/200 | 旧 `_redirects` 的 SPA 200 重写残留（已删）；或浏览器缓存旧 308 | 硬刷新/清缓存/Cloudflare Purge Everything |
+| nuxt generate 中断（crawler 404） | 页面跨年级链接被 crawler 爬 | 子应用保持 `prerender.failOnError:false`；门户保持 `crawlLinks:false + routes:['/']` |
+| 门户卡片用 NuxtLink 显示门户 404 | 门户没有 /g1/ /g5/ 路由 | 门户卡片用原生 `<a href="/g1/">`（已在 portal/pages/index.vue） |

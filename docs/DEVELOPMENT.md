@@ -47,10 +47,10 @@ math/
 │   ├── DEVELOPMENT.md         本文件（开发文档）
 │   ├── example-audit.md       一年级例题核对报告
 │   └── 游戏形式调研.md        一年级 20 个小游戏的课本出处调研
-├── portal/                    门户（index.html / style.css / README.md）
+├── portal/                    门户（Nuxt 4 + Nuxt UI 应用：pages/index.vue 两张年级卡片）
 ├── package.json               根：build:site / build:site:local / preview
 ├── scripts/
-│   ├── site-build.mjs         单 Pages 聚合构建脚本
+│   ├── site-build.mjs         单 Pages 聚合构建脚本（三个 Nuxt 应用：g1/g5/门户）
 │   └── verify_examples.py     一年级例题↔课本 OCR 机器核对
 │
 ├── ── 一年级工程（人教版上册）──
@@ -163,6 +163,12 @@ c7 好玩的"抢10" / c8 认识11~19 / c9 期末复习。
 - Nuxt UI v4：`ui.fonts` 显式 `false`；图标须装 `@iconify-json/heroicons`/`lucide` 并开 `icon.clientBundle.scan`。
 - 样式统一用 Nuxt UI 设计令牌（`--ui-primary`/`--ui-bg-*`/`--ui-border-*`/`--ui-text-*`），禁止硬编码色值；
   文本淡化用 `text-(--ui-text-muted)`（`--ui-muted` 不是有效令牌）。
+- **跨应用导航（顶栏切年级/回门户）必须用原生 `<a href>`（绝对路径）**，四个坑：
+  ① `UButton to`/`NuxtLink` → 客户端路由，在门户/对端应用内匹配不到路由 → 显示自己的 404；
+  ② `UButton as="a" href` → Nuxt 给 `href` 自动加 baseURL 前缀（`/g5/` 变 `/g1/g5/`）→ 404；
+  ③ `UButton to="/"` 首页按钮 → 被 baseURL 解析成本年级首页（`/g1/`）而非门户；
+  ④ crawler 爬跨年级链接在本应用 404 → 构建中断，需 `nitro.prerender.failOnError: false` 兑底。
+  正确写法见 `game/src/layouts/default.vue`（原生 `<a>` + `UIcon` + 手写按钮类）。
 
 ---
 
@@ -307,10 +313,10 @@ GitHub: tesths/math-stage（main 分支）
         └─ npm run build:site（Cloudflare 构建命令）
               ├─ game/   : npm ci + BASE_URL=/g1/ nuxi generate → 111 页静态
               ├─ g5/game/: npm ci + BASE_URL=/g5/ nuxi generate → 55 页静态
-              └─ portal/ : 复制静态页
+              └─ portal/ : npm ci + BASE_URL=/ nuxi generate（门户 Nuxt 应用）
               → 聚合产物 deploy/
 Cloudflare Pages 输出目录 deploy/
-  /       门户（index.html，相对链接 ./g1/ ./g5/）
+  /       门户（Nuxt 静态站，卡片用原生 <a href="/g1/" "/g5/">）
   /g1/*   一年级（111 页全量预渲染，直接命中静态文件）
   /g5/*   五年级（55 页全量预渲染，直接命中静态文件）
   404     由各子应用自带 404.html 兜底
@@ -321,8 +327,14 @@ Cloudflare Pages 输出目录 deploy/
 - **两个 nuxt.config.ts 都支持**：`app.baseURL = process.env.BASE_URL ?? '/'`（本地默认根路径，不受影响）；
   `nitro.prerender.crawlLinks = true`（静态导出时自动爬取全部路由）。
 - **`nuxi generate` 输出到 `dist/`**（cloudflare-pages preset），聚合脚本复制 `dist/gX` 到 `deploy/gX`。
-- **`scripts/site-build.mjs`**：清空 deploy → 对两个子应用 `npm ci`（本地已装则跳过）→
-  `BASE_URL=... npm run generate:site` → 复制 portal 与子路径 → 写 `_redirects`（仅注释）/`_headers`。
+- **两个子应用 nuxt.config 要点**：`app.baseURL = process.env.BASE_URL ?? '/'`；
+  `nitro.prerender = { crawlLinks: true, failOnError: false }`（crawlLinks 全量预渲染；
+  failOnError:false 容忍跨年级链接的 404，否则构建中断）。
+- **门户 `portal/` 是第三个 Nuxt 应用**（Nuxt UI，主色 sky），`baseURL` 默认 `/`；
+  `nitro.prerender = { crawlLinks: false, routes: ['/'] }`（门户只有首页；
+  crawlLinks 会爬 `/g1/` `/g5/` 卡片链接在门户内 404 导致构建失败）。
+- **`scripts/site-build.mjs`**：清空 deploy → 对三个子应用 `npm ci`（本地已装则跳过）→
+  分别 `BASE_URL=... nuxi generate` → 复制产物 → 写 `_redirects`（仅注释）/`_headers`。
   ⚠️ 不要在 `_redirects` 里加 `/g1/* → /g1/200.html 200` 这类 SPA 重写：
   它会在 Cloudflare 上抢在静态文件前命中目录请求，被 clean URL 解析成 `/g1/200`，造成 308 循环（线上事故记录）。
 - 根 `package.json`（无依赖，仅脚本）：`build:site` / `build:site:local`（跳过安装）/ `preview`。
@@ -406,5 +418,8 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 | three.js 页面 canvas 空白 | 本地检查用 playwright `--enable-unsafe-swiftshader`；真实浏览器均有 WebGL |
 | `npm run test:e2e` 连到错误站点 | 端口被旧服务占用（3000/3100），先 `lsof -i :3000 -i :3100` 清掉 |
 | 部署后 /g1/ 404 | 确认 Cloudflare 构建命令是 `npm run build:site`、输出目录 `deploy`；_redirects 兜底已生成 |
+| 从门户/年级点卡片进到 404（Nuxt 404 页） | 跨应用链接用了 NuxtLink/UButton → 改原生 `<a href>`（见 §3.5/§4.5 跨应用导航四坑） |
+| 点击后 URL 是 /g5/200 且 404/循环 | 旧版 `_redirects` SPA 200 重写残留 → 已删；若浏览器缓存，硬刷新/清缓存/Cloudflare Purge |
+| nuxt generate 构建中断（crawler 404） | 页面里有跨应用链接被 crawler 爬 → 保持 `prerender.failOnError: false`；门户保持 `crawlLinks: false + routes: ['/']` |
 | 五年级 OCR 覆盖一年级 | ocr_bin 第 5 参数必须传输出目录，勿在仓库根无参运行 |
 | nuxt generate 只出 2 页 | `nitro.prerender.crawlLinks` 未开启（两个工程已默认开启） |
