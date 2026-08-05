@@ -881,9 +881,10 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 | vue-tsc 报 `Load plugin failed: vue-router/volar/sfc-route-blocks` | Node 24 + vue-tsc 2.2 环境兼容问题（各工程均如此，非代码问题）；用 `nuxt build` + vitest 保证类型/行为正确 |
 | 二/三/五/六年级 `vue-tsc` 报 `Cannot find module 'nuxt/config'`（shared/theme/nuxt-config.ts） | 仓库根无 node_modules，该共享文件里的类型导入无法从仓库根解析——二/三/五/六年级同源，属既有基线；`nuxt build` 不受影响（Nuxt 用自己的解析） |
 | 部署后主色仍是旧色（一年级橙/门户蓝） | 聚合脚本曾复制旧 `dist/`；已改为复制 `.output/public`，重新 `npm run build:site:local` |
+| Cloudflare 构建报 `ENOENT ... game/.output/public` | **Cloudflare Pages 设 `CF_PAGES=1`**，std-env 把 nitro provider 识别为 `cloudflare_pages`，`nuxi generate` 自动改用 `cloudflare-pages-static` 预设（输出 `dist/<baseURL>/`），而脚本复制 `.output/public` → 已在 `site-build.mjs` 显式传 `NITRO_PRESET=static` 强制统一输出；本地可用 `CF_PAGES=1 npm run build:site:local` 复现/验证 |
 | 部署后 /g1/ 404 | 确认 Cloudflare 构建命令是 `npm run build:site`、输出目录 `deploy`；真实页面应已预渲染到 `deploy/g1/` |
 | 从门户/年级点卡片进到 404（Nuxt 404 页） | 跨应用链接用了 NuxtLink/UButton → 改原生 `<a href>`（见 §3.5/§4.5/§6.5 跨应用导航四坑） |
 | 点击后 URL 是 /g5/200 且 404/循环 | 旧版 `_redirects` SPA 200 重写残留 → 已删；若浏览器缓存，硬刷新/清缓存/Cloudflare Purge |
 | nuxt generate 构建中断（crawler 404） | 页面里有跨应用链接被 crawler 爬 → 保持 `prerender.failOnError: false`；门户保持 `crawlLinks: false + routes: ['/']` |
-| 二/三/五年级 OCR 覆盖一年级 | ocr_bin 第 5 参数必须传输出目录，勿在仓库根无参运行 |
+| 二/三/四/五/六年级 OCR 覆盖一年级 | ocr_bin 第 5 参数必须传输出目录，勿在仓库根无参运行 |
 | nuxt generate 只出 2 页 | `nitro.prerender.crawlLinks` 未开启（各工程已默认开启） |

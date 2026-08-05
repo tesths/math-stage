@@ -53,10 +53,13 @@ function installDeps(dir) {
   run('npm ci --no-audit --no-fund', dir)
 }
 
-// 2. 五个年级应用：安装依赖 → 子路径静态导出
+// 2. 七个年级应用：安装依赖 → 子路径静态导出
+// 注意：必须显式 NITRO_PRESET=static —— Cloudflare Pages 构建环境设 CF_PAGES=1 时，
+// nitro 会自动改用 cloudflare-pages-static 预设（输出到 dist/<baseURL>/），
+// 与本地 static 预设（输出 .output/public）不一致，会导致复制 ENOENT（部署事故记录）。
 for (const app of APPS) {
   installDeps(app.dir)
-  run('npm run generate:site', app.dir, { BASE_URL: app.base })
+  run('npm run generate:site', app.dir, { BASE_URL: app.base, NITRO_PRESET: 'static' })
   console.log(`\n> 复制 ${app.dist} → deploy${app.base}`)
   cpSync(join(root, app.dir, app.dist), join(OUT, app.base.slice(1, -1)), { recursive: true })
 }
@@ -64,7 +67,7 @@ for (const app of APPS) {
 // 3. 门户（Nuxt 应用，BASE_URL=/ 部署在根路径）
 const portalDir = join(root, 'portal')
 installDeps('portal')
-run('npm run generate:site', 'portal', { BASE_URL: '/' })
+run('npm run generate:site', 'portal', { BASE_URL: '/', NITRO_PRESET: 'static' })
 console.log('\n> 复制 portal/.output/public → deploy/')
 cpSync(join(portalDir, '.output/public'), OUT, { recursive: true })
 
