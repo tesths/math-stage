@@ -1,19 +1,20 @@
 /**
  * 单 Cloudflare Pages 项目聚合构建
  *
- * 把四个年级 Nuxt 应用（一年级 game/、二年级 g2/game/、五年级 g5/game/、六年级 g6/game/）
+ * 把五个年级 Nuxt 应用（一年级 game/、二年级 g2/game/、三年级 g3/game/、五年级 g5/game/、六年级 g6/game/）
  * 静态导出到子路径，与门户页 portal/ 合并为 deploy/ 一个构建产物：
  *
  *   deploy/
  *   ├── index.html       门户（portal/）
  *   ├── g1/              一年级（BASE_URL=/g1/ nuxi generate）
  *   ├── g2/              二年级（BASE_URL=/g2/ nuxi generate）
+ *   ├── g3/              三年级（BASE_URL=/g3/ nuxi generate）
  *   ├── g5/              五年级（BASE_URL=/g5/ nuxi generate）
  *   ├── g6/              六年级（BASE_URL=/g6/ nuxi generate）
  *   └── _redirects       仅注释；真实页面全部预渲染
  *
  * 用法：node scripts/site-build.mjs [--skip-install]
- * 环境变量：SKIP_INSTALL=1 可跳过四个应用的 npm ci（仅本地加速）
+ * 环境变量：SKIP_INSTALL=1 可跳过六个应用的 npm ci（仅本地加速）
  */
 import { execSync } from 'node:child_process'
 import { existsSync, rmSync, mkdirSync, cpSync, writeFileSync, readdirSync } from 'node:fs'
@@ -26,6 +27,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const APPS = [
   { dir: 'game', base: '/g1/', dist: '.output/public' },
   { dir: 'g2/game', base: '/g2/', dist: '.output/public' },
+  { dir: 'g3/game', base: '/g3/', dist: '.output/public' },
   { dir: 'g5/game', base: '/g5/', dist: '.output/public' },
   { dir: 'g6/game', base: '/g6/', dist: '.output/public' },
 ]
@@ -50,7 +52,7 @@ function installDeps(dir) {
   run('npm ci --no-audit --no-fund', dir)
 }
 
-// 2. 四个年级应用：安装依赖 → 子路径静态导出
+// 2. 五个年级应用：安装依赖 → 子路径静态导出
 for (const app of APPS) {
   installDeps(app.dir)
   run('npm run generate:site', app.dir, { BASE_URL: app.base })
@@ -104,5 +106,6 @@ console.log(`deploy/ 共 ${htmlCount(OUT)} 个 HTML 页面`)
 console.log(`  门户: deploy/index.html`)
 console.log(`  一年级: deploy/g1/ (${htmlCount(join(OUT, 'g1'))} 页)`)
 console.log(`  二年级: deploy/g2/ (${htmlCount(join(OUT, 'g2'))} 页)`)
+console.log(`  三年级: deploy/g3/ (${htmlCount(join(OUT, 'g3'))} 页)`)
 console.log(`  五年级: deploy/g5/ (${htmlCount(join(OUT, 'g5'))} 页)`)
 console.log(`  六年级: deploy/g6/ (${htmlCount(join(OUT, 'g6'))} 页)`)

@@ -3,7 +3,7 @@
  * 新增年级只需在此加一条记录（门户卡片 / 顶栏切换 / 页脚文案自动生效）。
  * 注意：跨应用导航必须用原生 <a href>（部署路径），不能用 NuxtLink/UButton。
  */
-export type GradeId = 'g1' | 'g2' | 'g5' | 'g6'
+export type GradeId = 'g1' | 'g2' | 'g3' | 'g5' | 'g6'
 
 export interface GradeFeature {
   icon: string
@@ -83,6 +83,27 @@ const G2: GradeInfo = {
   footer: '《义务教育教科书·数学》苏教版二年级上册 配套互动演示 · 例题可视化可拖动参数实时计算',
 }
 
+const G3: GradeInfo = {
+  id: 'g3',
+  no: 3,
+  base: '/g3/',
+  label: '三年级',
+  title: '三年级数学例题可视化',
+  standard: '苏教版 · 2022 版课标',
+  book: '《义务教育教科书·数学》苏教版三年级上册',
+  tagline: '例题可视化 · 参数实验室',
+  icon: '🐸',
+  accent: 'emerald',
+  description: '苏教版三年级上册 · 41 个可调参数例题 Lab + 16 个训练小游戏',
+  features: [
+    { icon: '🧮', text: '12 个单元 · 41 个可调参数 Lab' },
+    { icon: '🧊', text: 'three.js 三视图 · 竖式动画 · 线段图 · 钟面 / 尺子' },
+    { icon: '🎯', text: '16 个训练游戏（混合运算 / 口算 / 倍的认识 / 间隔排列…）' },
+  ],
+  cta: '进入三年级',
+  footer: '《义务教育教科书·数学》苏教版三年级上册 配套互动演示 · 例题可视化可拖动参数实时计算',
+}
+
 const G5: GradeInfo = {
   id: 'g5',
   no: 5,
@@ -126,7 +147,7 @@ const G6: GradeInfo = {
 }
 
 /** 全部年级（按序号升序），新增年级在此追加 */
-export const GRADES: readonly GradeInfo[] = [G1, G2, G5, G6]
+export const GRADES: readonly GradeInfo[] = [G1, G2, G3, G5, G6]
 
 /** 按部署路径段查找年级 */
 export function gradeById(id: string): GradeInfo | undefined {

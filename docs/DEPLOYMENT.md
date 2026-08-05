@@ -1,8 +1,8 @@
-# 部署方案详解（单 Cloudflare Pages · 门户 + 一/二/五/六年级）
+# 部署方案详解（单 Cloudflare Pages · 门户 + 一/二/三/五/六年级）
 
-> 本文是 `docs/DEVELOPMENT.md` §8 的**展开版**，逐参数说明如何修改。
+> 本文是 `docs/DEVELOPMENT.md` §10 的**展开版**，逐参数说明如何修改。
 > 目标：**一个 GitHub 仓库（tesths/math-stage）→ 一个 Cloudflare Pages 项目**，
-> 线上结构 `/` 门户、`/g1/*` 一年级、`/g2/*` 二年级、`/g5/*` 五年级、`/g6/*` 六年级。
+> 线上结构 `/` 门户、`/g1/*` 一年级、`/g2/*` 二年级、`/g3/*` 三年级、`/g5/*` 五年级、`/g6/*` 六年级。
 
 ---
 
@@ -52,12 +52,12 @@ Cloudflare 边缘网络 → 用户浏览器
 | 5 | 构建根目录 | Cloudflare 面板 | `/`（留空） | 在仓库子目录构建时才需要改 | 同上 |
 | 6 | `APPS` 数组 | `scripts/site-build.mjs` | 见 §4.1 | 注册每个年级应用（目录/子路径） | 改脚本 |
 | 7 | `OUT` | 同上 | `deploy` | 聚合输出目录（**必须与面板 #2 一致**） | 改脚本 |
-| 8 | `SKIP_INSTALL` | 同上（`--skip-install` 或 `SKIP_INSTALL=1`） | 本地用 | 跳过五个应用 npm ci（本地加速） | 命令行 |
-| 9 | 子路径前缀 | `nuxt.config.ts` 的 `app.baseURL` | `process.env.BASE_URL ?? '/'` | 资源/路由前缀（/g1/、/g2/、/g5/、/g6/） | 改脚本 BASE_URL 或配置文件 |
+| 8 | `SKIP_INSTALL` | 同上（`--skip-install` 或 `SKIP_INSTALL=1`） | 本地用 | 跳过六个应用 npm ci（本地加速） | 命令行 |
+| 9 | 子路径前缀 | `nuxt.config.ts` 的 `app.baseURL` | `process.env.BASE_URL ?? '/'` | 资源/路由前缀（/g1/、/g2/、/g3/、/g5/、/g6/） | 改脚本 BASE_URL 或配置文件 |
 | 10 | 静态导出爬取 | `nitro.prerender.crawlLinks` | `true` | 决定是否预渲染全部路由 | 改 nuxt.config |
 | 11 | 部署预设 | `nitro.preset` | `cloudflare-pages` | 构建产物形态 | 一般不改 |
 | 12 | `deploy/_redirects` | 脚本生成的 | 仅注释 | 全部页面已预渲染，无需重写；**禁止**加 200 SPA 重写（308 循环） | 改脚本 §4.4 |
-| 13 | 门户年级链接 | `shared/grades/index.ts` | `base: "/g1/"`、`base: "/g2/"`、`base: "/g5/"`、`base: "/g6/"` | 门户卡片与顶栏切换跳转 | 改年级注册表 |
+| 13 | 门户年级链接 | `shared/grades/index.ts` | `base: "/g1/"`、`base: "/g2/"`、`base: "/g3/"`、`base: "/g5/"`、`base: "/g6/"` | 门户卡片与顶栏切换跳转 | 改年级注册表 |
 | 14 | 门户样式 | `shared/theme/nuxt-config.ts` + `pages/index.vue` | primary: emerald | 与年级一致的 Nuxt UI 风格 | 改共享主题/注册表 |
 | 15 | 依赖安装方式 | 脚本内 | `npm ci` | 用 lock 文件安装（更快更稳） | 改脚本；超时可换 `npm install` |
 | 16 | 产物忽略 | 根 `.gitignore` | `deploy/`、`dist/`、`node_modules/` 等 | 构建产物不提交 | 一般不改 |
@@ -84,10 +84,10 @@ Cloudflare 边缘网络 → 用户浏览器
 ### 3.2 部署完成后的验证
 
 - 打开构建日志，最后应有聚合脚本的汇总：
-  `deploy/ 共 273 个 HTML 页面 / 门户 / 一年级 111 页 / 二年级 48 页 / 五年级 55 页 / 六年级 56 页`。
-- 访问 `https://<项目名>.pages.dev/` → 应看到门户四张卡片。
-- 点"进入一年级"→ URL 变 `/g1/` → 一年级首页；点"进入二年级"→ `/g2/`；点"进入五年级"→ `/g5/`；点"进入六年级"→ `/g6/`。
-- 抽查深层页面：`/g1/play/c1-count-01`、`/g2/labs/g2-c6-abacus`、`/g5/labs/g5-c3-area-parallelogram`、`/g6/labs/g6-c1-mul-decimal`。
+  `deploy/ 共 346 个 HTML 页面 / 门户 / 一年级 111 页 / 二年级 48 页 / 三年级 73 页 / 五年级 55 页 / 六年级 56 页`。
+- 访问 `https://<项目名>.pages.dev/` → 应看到门户五张卡片。
+- 点"进入一年级"→ URL 变 `/g1/` → 一年级首页；点"进入二年级"→ `/g2/`；点"进入三年级"→ `/g3/`；点"进入五年级"→ `/g5/`；点"进入六年级"→ `/g6/`。
+- 抽查深层页面：`/g1/play/c1-count-01`、`/g2/labs/g2-c6-abacus`、`/g3/labs/g3-c3-mul-pen`、`/g5/labs/g5-c3-area-parallelogram`、`/g6/labs/g6-c1-mul-decimal`。
 
 ### 3.3 已有旧项目（之前部署的是 game 目录）怎么改
 
@@ -97,7 +97,7 @@ Cloudflare 边缘网络 → 用户浏览器
 2. 把 **Build command** 改为 `npm run build:site`。
 3. 把 **Build output directory** 改为 `deploy`。
 4. 点 **Save**，然后 **Deployments → 手动触发一次部署**（或推送一次）。
-5. 旧产物会被覆盖，线上立刻变成门户 + 四个年级。
+5. 旧产物会被覆盖，线上立刻变成门户 + 五个年级。
 
 > 如果旧项目名/URL 想保留，直接改配置即可；想换名，删掉重建成 3.1 的流程。
 
@@ -123,6 +123,7 @@ Cloudflare 边缘网络 → 用户浏览器
 const APPS = [
   { dir: 'game',    base: '/g1/', dist: '.output/public' },
   { dir: 'g2/game', base: '/g2/', dist: '.output/public' },
+  { dir: 'g3/game', base: '/g3/', dist: '.output/public' },
   { dir: 'g5/game', base: '/g5/', dist: '.output/public' },
   { dir: 'g6/game', base: '/g6/', dist: '.output/public' },
 ]
@@ -199,7 +200,7 @@ Cloudflare 的 200 重写会抢在静态文件之前命中 `/g1/` 目录请求�
 - 门户是 **Nuxt 4 + Nuxt UI 应用**（风格与各年级一致），跨应用链接必须用原生 `<a href>`。
 - 新增年级：在 `shared/grades/index.ts` 加一条 `GradeInfo`，门户卡片自动生成。
 - 门户 `nuxt.config.ts` 的 `prerender` 必须是 `crawlLinks: false + routes: ['/']`：
-  开 crawlLinks 会爬 `/g1/`、`/g2/`、`/g5/`、`/g6/` 链接，在门户应用里 404 → 构建失败（已踩坑）。
+  开 crawlLinks 会爬 `/g1/`、`/g2/`、`/g3/`、`/g5/`、`/g6/` 链接，在门户应用里 404 → 构建失败（已踩坑）。
 
 ### 4.6 `.gitignore`（防误提交）
 
@@ -222,9 +223,9 @@ node_modules/  .nuxt/  .output/  dist/  test-results/  coverage/  deploy/  *.pdf
     const APPS = [
       { dir: 'game',    base: '/g1/', dist: '.output/public' },
       { dir: 'g2/game', base: '/g2/', dist: '.output/public' },
+      { dir: 'g3/game', base: '/g3/', dist: '.output/public' },
       { dir: 'g5/game', base: '/g5/', dist: '.output/public' },
       { dir: 'g6/game', base: '/g6/', dist: '.output/public' },
-      { dir: 'g3',      base: '/g3/', dist: '.output/public' },   // 新增
     ]
    ```
 3. `shared/grades/index.ts` 加一条 `GradeInfo`（`id/base/label/title/accent/features` 等）。
@@ -253,19 +254,19 @@ node_modules/  .nuxt/  .output/  dist/  test-results/  coverage/  deploy/  *.pdf
 
 1. Cloudflare 项目 → **Custom domains → Add**，输入域名（如 `math.example.com`）。
 2. DNS 记录自动创建（CNAME 到 pages.dev）。
-3. 无需改任何代码：门户在根域，`/g1/`、`/g2/`、`/g5/`、`/g6/` 自动可用（卡片用原生 `<a href>` 绝对路径）。
+3. 无需改任何代码：门户在根域，`/g1/`、`/g2/`、`/g3/`、`/g5/`、`/g6/` 自动可用（卡片用原生 `<a href>` 绝对路径）。
 
 ### 5.5 只想部署一个年级（临时）
 
 - 把 `APPS` 数组临时删掉一项，推送一次即只出该年级；
-  恢复后再推一次。产物页数会变化（273 → 111 或 48 或 55 或 56）。
+  恢复后再推一次。产物页数会变化（346 → 111 或 48 或 73 或 55 或 56）。
 
 ---
 
 ## 6. 本地完整演练（改参数后先本地验证）
 
 ```bash
-# 1) 聚合构建（跳过五个应用依赖安装；Cloudflare 上会自动 npm ci）
+# 1) 聚合构建（跳过六个应用依赖安装；Cloudflare 上会自动 npm ci）
 npm run build:site:local
 
 # 2) 本地静态预览
@@ -276,12 +277,14 @@ cd deploy && python3 -m http.server 4100
 #    http://localhost:4100/          门户
 #    http://localhost:4100/g1/       一年级
 #    http://localhost:4100/g2/       二年级
+#    http://localhost:4100/g3/       三年级
 #    http://localhost:4100/g5/       五年级
 #    http://localhost:4100/g6/       六年级
 #    http://localhost:4100/g5/labs/g5-c3-area-parallelogram/   深层页
 #    http://localhost:4100/g1/play/c1-count-01/                深层页
 #    http://localhost:4100/g6/labs/g6-c1-mul-decimal/          深层页
 #    http://localhost:4100/g2/labs/g2-c6-abacus/               深层页
+#    http://localhost:4100/g3/labs/g3-c3-mul-pen/              深层页
 ```
 
 > 注意：`python3 -m http.server` 对无尾斜杠路径会 301 到带斜杠目录；
@@ -293,19 +296,21 @@ cd deploy && python3 -m http.server 4100
 
 | 检查项 | 期望 | 命令/路径 |
 | --- | --- | --- |
-| 构建日志汇总 | `共 273 个 HTML` | 面板 Deployments → 最新一次 → 日志尾部 |
-| 门户 | 四张年级卡片 | `GET /` |
+| 构建日志汇总 | `共 346 个 HTML` | 面板 Deployments → 最新一次 → 日志尾部 |
+| 门户 | 五张年级卡片 | `GET /` |
 | 一年级首页 | 标题"一年级数学例题游戏" | `GET /g1/` |
 | 二年级首页 | 标题"二年级数学例题可视化" | `GET /g2/` |
+| 三年级首页 | 标题"三年级数学例题可视化" | `GET /g3/` |
 | 五年级首页 | 标题"五年级数学例题可视化" | `GET /g5/` |
 | 六年级首页 | 标题"六年级数学例题可视化" | `GET /g6/` |
 | 一年级深层页 | 200 + 内容 | `GET /g1/play/c1-count-01/` |
 | 二年级深层页 | 200 + 内容 | `GET /g2/labs/g2-c6-abacus/` |
+| 三年级深层页 | 200 + 内容 | `GET /g3/labs/g3-c3-mul-pen/` |
 | 五年级深层页 | 200 + 内容 | `GET /g5/labs/g5-c3-area-parallelogram/` |
 | 六年级深层页 | 200 + 内容 | `GET /g6/labs/g6-c1-mul-decimal/` |
-| 静态资源 | 200 | `GET /g1/_nuxt/…`、`GET /g2/_nuxt/…`、`GET /g5/_nuxt/…`、`GET /g6/_nuxt/…` |
+| 静态资源 | 200 | `GET /g1/_nuxt/…`、`GET /g2/_nuxt/…`、`GET /g3/_nuxt/…`、`GET /g5/_nuxt/…`、`GET /g6/_nuxt/…` |
 | 客户端渲染 | 无 JS 错误 | 浏览器 DevTools Console / 或 playwright 冒烟 |
-| 目录入口 | /g1/ /g2/ /g5/ /g6/ 不 308 循环 | `GET /g1/` 应 200 且返回一年级首页 |
+| 目录入口 | /g1/ /g2/ /g3/ /g5/ /g6/ 不 308 循环 | `GET /g1/` 应 200 且返回一年级首页 |
 
 ---
 
@@ -313,13 +318,13 @@ cd deploy && python3 -m http.server 4100
 
 | 现象 | 原因 | 处理 |
 | --- | --- | --- |
-| 部署后只有门户，/g1/ /g2/ /g5/ /g6/ 404 | 构建输出目录没指对，或聚合失败 | 检查面板输出目录=`deploy`；看构建日志是否有"聚合完成" |
+| 部署后只有门户，/g1/ /g2/ /g3/ /g5/ /g6/ 404 | 构建输出目录没指对，或聚合失败 | 检查面板输出目录=`deploy`；看构建日志是否有"聚合完成" |
 | /g1/ 资源 404（_nuxt 打不开） | baseURL 没生效 | 确认 nuxt.config 是 `process.env.BASE_URL ?? '/'`，且脚本传了 `BASE_URL=/g1/` |
 | 只有 2 个 HTML | crawlLinks 没开 | `nitro.prerender.crawlLinks: true` |
 | 改 base 后跳转/资源全坏 | 脚本 base 与 `shared/grades` 注册表没同步 | 见 §5.2（脚本 base + 年级注册表 base） |
 | 构建超时 | npm ci 冷缓存慢 | 见 §5.3（开 Build cache / 改 npm install） |
 | 本地 e2e 连错站点 | 3000/3100 端口被旧服务占用 | `lsof -i :3000 -i :3100` 清掉再跑 |
-| 门户/顶栏点卡片进到 404（Nuxt 404 页） | 跨应用链接用了 NuxtLink/UButton（客户端路由/被 baseURL 改写） | 改原生 `<a href="/g5/">`，见 DEVELOPMENT.md §3.5/§4.5/§5.5 四坑 |
+| 门户/顶栏点卡片进到 404（Nuxt 404 页） | 跨应用链接用了 NuxtLink/UButton（客户端路由/被 baseURL 改写） | 改原生 `<a href="/g5/">`，见 DEVELOPMENT.md §3.5/§4.5/§5.5/§6.5 四坑 |
 | 点击后 URL 变成 /g5/200 | 旧 `_redirects` 的 SPA 200 重写残留（已删）；或浏览器缓存旧 308 | 硬刷新/清缓存/Cloudflare Purge Everything |
 | nuxt generate 中断（crawler 404） | 页面跨年级链接被 crawler 爬 | 年级应用保持 `prerender.failOnError:false`；门户保持 `crawlLinks:false + routes:['/']` |
-| 门户卡片用 NuxtLink 显示门户 404 | 门户没有 /g1/ /g2/ /g5/ /g6/ 路由 | 门户卡片用原生 `<a href="/g1/">`（已在 portal/pages/index.vue） |
+| 门户卡片用 NuxtLink 显示门户 404 | 门户没有 /g1/ /g2/ /g3/ /g5/ /g6/ 路由 | 门户卡片用原生 `<a href="/g1/">`（已在 portal/pages/index.vue） |

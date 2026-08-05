@@ -1,6 +1,6 @@
 /**
  * 统一 CSS 入口：tailwind + Nuxt UI + 共享样式覆盖层（五年级 emerald 主样式基准）。
- * 五个应用（门户 / 一/二/五/六年级）此文件内容完全一致。
+ * 六个应用（门户 / 一/二/三/五/六年级）此文件内容完全一致。
  */
 @import "tailwindcss";
 @import "@nuxt/ui";

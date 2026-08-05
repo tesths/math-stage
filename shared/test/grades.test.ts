@@ -9,9 +9,9 @@ import {
 } from '../grades'
 
 describe('年级注册表 grades registry', () => {
-  it('包含一、二、五、六年级，顺序按年级序号', () => {
-    expect(GRADES.map((g) => g.id)).toEqual(['g1', 'g2', 'g5', 'g6'])
-    expect(GRADES.map((g) => g.no)).toEqual([1, 2, 5, 6])
+  it('包含一、二、三、五、六年级，顺序按年级序号', () => {
+    expect(GRADES.map((g) => g.id)).toEqual(['g1', 'g2', 'g3', 'g5', 'g6'])
+    expect(GRADES.map((g) => g.no)).toEqual([1, 2, 3, 5, 6])
   })
 
   it('每个年级的部署路径以斜杠包围（/gN/）', () => {
@@ -37,7 +37,8 @@ describe('年级注册表 grades registry', () => {
     expect(gradeById('g2')?.label).toBe('二年级')
     expect(gradeById('g5')?.label).toBe('五年级')
     expect(gradeById('g6')?.label).toBe('六年级')
-    expect(gradeById('g3')).toBeUndefined()
+    expect(gradeById('g3')?.label).toBe('三年级')
+    expect(gradeById('g4')).toBeUndefined()
     expect(gradeById('')).toBeUndefined()
   })
 
@@ -51,16 +52,17 @@ describe('年级注册表 grades registry', () => {
   })
 
   it('otherGrades 返回除当前外的全部年级（保持序号顺序）', () => {
-    expect(otherGrades('g1').map((g) => g.id)).toEqual(['g2', 'g5', 'g6'])
-    expect(otherGrades('g2').map((g) => g.id)).toEqual(['g1', 'g5', 'g6'])
-    expect(otherGrades('g5').map((g) => g.id)).toEqual(['g1', 'g2', 'g6'])
-    expect(otherGrades('g6').map((g) => g.id)).toEqual(['g1', 'g2', 'g5'])
-    expect(otherGrades('g3')).toEqual([])
+    expect(otherGrades('g1').map((g) => g.id)).toEqual(['g2', 'g3', 'g5', 'g6'])
+    expect(otherGrades('g2').map((g) => g.id)).toEqual(['g1', 'g3', 'g5', 'g6'])
+    expect(otherGrades('g3').map((g) => g.id)).toEqual(['g1', 'g2', 'g5', 'g6'])
+    expect(otherGrades('g5').map((g) => g.id)).toEqual(['g1', 'g2', 'g3', 'g6'])
+    expect(otherGrades('g6').map((g) => g.id)).toEqual(['g1', 'g2', 'g3', 'g5'])
   })
 
   it('isKnownGrade 判定合法年级 id', () => {
     expect(isKnownGrade('g1')).toBe(true)
     expect(isKnownGrade('g2')).toBe(true)
+    expect(isKnownGrade('g3')).toBe(true)
     expect(isKnownGrade('g5')).toBe(true)
     expect(isKnownGrade('g6')).toBe(true)
     expect(isKnownGrade('g4')).toBe(false)
@@ -70,6 +72,7 @@ describe('年级注册表 grades registry', () => {
   it('gradeNoOf 返回年级序号，未知返回 0', () => {
     expect(gradeNoOf('g1')).toBe(1)
     expect(gradeNoOf('g2')).toBe(2)
+    expect(gradeNoOf('g3')).toBe(3)
     expect(gradeNoOf('g5')).toBe(5)
     expect(gradeNoOf('g6')).toBe(6)
     expect(gradeNoOf('g9')).toBe(0)
