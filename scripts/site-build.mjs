@@ -28,6 +28,7 @@ const APPS = [
   { dir: 'game', base: '/g1/', dist: '.output/public' },
   { dir: 'g2/game', base: '/g2/', dist: '.output/public' },
   { dir: 'g3/game', base: '/g3/', dist: '.output/public' },
+  { dir: 'g4/game', base: '/g4/', dist: '.output/public' },
   { dir: 'g5/game', base: '/g5/', dist: '.output/public' },
   { dir: 'g6/game', base: '/g6/', dist: '.output/public' },
 ]
@@ -107,5 +108,6 @@ console.log(`  门户: deploy/index.html`)
 console.log(`  一年级: deploy/g1/ (${htmlCount(join(OUT, 'g1'))} 页)`)
 console.log(`  二年级: deploy/g2/ (${htmlCount(join(OUT, 'g2'))} 页)`)
 console.log(`  三年级: deploy/g3/ (${htmlCount(join(OUT, 'g3'))} 页)`)
+console.log(`  四年级: deploy/g4/ (${htmlCount(join(OUT, 'g4'))} 页)`)
 console.log(`  五年级: deploy/g5/ (${htmlCount(join(OUT, 'g5'))} 页)`)
 console.log(`  六年级: deploy/g6/ (${htmlCount(join(OUT, 'g6'))} 页)`)
