@@ -1,0 +1,391 @@
+<script setup lang="ts">
+/**
+ * 比和比例 Lab：比的认识 / 比值与形状 / 化简比 / 按比例分配 / 比例性质 / 解比例 / 黄金比
+ */
+import { computed } from 'vue'
+import type { LabDef, ParamValues } from '@data/schema/lab'
+import { gcd, simplifyRatio, toFixed2 } from '@/lib/engine/math'
+
+const props = defineProps<{ lab: LabDef; values: ParamValues }>()
+
+const kind = computed(() => props.lab.kind)
+
+/* ---------- 比的认识 · 橙汁饮料 ---------- */
+const ra = computed(() => Math.round(props.values.a ?? 3))
+const rb = computed(() => Math.round(props.values.b ?? 2))
+
+/* ---------- 比值与形状 · 长方形名片 ---------- */
+const w = computed(() => Math.round(props.values.w ?? 90))
+const h = computed(() => Math.round(props.values.h ?? 54))
+const ratioVal = computed(() => w.value / h.value)
+const [sn, sd] = computed(() => simplifyRatio(w.value, h.value)).value
+
+/* ---------- 化简比 ---------- */
+const SIMPLIFY_EXAMPLES = [
+  { label: '12 : 18', expr: '同时除以 6（12 和 18 的最大公因数）', ans: '2 : 3' },
+  { label: '5/6 : 3/4', expr: '同时乘 12（6 和 4 的公分母）', ans: '10 : 9' },
+  { label: '1.8 : 0.09', expr: '同时乘 100 化成整数比，再化简', ans: '20 : 1' },
+  { label: '0.32 : 0.8', expr: '同时乘 100 得 32 : 80，再除以 16', ans: '2 : 5' },
+]
+const sim = computed(() => SIMPLIFY_EXAMPLES[Math.round(props.values.sel ?? 0) % SIMPLIFY_EXAMPLES.length]!)
+
+/* ---------- 按比例分配 · 青团皮 ---------- */
+const da = computed(() => Math.round(props.values.a ?? 3))
+const db = computed(() => Math.round(props.values.b ?? 2))
+const total = computed(() => props.values.total ?? 500)
+const per = computed(() => total.value / (da.value + db.value))
+const partA = computed(() => per.value * da.value)
+const partB = computed(() => per.value * db.value)
+
+/* ---------- 比例的基本性质 ---------- */
+const pa = computed(() => Math.round(props.values.a ?? 4))
+const pb = computed(() => Math.round(props.values.b ?? 2))
+const pk = computed(() => Math.round(props.values.k ?? 2))
+const pc = computed(() => pa.value * pk.value)
+const pd = computed(() => pb.value * pk.value)
+const outerProd = computed(() => pa.value * pd.value)
+const innerProd = computed(() => pb.value * pc.value)
+
+/* ---------- 解比例 · 糖水 ---------- */
+const sa = computed(() => Math.round(props.values.a ?? 25))
+const sb = computed(() => Math.round(props.values.b ?? 200))
+const sc = computed(() => Math.round(props.values.c ?? 300))
+const sx = computed(() => (sa.value * sc.value) / sb.value)
+
+/* ---------- 黄金比 ---------- */
+const gw = computed(() => props.values.w ?? 200)
+const gl = computed(() => gw.value / 0.618)
+const H = 60
+const RATIO = 0.618
+</script>
+
+<template>
+  <div class="ratio-wrap">
+    <!-- 比的认识 -->
+    <template v-if="kind === 'ratio-intro'">
+      <div class="juice">
+        <div class="cup-set">
+          <div class="cup">
+            <div class="cup-fill juice-a" :style="{ height: `${(ra / 8) * 100}%` }" />
+            <span class="cup-label">{{ ra }} 杯</span>
+            <span class="cup-name">纯橙汁</span>
+          </div>
+          <div class="cup">
+            <div class="cup-fill juice-b" :style="{ height: `${(rb / 8) * 100}%` }" />
+            <span class="cup-label">{{ rb }} 杯</span>
+            <span class="cup-name">水</span>
+          </div>
+        </div>
+        <p class="ratio-big">
+          纯橙汁 : 水 = <b>{{ ra }} : {{ rb }}</b>
+        </p>
+        <p class="note">前项 {{ ra }}，后项 {{ rb }}；表示橙汁是水的 {{ toFixed2(ra / rb) }} 倍</p>
+      </div>
+    </template>
+
+    <!-- 比值与形状 -->
+    <template v-else-if="kind === 'ratio-value'">
+      <div class="card-block">
+        <div class="rect" :style="{ width: `${Math.min(w, 220)}px`, height: `${Math.min(h, 150)}px` }">
+          <span class="rect-lb">{{ w }}</span>
+          <span class="rect-ht">{{ h }}</span>
+        </div>
+        <p class="ratio-big">
+          {{ w }} : {{ h }} = <b>{{ toFixed2(ratioVal) }}</b>（比值 {{ sn }}:{{ sd }}）
+        </p>
+        <p class="note">长 ÷ 宽 = 比值；比值相等的长方形形状相同</p>
+      </div>
+    </template>
+
+    <!-- 化简比 -->
+    <template v-else-if="kind === 'ratio-simplify'">
+      <div class="cmp-card">
+        <p class="ratio-big">{{ sim.label }}</p>
+        <p class="sim-step">{{ sim.expr }}</p>
+        <p class="sim-ans">
+          = <b>{{ sim.ans }}</b>
+        </p>
+        <p class="note">前项、后项同时乘或除以相同的数（0 除外），比值不变</p>
+      </div>
+    </template>
+
+    <!-- 按比例分配 -->
+    <template v-else-if="kind === 'ratio-distribute'">
+      <div class="card-block">
+        <div class="dist-track">
+          <div class="dist-part a" :style="{ width: `${(da / (da + db)) * 100}%` }">
+            糯米粉 {{ da }} 份
+          </div>
+          <div class="dist-part b" :style="{ width: `${(db / (da + db)) * 100}%` }">
+            草浆 {{ db }} 份
+          </div>
+        </div>
+        <p class="sim-step">总份数 = {{ da }} + {{ db }} = {{ da + db }}，每份 = {{ total }} ÷ {{ da + db }} = {{ toFixed2(per) }} 克</p>
+        <p class="sim-ans">
+          糯米粉 = {{ toFixed2(per) }} × {{ da }} = <b>{{ toFixed2(partA) }} 克</b>
+          <br />
+          鼠曲草浆 = {{ toFixed2(per) }} × {{ db }} = <b>{{ toFixed2(partB) }} 克</b>
+        </p>
+      </div>
+    </template>
+
+    <!-- 比例的基本性质 -->
+    <template v-else-if="kind === 'proportion-basic'">
+      <div class="card-block">
+        <p class="ratio-big">
+          {{ pa }} : {{ pb }} = {{ pc }} : {{ pd }}
+        </p>
+        <div class="cross-diagram">
+          <div class="cross-num outer">{{ pa }}</div>
+          <div class="cross-mid">外项</div>
+          <div class="cross-num inner">{{ pb }}</div>
+          <div class="cross-num inner">{{ pc }}</div>
+          <div class="cross-mid">内项</div>
+          <div class="cross-num outer">{{ pd }}</div>
+        </div>
+        <p class="sim-step">
+          外项积：{{ pa }} × {{ pd }} = {{ outerProd }}
+          <br />
+          内项积：{{ pb }} × {{ pc }} = {{ innerProd }}
+        </p>
+        <p class="sim-ans">
+          <b>外项积 = 内项积 = {{ outerProd }}</b>
+        </p>
+      </div>
+    </template>
+
+    <!-- 解比例 -->
+    <template v-else-if="kind === 'solve-proportion'">
+      <div class="card-block">
+        <p class="ratio-big">
+          {{ sa }} : {{ sb }} = x : {{ sc }}
+        </p>
+        <p class="sim-step">
+          {{ sb }}x = {{ sa }} × {{ sc }} = {{ sa * sc }}
+        </p>
+        <p class="sim-ans">
+          x = {{ sa * sc }} ÷ {{ sb }} = <b>{{ toFixed2(sx) }} 克</b>
+        </p>
+        <p class="note">应加入 {{ toFixed2(sx) }} 克糖，糖水才和原来一样甜</p>
+      </div>
+    </template>
+
+    <!-- 黄金比 -->
+    <template v-else>
+      <div class="card-block">
+        <div class="gold-rect" :style="{ width: `${Math.min(gl, 320)}px`, height: `${H}px` }">
+          <div class="gold-line" :style="{ left: `${RATIO * 100}%` }" />
+          <span class="gold-leb">{{ toFixed2(gl) }}</span>
+        </div>
+        <p class="ratio-big">
+          {{ toFixed2(gw) }} : {{ toFixed2(gl) }} ≈ <b>{{ toFixed2(gw / gl) }}</b>
+        </p>
+        <p class="sim-step">长 = 宽 ÷ 0.618 = {{ toFixed2(gw) }} ÷ 0.618 = {{ toFixed2(gl) }}</p>
+        <p class="note">宽与长的比越接近 0.618，看起来越协调、越美</p>
+      </div>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.ratio-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  align-items: center;
+  min-height: 320px;
+  justify-content: center;
+  width: 100%;
+}
+.juice,
+.card-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
+}
+.cup-set {
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-end;
+}
+.cup {
+  position: relative;
+  width: 64px;
+  height: 130px;
+  border: 2px solid var(--ui-border-accented);
+  border-top: none;
+  border-radius: 0 0 1rem 1rem;
+  background: var(--ui-bg-muted);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+.cup-fill {
+  width: 100%;
+  background: color-mix(in srgb, var(--ui-primary) 60%, white);
+  transition: height 0.3s;
+}
+.cup-fill.juice-b {
+  background: color-mix(in srgb, #38bdf8 55%, white);
+}
+.cup-label {
+  position: absolute;
+  top: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+}
+.cup-name {
+  position: absolute;
+  bottom: -1.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+}
+.ratio-big {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ui-text-highlighted);
+  font-family: ui-monospace, monospace;
+  text-align: center;
+}
+.ratio-big b {
+  color: var(--ui-primary);
+}
+.note {
+  font-size: 0.85rem;
+  color: var(--ui-text-muted);
+  text-align: center;
+}
+.rect {
+  border: 2px solid var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 18%, transparent);
+  position: relative;
+  border-radius: var(--ui-radius-lg);
+}
+.rect-lb {
+  position: absolute;
+  left: 50%;
+  bottom: -1.6rem;
+  transform: translateX(-50%);
+  font-size: 0.85rem;
+  color: var(--ui-text-muted);
+}
+.rect-ht {
+  position: absolute;
+  top: 50%;
+  right: -1.9rem;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: var(--ui-text-muted);
+}
+.cmp-card {
+  border: 1px dashed var(--ui-border-accented);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-muted);
+  padding: 1rem 1.4rem;
+  text-align: center;
+  min-width: 16rem;
+  max-width: 22rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+.sim-step {
+  font-size: 0.9rem;
+  color: var(--ui-text-toned);
+  font-family: ui-monospace, monospace;
+  text-align: center;
+}
+.sim-ans {
+  font-size: 1rem;
+  color: var(--ui-text-highlighted);
+  font-family: ui-monospace, monospace;
+  text-align: center;
+  line-height: 1.7;
+}
+.sim-ans b {
+  color: var(--ui-primary);
+}
+.dist-track {
+  display: flex;
+  height: 2.4rem;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  width: 100%;
+}
+.dist-part {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: white;
+  font-weight: 700;
+  transition: width 0.3s;
+}
+.dist-part.a {
+  background: var(--ui-primary);
+}
+.dist-part.b {
+  background: color-mix(in srgb, var(--ui-primary) 40%, white);
+  color: var(--ui-text-highlighted);
+}
+.cross-diagram {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: auto auto;
+  gap: 0.4rem;
+  align-items: center;
+}
+.cross-num {
+  width: 3rem;
+  height: 2.2rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--ui-primary) 20%, transparent);
+  border: 1px solid var(--ui-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--ui-text-highlighted);
+}
+.cross-num.outer {
+  background: color-mix(in srgb, #f59e0b 22%, transparent);
+  border-color: #f59e0b;
+  color: #92400e;
+}
+.cross-mid {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+}
+.gold-rect {
+  position: relative;
+  border: 2px solid var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 18%, transparent);
+  border-radius: var(--ui-radius-lg);
+}
+.gold-line {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: #f59e0b;
+}
+.gold-leb {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -1.6rem;
+  transform: translateX(50%);
+  font-size: 0.85rem;
+  color: var(--ui-text-muted);
+}
+</style>

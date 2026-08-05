@@ -32,7 +32,7 @@ g5/
 │   │   ├── units/[id].vue      单元页（Lab 清单）
 │   │   ├── labs/[id].vue       Lab 页（参数滑块 + 实时公式 + 分步思考）
 │   │   └── games/[slug].vue    游戏页
-│   ├── test/                   vitest（39 用例，语句/行覆盖率 ≥90%）
+│   ├── test/                   vitest（105 用例，statements/lines/functions/branches 均 ≥95%）
 │   └── e2e/smoke.spec.ts       Playwright 6 用例
 └── docs/
 ```
@@ -73,16 +73,17 @@ Lab 页布局：左侧可视化（SVG/three.js），右侧参数滑块，下方"
 ```bash
 cd g5/game
 npm run dev          # 开发（PORT 3000）
-npm run test         # vitest 39 用例
-npm run test:coverage# 语句/行覆盖率 ≥90%
+npm run test         # vitest 105 用例（含共享 GradeShell 组件）
+npm run test:coverage# 四指标均 ≥95%（statements/lines/functions/branches）
 npm run test:e2e     # Playwright 6 用例（NITRO_PRESET=node-server 本地构建）
-npm run typecheck    # vue-tsc 0 错误
 npm run build        # 构建（nitro preset: cloudflare-pages，可部署 Pages/静态）
 ```
 
 已知约定（与一年级工程一致）：
 - `game/` 内 `package.json` 依赖与一年级完全一致，`node_modules` 可复制共享。
-- `vitest.config.ts` 的 `@data` 别名指向 `../data`（本文件夹内），与一年级互不影响。
+- `vitest.config.ts` 的 `@data` 别名指向 `../data`（本文件夹内），与一年级互不影响；
+  `@shared` 别名指向仓库根 `shared/`（共享设计系统）。
+- 布局使用共享 `shared/components/GradeShell.vue`（顶栏年级切换/页脚由 `shared/grades` 注册表驱动）。
 - 书页 = PDF 页 - 2；OCR 脚本 `ocr/src/ocr.swift` 支持第 5 参数指定输出目录，
   五年级产物在 `g5/ocr/pages`，勿与一年级 `ocr/pages` 混淆。
 

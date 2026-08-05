@@ -48,6 +48,7 @@ declare module 'vue' {
     UBadge: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Badge.vue')['default']
     UButton: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
     UHeader: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Header.vue')['default']
+    UIcon: typeof import('./node_modules/@nuxt/ui/dist/runtime/vue/components/Icon.vue')['default']
     WarBattleGame: typeof import('./src/components/arcade/WarBattleGame.vue')['default']
     WhackGame: typeof import('./src/components/arcade/WhackGame.vue')['default']
   }
@@ -91,6 +92,7 @@ declare global {
   const UBadge: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Badge.vue')['default']
   const UButton: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
   const UHeader: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Header.vue')['default']
+  const UIcon: typeof import('./node_modules/@nuxt/ui/dist/runtime/vue/components/Icon.vue')['default']
   const WarBattleGame: typeof import('./src/components/arcade/WarBattleGame.vue')['default']
   const WhackGame: typeof import('./src/components/arcade/WhackGame.vue')['default']
 }

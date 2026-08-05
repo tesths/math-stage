@@ -1,0 +1,80 @@
+/**
+ * 共享样式覆盖层（全平台统一入口的公共部分）。
+ * 各应用的入口 main.css 统一为：
+ *   @import "tailwindcss";
+ *   @import "@nuxt/ui";
+ *   @import "@shared/theme/main.css";
+ * 所有跨应用一致的样式（基础排版 / 交互反馈 / 工具类）都收敛在此处，
+ * 以五年级 emerald 主样式为基准（主色变量由 Nuxt UI 的 --ui-primary 提供）。
+ */
+
+/* ---------- 基础排版 ---------- */
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family:
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background-color: var(--ui-bg);
+  color: var(--ui-text);
+}
+
+/* ---------- 交互反馈 ---------- */
+::selection {
+  background-color: color-mix(in srgb, var(--ui-primary) 22%, transparent);
+  color: var(--ui-text-highlighted);
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 65%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---------- 通用工具类（与组件内联令牌风格一致） ---------- */
+/* 卡片悬停反馈：全部年级/游戏卡片统一 */
+.card-hover {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -12px color-mix(in srgb, var(--ui-primary) 35%, transparent);
+}
+
+/* 内容区统一留白节奏 */
+.page-container {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+@media (min-width: 768px) {
+  .page-container {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+/* 页面区块标题行（主标题 + 说明） */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.section-head h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ui-text-highlighted);
+}
+.section-head .hint {
+  font-size: 0.875rem;
+  color: var(--ui-text-muted);
+}

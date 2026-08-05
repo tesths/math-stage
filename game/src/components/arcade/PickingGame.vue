@@ -10,7 +10,7 @@
       <UButton color="primary" size="lg" @click="restart">再摘一次</UButton>
     </div>
 
-    <template v-else>
+    <template v-else-if="rd">
       <div class="orchard">
         <p class="q-text" data-test="question">{{ questionText }}</p>
         <div class="tree" data-test="tree">
@@ -32,6 +32,8 @@
       <FeedbackOverlay :state="feedback" :correct-answer="rd.answer" />
       <UButton v-if="done && !finished" color="primary" size="lg" @click="nextRound">下一题</UButton>
     </template>
+
+    <div v-else class="empty-round" data-test="empty-round">题目加载中…</div>
   </div>
 </template>
 
@@ -44,7 +46,7 @@ import { playCorrect, playWrong } from '@/lib/sound'
 
 const ROUNDS = 5
 const round = ref(1)
-const rd = ref<PickingRound>(newPickingRound(1))
+const rd = ref<PickingRound | null>(newPickingRound(1))
 const picked = ref(0)
 const selected = ref<number | null>(null)
 const done = ref(false)
@@ -64,7 +66,7 @@ const questionText = computed(() => {
 })
 
 function onSelect(v: number | string) {
-  if (done.value) return
+  if (done.value || !rd.value) return
   selected.value = Number(v)
   if (Number(v) === rd.value.answer) {
     picked.value = rd.value.picks.reduce((s, p) => s + p, 0)

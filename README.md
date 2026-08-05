@@ -2,13 +2,16 @@
 
 > 📖 **开发者请看**：完整开发文档 `docs/DEVELOPMENT.md`（架构、数据格式、新增例题/Lab/游戏的标准流程、OCR 管线、测试、单 Cloudflare Pages 部署、排错速查）。
 
-本仓库包含两个年级的独立工程：
+本仓库包含四个年级的独立工程，以及全平台共享的 `shared/` 设计系统（主样式以五年级为基准，全站统一 emerald）：
 
 | 年级 | 课本 | 位置 | 内容 |
 | --- | --- | --- | --- |
-| 门户 | — | `portal/`（纯静态）+ 聚合脚本 `scripts/site-build.mjs` | **单 Cloudflare Pages 部署**：`/` 门户、`/g1/` 一年级、`/g5/` 五年级（详见文末部署章节） |
+| 共享层 | — | `shared/`（年级注册表/主题令牌/GradeShell 布局/工具函数） | 新增年级只改 `shared/grades` 一处 |
+| 门户 | — | `portal/`（Nuxt 静态站）+ 聚合脚本 `scripts/site-build.mjs` | **单 Cloudflare Pages 部署**：`/` 门户、`/g1/` 一年级、`/g2/` 二年级、`/g5/` 五年级、`/g6/` 六年级（详见文末部署章节） |
 | 一年级（人教版·2022 课标） | 一年级上册扫描 PDF | `data/` + `game/` | 78 道例题答题游戏 + 20 个小游戏（详见下） |
+| 二年级（苏教版·2022 课标·2025 新编） | 义务教育教科书•数学二年级上册.pdf | `g2/`（独立文件夹） | **22 个可调参数例题可视化 Lab**（七巧板/算盘/计数器/方向板/人民币等）+ 12 个训练小游戏（详见 `g2/README.md`） |
 | 五年级（苏教版·2022 课标） | 最新【苏教版】5年级数学课本•上册.pdf | `g5/`（独立文件夹） | **33 个可调参数例题可视化 Lab**（three.js 三视图可拖拽、chart.js 统计图、多边形面积剪拼等）+ 10 个训练小游戏（详见 `g5/README.md`） |
+| 六年级（苏教版·2022 课标） | 最新【苏教版】6年级数学课本•上册.pdf | `g6/`（独立文件夹） | **33 个可调参数例题可视化 Lab**（小数方格模型、圆/扇形 SVG、线段图、二进制、黄金比等）+ 12 个训练小游戏（详见 `g6/README.md`） |
 
 ---
 
@@ -20,12 +23,30 @@
 
 ```
 math/
-├── README.md                      本文件（维护总入口，含五年级 g5/ 指引）
+├── README.md                      本文件（维护总入口，含二/五/六年级 g2/、g5/、g6/ 指引）
+├── shared/                        全平台共享设计系统（主样式 = 五年级 emerald）
+│   ├── grades/index.ts            年级注册表：新增年级只改这里
+│   ├── theme/                     主题令牌 + 统一 CSS 覆盖层 + 共享 Nuxt 配置片段
+│   ├── components/GradeShell.vue  统一布局壳（顶栏年级切换/页脚，由注册表驱动）
+│   ├── utils/                     共享工具函数
+│   └── test/                      独立 vitest（25 用例，覆盖率 100%）
+├── g2/                             二年级（苏教版上册）独立文件夹：
+│   ├── README.md                  二年级工程说明
+│   ├── ocr/pages/                 课本 OCR（书页 = PDF页 - 8）
+│   ├── data/                      22 个可调参数 Lab 数据
+│   ├── game/                      二年级 Nuxt4 应用（Nuxt UI）
+│   └── docs/                      课本 OCR 与页面映射
 ├── g5/                             五年级（苏教版上册）独立文件夹：
 │   ├── README.md                  五年级工程说明
 │   ├── ocr/pages/                 课本 OCR（书页 = PDF页 - 2）
-│   ├── data/                      31 个可调参数 Lab 数据
+│   ├── data/                      33 个可调参数 Lab 数据
 │   ├── game/                      五年级 Nuxt4 应用（Nuxt UI + three.js）
+│   └── docs/                      课本 OCR 与页面映射
+├── g6/                             六年级（苏教版上册）独立文件夹：
+│   ├── README.md                  六年级工程说明
+│   ├── ocr/pages/                 课本 OCR（书页 = PDF页 - 2）
+│   ├── data/                      33 个可调参数 Lab 数据
+│   ├── game/                      六年级 Nuxt4 应用（Nuxt UI）
 │   └── docs/                      课本 OCR 与页面映射
 ├── （…）·数学一年级上册.pdf        原始扫描 PDF（105 页）
 ├── ocr/                           一年级文字识别管线
@@ -42,8 +63,12 @@ math/
 │   ├── chapters/meta.ts           单元元信息（标题/tocLabel/书页/图标/简介）
 │   ├── chapters/c1.ts … c9.ts     9 个单元例题（78 道，带 source 题源小节）
 │   └── index.ts                   汇总结点（findById / examplesOfChapter …）
-├── scripts/verify_examples.py 例题 ↔ 课本文字机器核对（STRONG/MEDIUM/FIG 三级证据）
-├── game/                          Nuxt4 前端工程（Nuxt UI 界面，主色 orange）
+├── scripts/
+│   ├── site-build.mjs       单 Pages 聚合构建脚本（五个 Nuxt 应用：g1/g2/g5/g6/门户）
+│   ├── test-shared.mjs      共享层测试（npm run test:shared）
+│   ├── real-click-test.mjs  真实点击验收（npm run test:click，46 项）
+│   └── verify_examples.py   例题 ↔ 课本文字机器核对（STRONG/MEDIUM/FIG 三级证据）
+├── game/                          Nuxt4 前端工程（Nuxt UI 界面，主色 emerald 统一）
 │   ├── src/assets/css/main.css    Nuxt UI v4 必填 CSS 入口（tailwindcss + @nuxt/ui）
 │   ├── src/lib/engine/            纯逻辑引擎（checker/position/count/generator/registry）
 │   │   ├── src/lib/arcade/        20 个小游戏纯逻辑引擎（warbattle/frogjump/matchstick…）
@@ -112,13 +137,28 @@ shape3d / numberline / sequence / ten。位置判定规则：左/上/前取前�
 `game/` 目录内：
 
 ```bash
-npm run test          # vitest（单元 + 组件），308 用例全绿
-npm run test:coverage # 覆盖率（statements 100% / branches 99.9% / lines 100% / functions 100%）
+npm run test          # vitest（单元 + 组件），311 用例全绿
+npm run test:coverage # 覆盖率（statements 100% / branches 99.8% / lines 100% / functions 100%）
 npm run test:e2e      # Playwright 34 个 E2E（含 20 个小游戏页矩阵，构建产物运行）
-npm run typecheck     # vue-tsc 类型检查，0 报错
 npm run dev           # 开发（PORT 3000）
 npm run build | nuxt build
-npm run generate      # 静态导出 dist/（含 units/、play/、games/ 全部路由）
+npm run generate      # 静态导出 .output/public（含 units/、play/、games/ 全部路由）
+```
+
+共享层（`shared/`）、二/五年级与六年级测试：
+
+```bash
+npm run test:shared    # 仓库根：共享层 25 用例（覆盖率 100%）
+npm run test:shared:coverage
+npm run test:click     # 仓库根：真实点击验收 46 项（需先 npm run build:site:local）
+cd g2/game && npm run test          # 二年级单元 + 组件用例全绿
+cd g2/game && npm run test:coverage # 二年级四指标均 ≥95%
+cd g2/game && npm run typecheck     # 二年级 vue-tsc
+cd g5/game && npm run test          # 五年级 105 用例全绿
+cd g5/game && npm run test:coverage # 五年级四指标均 ≥95%（99.6/96/95/99.6）
+cd g6/game && npm run test          # 六年级 130 用例全绿
+cd g6/game && npm run test:coverage # 六年级四指标均 ≥95%（100/99.17/100/100）
+cd g6/game && npm run typecheck     # 六年级 vue-tsc（与五年级同源的一处共享 theme 类型提示一致）
 ```
 
 已知约定（极易踩坑）：
@@ -147,23 +187,25 @@ npm run generate      # 静态导出 dist/（含 units/、play/、games/ 全部�
   驱动首页按单元分组和 `/games` 卡片徽章；增删游戏务必同步该字段与 `unitNoOf()` 测试
   （`test/unit/arcade/games.test.ts` 最后一组 describe），缺口会让首页分组/徽章失真。
 
-## 单 Cloudflare Pages 部署（门户 + 一年级 + 五年级）
+## 单 Cloudflare Pages 部署（门户 + 一/二/五/六年级）
 
-一个 GitHub 仓库、**一个** Cloudflare Pages 项目，门户在 `/`、一年级在 `/g1/`、五年级在 `/g5/`。
-两个年级仍是独立 Nuxt 工程（管理上分开），构建时聚合为一个产物 `deploy/`。
+一个 GitHub 仓库、**一个** Cloudflare Pages 项目，门户在 `/`、一年级在 `/g1/`、二年级在 `/g2/`、五年级在 `/g5/`、六年级在 `/g6/`。
+各年级仍是独立 Nuxt 工程（管理上分开），构建时聚合为一个产物 `deploy/`。
 
 ```
 部署产物 deploy/
-├── index.html    门户（portal/，链接 ./g1/ 与 ./g5/）
+├── index.html    门户（portal/，链接 ./g1/、./g2/、./g5/ 与 ./g6/）
 ├── g1/           一年级（game/，BASE_URL=/g1/ 静态导出，111 页）
+├── g2/           二年级（g2/game/，BASE_URL=/g2/ 静态导出）
 ├── g5/           五年级（g5/game/，BASE_URL=/g5/ 静态导出，55 页）
-└── _redirects    SPA 兜底（/g1/* → 200.html、/g5/* → 200.html）
+├── g6/           六年级（g6/game/，BASE_URL=/g6/ 静态导出，56 页）
+└── _redirects    仅注释；真实页面全部预渲染，禁止 SPA 200 重写
 ```
 
 ### 本地构建与预览
 
 ```bash
-npm run build:site:local   # 聚合构建（跳过子应用依赖安装）
+npm run build:site:local   # 聚合构建（跳过五个应用依赖安装）
 npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
 ```
 
@@ -175,19 +217,19 @@ npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
    | 项 | 值 |
    | --- | --- |
    | 框架预设 | None |
-   | 构建命令 | `npm run build:site`（脚本内自动对 game/、g5/game/ 执行 `npm ci` 并分别 `nuxi generate`） |
+   | 构建命令 | `npm run build:site`（脚本内自动对 game/、g2/game/、g5/game/、g6/game/、portal/ 执行 `npm ci` 并分别 `nuxi generate`） |
    | 构建输出目录 | `deploy` |
 4. 保存并部署。以后推送 `main` 分支即自动构建。
 
-> 首次构建需要安装两个子应用的依赖，约 8~15 分钟（免费额度 20 分钟以内）。
-> 若超时，可在两个子应用各自提交后，把 `scripts/site-build.mjs` 中 `npm ci` 改为
+> 首次构建需要安装五个应用的依赖，约 8~15 分钟（免费额度 20 分钟以内）。
+> 若超时，可在各应用提交 lockfile 后，把 `scripts/site-build.mjs` 中 `npm ci` 改为
 > `npm install`（Cloudflare 构建缓存命中后更快），或拆分触发。
 
 ### 新增年级（三年级等）
 
-1. 新建独立 Nuxt 工程（如 `g3/`，管理上独立），同样配置 `BASE_URL` 与 `nitro.prerender.crawlLinks`。
-2. `scripts/site-build.mjs` 的 `APPS` 数组加一项 `{ dir: 'g3', base: '/g3/' }`。
-3. `portal/index.html` 加一张年级卡片，链接 `./g3/`。
+1. 新建独立 Nuxt 工程（如 `g3/`，管理上独立），复制现有 nuxt.config 骨架（引入 `sharedNuxtConfig`）。
+2. **`shared/grades/index.ts` 加一条 `GradeInfo` 记录**——门户卡片、顶栏切换、页脚文案自动生成。
+3. `scripts/site-build.mjs` 的 `APPS` 数组加一项 `{ dir: 'g3', base: '/g3/' }`。
 
 ## 维护提示
 

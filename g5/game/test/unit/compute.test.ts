@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeLab } from '@/lib/labs/compute'
+import { computeLab, isPrimeNum } from '@/lib/labs/compute'
+import { allLabs } from '@data'
 import { factorsOf, isPrime, primesUpTo, gcd, lcm, areaOf } from '@/lib/engine/math'
 
 describe('math 工具', () => {
@@ -145,5 +146,109 @@ describe('computeLab 各 kind', () => {
   it('views3d：观察方向', () => {
     const r = computeLab('views3d', { view: 0 })
     expect(r.text).toContain('前面')
+  })
+})
+
+describe('computeLab 分支覆盖', () => {
+  it('translate：四个方向与取模回绕', () => {
+    expect(computeLab('translate', { dir: 0, grid: 9 }).text).toContain('右')
+    expect(computeLab('translate', { dir: 1, grid: 9 }).text).toContain('下')
+    expect(computeLab('translate', { dir: 2, grid: 9 }).text).toContain('左')
+    expect(computeLab('translate', { dir: 3, grid: 9 }).text).toContain('上')
+    expect(computeLab('translate', { dir: 4, grid: 9 }).text).toContain('右')
+  })
+
+  it('rotate：逆时针方向', () => {
+    const r = computeLab('rotate', { angle: 90, dir: 1 })
+    expect(r.text).toContain('逆时针')
+    expect(r.conclusion).toContain('旋转')
+  })
+
+  it('axis：对称轴三个位置', () => {
+    expect(computeLab('axis', { sym: 0 }).text).toContain('左')
+    expect(computeLab('axis', { sym: 1 }).text).toContain('中间')
+    expect(computeLab('axis', { sym: 2 }).text).toContain('右')
+  })
+
+  it('area：平行四边形 / 三角形 / 梯形三步过程', () => {
+    const para = computeLab('area', { a: 6, h: 4, shape: 0 })
+    expect(para.steps[0]!.expr).toContain('转化成长方形')
+    expect(para.steps[1]!.expr).toContain('S = 底 × 高')
+    const tri = computeLab('area', { a: 8, h: 5, shape: 1 })
+    expect(tri.steps[0]!.expr).toContain('两个完全一样的三角形')
+    expect(tri.conclusion).toContain('三角形')
+    const trap = computeLab('area', { a: 4, b: 7, h: 5, shape: 2 })
+    expect(trap.steps[0]!.expr).toContain('两个完全一样的梯形')
+    expect(trap.conclusion).toContain('梯形')
+  })
+
+  it('area：带单位参数显示平方米', () => {
+    const r = computeLab('area', { a: 6, h: 4, shape: 0, unit: 1 })
+    expect(r.text).toContain('平方米')
+  })
+
+  it('hectare：非 100 米边长的换算结论', () => {
+    const r = computeLab('hectare', { side: 50 })
+    expect(r.value).toBe(2500)
+    expect(r.conclusion).toContain('2500')
+  })
+
+  it('spinner：蓝 / 黄区域最大', () => {
+    expect(computeLab('spinner', { red: 20, blue: 50, yellow: 30 }).text).toContain('蓝')
+    expect(computeLab('spinner', { red: 20, blue: 30, yellow: 50 }).text).toContain('黄')
+  })
+
+  it('marble：红多 / 一样多', () => {
+    const redMore = computeLab('marble', { red: 6, yellow: 4 })
+    expect(redMore.conclusion).toContain('红球多')
+    const equal = computeLab('marble', { red: 5, yellow: 5 })
+    expect(equal.conclusion).toContain('相等')
+  })
+
+  it('decimal-point：乘法方向与除法的 0 补足结论', () => {
+    const mul = computeLab('decimal-point', { power: 2, base: 0.001, divide: 0 })
+    expect(mul.conclusion).toContain('乘')
+    expect(mul.conclusion).toContain('向右')
+    const div = computeLab('decimal-point', { power: 1, base: 12.5, divide: 1 })
+    expect(div.conclusion).toContain('除以')
+    expect(div.conclusion).toContain('向左')
+  })
+
+  it('stats-chart：同桌最多活动在不同位置', () => {
+    const r = computeLab('stats-chart', {
+      s1: 1, d1: 0.5, s2: 2, d2: 3, s3: 1.5, d3: 1, s4: 1, d4: 0.5, s5: 0.5, d5: 9,
+    })
+    expect(r.steps[3]!.result).toContain('看电视')
+  })
+
+  it('pinboard：五种图形的皮克定理', () => {
+    const names = ['矩形', '三角形', 'L 形', '五边形', '凹四边形']
+    for (let i = 0; i < 5; i++) {
+      const r = computeLab('pinboard', { shape: i })
+      expect(r.conclusion).toContain(names[i]!)
+      expect(r.value).toBeGreaterThan(0)
+    }
+  })
+
+  it('views3d：右面 / 上面观察', () => {
+    expect(computeLab('views3d', { view: 1 }).text).toContain('右面')
+    expect(computeLab('views3d', { view: 2 }).text).toContain('上面')
+  })
+
+  it('参数缺失时走 ?? 默认值兜底分支（全覆盖）', () => {
+    // 所有 kind 以空参数调用，覆盖 p.x ?? 0 / p.x ?? 1 等默认值分支
+    for (const l of allLabs) {
+      expect(() => computeLab(l.kind, {})).not.toThrow()
+    }
+    // 空参数下的代表性默认值
+    expect(computeLab('translate', {}).text).toContain('右')
+    expect(computeLab('axis', {}).text).toContain('中间')
+    expect(computeLab('views3d', {}).text).toContain('前面')
+    expect(computeLab('marble', {}).conclusion).toContain('一样多')
+  })
+
+  it('isPrimeNum 质数判断', () => {
+    expect(isPrimeNum(7)).toBe(true)
+    expect(isPrimeNum(8)).toBe(false)
   })
 })

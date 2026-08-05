@@ -837,7 +837,6 @@ describe('SudokuGame 通关', () => {
     for (let lvl = 0; lvl < 3; lvl++) {
       vm.board = JSON.parse(JSON.stringify(vm.solution))
       vm.passed = false
-      vm.allFilled = true
       await w.vm.$nextTick()
       const check = w.findAll('button').find((b) => b.text().includes('检查'))
       await check!.trigger('click')

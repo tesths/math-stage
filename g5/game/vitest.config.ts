@@ -5,10 +5,18 @@ import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
   plugins: [vue(), ui()],
+  root: fileURLToPath(new URL('.', import.meta.url)),
+  server: {
+    fs: {
+      allow: [fileURLToPath(new URL('../../shared', import.meta.url))],
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@data': fileURLToPath(new URL('../data', import.meta.url)),
+      '@shared': fileURLToPath(new URL('../../shared', import.meta.url)),
+      '#components': fileURLToPath(new URL('../../shared/test/stubs/components.ts', import.meta.url)),
     },
   },
   test: {
@@ -28,10 +36,10 @@ export default defineConfig({
         '!**/*.d.ts',
       ],
       thresholds: {
-        statements: 90,
-        branches: 60,
-        functions: 50,
-        lines: 90,
+        statements: 95,
+        branches: 95,
+        functions: 95,
+        lines: 95,
       },
     },
   },

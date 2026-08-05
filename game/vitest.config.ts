@@ -5,10 +5,17 @@ import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
   plugins: [vue(), ui()],
+  server: {
+    fs: {
+      allow: [fileURLToPath(new URL('../shared', import.meta.url))],
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@data': fileURLToPath(new URL('../data', import.meta.url)),
+      '@shared': fileURLToPath(new URL('../shared', import.meta.url)),
+      '#components': fileURLToPath(new URL('../shared/test/stubs/components.ts', import.meta.url)),
     },
   },
   test: {

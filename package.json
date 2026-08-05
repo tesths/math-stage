@@ -6,6 +6,9 @@
   "scripts": {
     "build:site": "node scripts/site-build.mjs",
     "build:site:local": "node scripts/site-build.mjs --skip-install",
-    "preview": "npx serve deploy"
+    "preview": "npx serve deploy",
+    "test:shared": "node scripts/test-shared.mjs",
+    "test:shared:coverage": "node scripts/test-shared.mjs --coverage",
+    "test:click": "node scripts/real-click-test.mjs"
   }
 }

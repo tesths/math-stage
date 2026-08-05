@@ -242,9 +242,11 @@ describe('arcade 守卫分支', () => {
     vm.rd.picks = [2, 3]
     await w.vm.$nextTick()
     expect(vm.questionText).toContain('又摘 3 个')
-    // rd 为空时 questionText 兜底返回空串
+    // rd 为空时 questionText 与模板同时兜底，避免异步渲染阶段抛 unhandled error
     vm.rd = null
+    await w.vm.$nextTick()
     expect(vm.questionText).toBe('')
+    expect(w.find('[data-test="empty-round"]').text()).toContain('题目加载中')
     vm.done = true
     await vm.onSelect(0)
     w.unmount()

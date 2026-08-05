@@ -1,18 +1,19 @@
 /**
  * 单 Cloudflare Pages 项目聚合构建
  *
- * 把两个独立 Nuxt 应用（一年级 game/、五年级 g5/game/）静态导出到子路径，
- * 与门户页 portal/ 合并为 deploy/ 一个构建产物：
+ * 把四个年级 Nuxt 应用（一年级 game/、二年级 g2/game/、五年级 g5/game/、六年级 g6/game/）
+ * 静态导出到子路径，与门户页 portal/ 合并为 deploy/ 一个构建产物：
  *
  *   deploy/
  *   ├── index.html       门户（portal/）
- *   ├── style.css
  *   ├── g1/              一年级（BASE_URL=/g1/ nuxi generate）
+ *   ├── g2/              二年级（BASE_URL=/g2/ nuxi generate）
  *   ├── g5/              五年级（BASE_URL=/g5/ nuxi generate）
- *   └── _redirects       SPA 兜底 + 子路径重写
+ *   ├── g6/              六年级（BASE_URL=/g6/ nuxi generate）
+ *   └── _redirects       仅注释；真实页面全部预渲染
  *
  * 用法：node scripts/site-build.mjs [--skip-install]
- * 环境变量：NODE_ENV、SKIP_INSTALL=1 可跳过两个子应用的 npm install（本地加速）
+ * 环境变量：SKIP_INSTALL=1 可跳过四个应用的 npm ci（仅本地加速）
  */
 import { execSync } from 'node:child_process'
 import { existsSync, rmSync, mkdirSync, cpSync, writeFileSync, readdirSync } from 'node:fs'
@@ -20,9 +21,13 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+// nuxi generate（Nuxt4 + cloudflare-pages preset）输出到 .output/public：
+// 页面在根（index.html 即应用首页），资源链接带 BASE_URL 前缀（/g1/_nuxt/...）
 const APPS = [
-  { dir: 'game', base: '/g1/', dist: 'dist/g1' },
-  { dir: 'g5/game', base: '/g5/', dist: 'dist/g5' },
+  { dir: 'game', base: '/g1/', dist: '.output/public' },
+  { dir: 'g2/game', base: '/g2/', dist: '.output/public' },
+  { dir: 'g5/game', base: '/g5/', dist: '.output/public' },
+  { dir: 'g6/game', base: '/g6/', dist: '.output/public' },
 ]
 const OUT = join(root, 'deploy')
 const SKIP_INSTALL = process.argv.includes('--skip-install') || process.env.SKIP_INSTALL === '1'
@@ -37,14 +42,17 @@ console.log(`\n=== 清空 ${OUT} ===`)
 rmSync(OUT, { recursive: true, force: true })
 mkdirSync(OUT, { recursive: true })
 
-// 2. 两个应用：安装依赖（本地已装则跳过）→ 子路径静态导出
-for (const app of APPS) {
-  const appDir = join(root, app.dir)
-  if (!SKIP_INSTALL && !existsSync(join(appDir, 'node_modules'))) {
-    run('npm ci --no-audit --no-fund', app.dir)
-  } else {
-    console.log(`\n> [${app.dir}] 已存在 node_modules，跳过 npm install`)
+function installDeps(dir) {
+  if (SKIP_INSTALL) {
+    console.log(`\n> [${dir}] --skip-install，跳过 npm ci`)
+    return
   }
+  run('npm ci --no-audit --no-fund', dir)
+}
+
+// 2. 四个年级应用：安装依赖 → 子路径静态导出
+for (const app of APPS) {
+  installDeps(app.dir)
   run('npm run generate:site', app.dir, { BASE_URL: app.base })
   console.log(`\n> 复制 ${app.dist} → deploy${app.base}`)
   cpSync(join(root, app.dir, app.dist), join(OUT, app.base.slice(1, -1)), { recursive: true })
@@ -52,14 +60,10 @@ for (const app of APPS) {
 
 // 3. 门户（Nuxt 应用，BASE_URL=/ 部署在根路径）
 const portalDir = join(root, 'portal')
-if (!SKIP_INSTALL && !existsSync(join(portalDir, 'node_modules'))) {
-  run('npm ci --no-audit --no-fund', 'portal')
-} else {
-  console.log('\n> [portal] 已存在 node_modules，跳过 npm install')
-}
+installDeps('portal')
 run('npm run generate:site', 'portal', { BASE_URL: '/' })
-console.log('\n> 复制 portal/dist → deploy/')
-cpSync(join(portalDir, 'dist'), OUT, { recursive: true })
+console.log('\n> 复制 portal/.output/public → deploy/')
+cpSync(join(portalDir, '.output/public'), OUT, { recursive: true })
 
 // 4. 根级路由文件（所有真实页面均已预渲染，无需 SPA 200 重写 ——
 //    历史教训：/g1/* → /g1/200.html 200 会抢在静态文件前命中目录请求，
@@ -99,4 +103,6 @@ console.log('\n=== 聚合完成 ===')
 console.log(`deploy/ 共 ${htmlCount(OUT)} 个 HTML 页面`)
 console.log(`  门户: deploy/index.html`)
 console.log(`  一年级: deploy/g1/ (${htmlCount(join(OUT, 'g1'))} 页)`)
+console.log(`  二年级: deploy/g2/ (${htmlCount(join(OUT, 'g2'))} 页)`)
 console.log(`  五年级: deploy/g5/ (${htmlCount(join(OUT, 'g5'))} 页)`)
+console.log(`  六年级: deploy/g6/ (${htmlCount(join(OUT, 'g6'))} 页)`)

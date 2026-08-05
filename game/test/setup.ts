@@ -1,4 +1,38 @@
 import { vi } from 'vitest'
+import { config } from '@vue/test-utils'
+import {
+  UAlert,
+  UBadge,
+  UButton,
+  UCard,
+  UContainer,
+  UHeader,
+  UIcon,
+  UInput,
+} from '@shared/test/stubs/components'
+
+config.global.stubs = {
+  ...config.global.stubs,
+  UAlert,
+  Alert: UAlert,
+  UBadge,
+  Badge: UBadge,
+  UButton,
+  Button: UButton,
+  Link: UButton,
+  NuxtLink: UButton,
+  RouterLink: UButton,
+  UCard,
+  Card: UCard,
+  UContainer,
+  Container: UContainer,
+  UHeader,
+  Header: UHeader,
+  UIcon,
+  Icon: UIcon,
+  UInput,
+  Input: UInput,
+}
 
 // 全局 UI 事件兼容 (happy-dom)
 if (typeof globalThis.matchMedia === 'undefined') {
