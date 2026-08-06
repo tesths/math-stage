@@ -7,18 +7,7 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "generate": "nuxt generate",
-    "generate:site": "nuxi generate"
-  },
-  "dependencies": {
-    "@iconify-json/heroicons": "^1.2.3",
-    "@iconify-json/lucide": "^1.2.121",
-    "@nuxt/ui": "^4.10.0",
-    "nuxt": "^4.0.0",
-    "vue": "^3.5.0",
-    "vue-router": "^4.5.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.7.0",
-    "vue-tsc": "^2.2.0"
+    "generate:site": "nuxi generate",
+    "typecheck": "vue-tsc --noEmit"
   }
 }

@@ -9,21 +9,29 @@
  *   node scripts/real-click-test.mjs        # 自动起 deploy 静态服务（端口 4400）并运行
  *   node scripts/real-click-test.mjs --keep # 不自动起/停服务（复用已启动的 4400）
  *
- * 截图输出到 /tmp/math-shots/。依赖 g5/game 的 playwright-core（npm install 后即有）。
+ * 截图输出到 /tmp/math-shots/。优先使用根 workspace 的 playwright-core。
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync } from 'node:fs'
-import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { gradeApps } from './app-registry.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const PORT = 4400
 const BASE = `http://localhost:${PORT}`
 const SHOT = '/tmp/math-shots'
 
-const require = createRequire(import.meta.url)
-const { chromium } = require(join(root, 'g5/game/node_modules/playwright-core/index.mjs'))
+const playwrightCandidates = [
+  join(root, 'node_modules/playwright-core/index.mjs'),
+  join(root, 'g5/game/node_modules/playwright-core/index.mjs'),
+]
+const playwrightCore = playwrightCandidates.find((candidate) => existsSync(candidate))
+if (!playwrightCore) {
+  console.error('未找到 playwright-core，请先在仓库根目录执行 npm install 或 npm ci')
+  process.exit(1)
+}
+const { chromium } = await import(pathToFileURL(playwrightCore))
 
 const deployDir = join(root, 'deploy')
 if (!existsSync(join(deployDir, 'index.html'))) {
@@ -123,9 +131,10 @@ async function run() {
     await step(page, '门户：标题「小学数学互动学习平台」', async () => {
       await page.getByRole('heading', { name: '小学数学互动学习平台' }).waitFor()
     })
-    await step(page, '门户：两张年级卡片（/g1/ 与 /g5/）', async () => {
-      const n = await page.locator('a[href="/g1/"], a[href="/g5/"]').count()
-      if (n < 2) throw new Error(`年级卡片仅 ${n} 张`)
+    await step(page, '门户：六个年级入口齐全', async () => {
+      const selector = gradeApps.map((app) => `a[href="${app.base}"]`).join(', ')
+      const n = await page.locator(selector).count()
+      if (n < gradeApps.length) throw new Error(`年级入口仅 ${n} / ${gradeApps.length} 个`)
     })
     await step(page, '门户：点「进入一年级」→ /g1/', async () => {
       await page.locator('a[href="/g1/"]').first().click()

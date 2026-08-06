@@ -14,7 +14,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@data': fileURLToPath(new URL('../data', import.meta.url)),
+      '@data': fileURLToPath(new URL('../data/upper', import.meta.url)),
       '@shared': fileURLToPath(new URL('../../shared', import.meta.url)),
       '#components': fileURLToPath(new URL('../../shared/test/stubs/components.ts', import.meta.url)),
     },
@@ -27,7 +27,7 @@ export default defineConfig({
       provider: 'v8',
       include: [
         'src/**/*.{ts,vue}',
-        '../data/**/*.ts',
+        '../data/upper/**/*.ts',
         '!src/pages/**',
         '!src/app.vue',
         '!src/error.vue',

@@ -1,11 +1,12 @@
 # 门户页（portal/）
 
 小学数学互动学习平台的**总入口**，**Nuxt 4 + Nuxt UI** 应用（与各年级技术栈、视觉风格一致），
-部署在 Cloudflare Pages 根路径 `/`，通过卡片链接进入五个年级：
+部署在 Cloudflare Pages 根路径 `/`，通过卡片链接进入六个年级：
 
-- `/g1/` → 一年级（人教版上册，`game/` 应用）
+- `/g1/` → 一年级（人教版上册，`g1/game/` 应用）
 - `/g2/` → 二年级（苏教版上册，`g2/game/` 应用）
 - `/g3/` → 三年级（苏教版上册，`g3/game/` 应用）
+- `/g4/` → 四年级（苏教版上册，`g4/game/` 应用）
 - `/g5/` → 五年级（苏教版上册，`g5/game/` 应用）
 - `/g6/` → 六年级（苏教版上册，`g6/game/` 应用）
 
@@ -14,17 +15,18 @@
 | 文件 | 说明 |
 | --- | --- |
 | `pages/index.vue` | 门户首页（年级卡片由 `shared/grades` 注册表生成，原生 `<a href>` 跨应用跳转） |
-| `nuxt.config.ts` | 共享 emerald 主题；`baseURL` 支持 `BASE_URL`；`prerender` 显式预渲染 `/`（**不要开 crawlLinks**，会爬 `/g1/` `/g2/` `/g3/` `/g5/` `/g6/` 链接导致 404 构建失败） |
-| `app.vue` / `assets/css/main.css` | Nuxt UI 骨架 |
+| `nuxt.config.ts` | 共享 emerald 主题；`baseURL` 支持 `BASE_URL`；`prerender` 显式预渲染 `/`（**不要开 crawlLinks**，会爬 `/g1/`…`/g6/` 链接导致 404 构建失败） |
+| `app.vue` / `shared/theme/app.css` | Nuxt UI 骨架与统一 CSS 入口 |
 
 ```bash
-npm run dev            # 本地开发（PORT 3000）
-npm run generate:site  # 静态导出（配合 BASE_URL=/ 输出到 .output/public）
+npm run dev                     # 本地开发（PORT 3000）
+npm run generate:portal         # 仓库根：静态导出门户，自动清理代理变量
+npm --workspace math-portal run generate:site  # 门户目录/工作区内直接导出
 ```
 
 ## 新增年级（三年级等）
 
-1. 新建独立 Nuxt 工程 `g3/`；
+1. 新建独立年级目录（例如 `g7/`）与 Nuxt 工程 `g7/game/`；上下册数据分别放 `g7/data/upper/`、`g7/data/lower/`；
 2. `shared/grades/index.ts` 加一条 `GradeInfo`；
-3. `scripts/site-build.mjs` 的 `APPS` 加 `{ dir: 'g3', base: '/g3/', dist: '.output/public' }`；
+3. `scripts/app-registry.mjs` 加应用记录；
 4. 聚合脚本会自动构建门户 + 各年级，Cloudflare 面板无需改动。

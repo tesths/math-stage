@@ -1,9 +1,6 @@
 /**
- * 共享样式覆盖层（全平台统一入口的公共部分）。
- * 各应用的入口 main.css 统一为：
- *   @import "tailwindcss";
- *   @import "@nuxt/ui";
- *   @import "@shared/theme/main.css";
+ * 共享样式覆盖层（全平台 CSS 入口的公共部分）。
+ * Tailwind / Nuxt UI 入口统一在 shared/theme/app.css 中注入。
  * 所有跨应用一致的样式（基础排版 / 交互反馈 / 工具类）都收敛在此处，
  * 以五年级 emerald 主样式为基准（主色变量由 Nuxt UI 的 --ui-primary 提供）。
  */

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   sharedAppConfig,
+  sharedCss,
+  gradePrerenderIgnore,
   sharedIcon,
   sharedNuxtConfig,
   sharedPrerender,
@@ -27,8 +29,23 @@ describe('共享 Nuxt 配置片段 nuxt-config', () => {
     expect(sharedVite.optimizeDeps.include).toEqual(['three', 'jsxgraph', 'animejs'])
   })
 
+  it('CSS 入口统一从 shared 注入', () => {
+    expect(sharedCss).toEqual(['@shared/theme/app.css'])
+  })
+
   it('预渲染策略：crawlLinks 全量 + 容忍跨年级 404', () => {
     expect(sharedPrerender).toEqual({ crawlLinks: true, failOnError: false })
+  })
+
+  it('按当前年级生成跨年级 prerender ignore 列表', () => {
+    expect(gradePrerenderIgnore('g4')).toEqual([
+      '**/g1/**',
+      '**/g2/**',
+      '**/g3/**',
+      '**/g5/**',
+      '**/g6/**',
+    ])
+    expect(gradePrerenderIgnore('g1')).toEqual(['**/g2/**', '**/g3/**', '**/g4/**', '**/g5/**', '**/g6/**'])
   })
 
   it('sharedNuxtConfig 组装共享片段并合并扩展项', () => {
@@ -38,6 +55,7 @@ describe('共享 Nuxt 配置片段 nuxt-config', () => {
     })
     expect(cfg.ui).toEqual({ fonts: false })
     expect(cfg.icon).toEqual(sharedIcon)
+    expect(cfg.css).toEqual(sharedCss)
     expect(cfg.appConfig).toEqual(sharedAppConfig)
     expect(cfg.vite).toEqual(sharedVite)
     expect(cfg.nitro?.prerender).toEqual({ crawlLinks: true, failOnError: false })
@@ -61,6 +79,7 @@ describe('共享 Nuxt 配置片段 nuxt-config', () => {
     const cfg = sharedNuxtConfig()
     expect(cfg).toEqual({
       ui: sharedUi,
+      css: sharedCss,
       icon: sharedIcon,
       appConfig: sharedAppConfig,
       vite: sharedVite,

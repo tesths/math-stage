@@ -21,7 +21,7 @@
 
 ## OCR 产物
 
-`g4/ocr/pages/` 每页三样（由 `ocr/src/ocr.swift` 生成，支持第 5 参数输出目录）：
+`g4/ocr/upper/pages/` 每页三样（由 `ocr/src/ocr.swift` 生成，支持第 5 参数输出目录）：
 
 | 产物 | 说明 |
 | --- | --- |
@@ -33,7 +33,7 @@
 
 ```bash
 swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
-./ocr/src/ocr_bin "最新【苏教版】4年级数学课本•上册.pdf" 1 121 "g4/ocr/pages"
+./ocr/src/ocr_bin "最新【苏教版】4年级数学课本•上册.pdf" 1 121 "g4/ocr/upper/pages"
 ```
 
 ## 注意事项

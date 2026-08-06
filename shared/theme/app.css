@@ -1,0 +1,7 @@
+/**
+ * 全平台 CSS 入口：Tailwind + Nuxt UI + 共享样式覆盖层。
+ * 由 sharedNuxtConfig 注入，避免七个 Nuxt 应用重复维护同一份入口文件。
+ */
+@import "tailwindcss";
+@import "@nuxt/ui";
+@import "./main.css";

@@ -18,6 +18,8 @@ const others = otherGrades(props.gradeId)
 
 const linkClass =
   'inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors'
+const mobileLinkClass =
+  'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors'
 </script>
 
 <template>
@@ -28,7 +30,7 @@ const linkClass =
       class="print:hidden"
     >
       <template #right>
-        <div class="flex items-center gap-1">
+        <div class="hidden items-center gap-1 lg:flex">
           <!-- 其他年级切换（原生 <a>，绝对路径） -->
           <a
             v-for="g in others"
@@ -65,6 +67,44 @@ const linkClass =
             首页
           </a>
         </div>
+      </template>
+
+      <template #body>
+        <nav class="flex flex-col gap-1 lg:hidden">
+          <a
+            v-for="g in others"
+            :key="g.id"
+            :href="g.base"
+            rel="external"
+            class="text-(--ui-primary) hover:bg-(--ui-bg-elevated)"
+            :class="mobileLinkClass"
+          >
+            <UIcon
+              :name="g.no < grade.no ? 'i-heroicons-arrow-left-circle' : 'i-heroicons-arrow-right-circle'"
+              class="size-4"
+            />
+            {{ g.label }}
+          </a>
+          <UButton
+            v-for="item in nav"
+            :key="item.to"
+            :to="item.to"
+            variant="ghost"
+            color="neutral"
+            :icon="item.icon"
+            :label="item.label"
+            block
+          />
+          <a
+            href="/"
+            rel="external"
+            class="text-(--ui-text-muted) hover:bg-(--ui-bg-elevated)"
+            :class="mobileLinkClass"
+          >
+            <UIcon name="i-heroicons-home" class="size-4" />
+            首页
+          </a>
+        </nav>
       </template>
     </UHeader>
 

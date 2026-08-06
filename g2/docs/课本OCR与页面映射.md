@@ -63,7 +63,7 @@
 
 ## OCR 产物
 
-- `ocr/pages/pNNN.txt`：每页文字
-- `ocr/pages/pNNN.jpg`：每页整版图
-- `ocr/pages/pNNN-N.jpg`：插图自动裁剪片段
+- `g2/ocr/upper/pages/pNNN.txt`：每页文字
+- `g2/ocr/upper/pages/pNNN.jpg`：每页整版图
+- `g2/ocr/upper/pages/pNNN-N.jpg`：插图自动裁剪片段
 - `ocr/ocr_run.log`：运行日志（120 页，末尾 done）

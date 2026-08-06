@@ -4,6 +4,7 @@
  * 注意：跨应用导航必须用原生 <a href>（部署路径），不能用 NuxtLink/UButton。
  */
 export type GradeId = 'g1' | 'g2' | 'g3' | 'g4' | 'g5' | 'g6'
+export type GradeAccent = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'
 
 export interface GradeFeature {
   icon: string
@@ -29,8 +30,8 @@ export interface GradeInfo {
   tagline: string
   /** 门户卡片 emoji */
   icon: string
-  /** 门户卡片徽章 / 按钮强调色（Nuxt UI 色名，g5=emerald 为全局主样式基准） */
-  accent: string
+  /** 门户卡片徽章 / 按钮语义色；primary 由 Nuxt UI 全局主题映射为 emerald */
+  accent: GradeAccent
   /** 门户卡片简介 */
   description: string
   /** 门户卡片特性列表 */
@@ -51,7 +52,7 @@ const G1: GradeInfo = {
   book: '《义务教育教科书·数学》人教版一年级上册',
   tagline: '数感启蒙 · 例题答题游戏',
   icon: '🧮',
-  accent: 'orange',
+  accent: 'warning',
   description: '人教版一年级上册 · 78 道例题答题游戏 + 20 个课本主题小游戏',
   features: [
     { icon: '🔢', text: '9 个单元 · 78 道例题小游戏' },
@@ -72,7 +73,7 @@ const G2: GradeInfo = {
   book: '《义务教育教科书·数学》苏教版二年级上册',
   tagline: '例题可视化 · 参数实验室',
   icon: '🍎',
-  accent: 'emerald',
+  accent: 'primary',
   description: '苏教版二年级上册 · 22 个可调参数例题 Lab + 12 个训练小游戏',
   features: [
     { icon: '✖️', text: '10 个单元 · 22 个可调参数 Lab' },
@@ -93,7 +94,7 @@ const G3: GradeInfo = {
   book: '《义务教育教科书·数学》苏教版三年级上册',
   tagline: '例题可视化 · 参数实验室',
   icon: '🐸',
-  accent: 'emerald',
+  accent: 'primary',
   description: '苏教版三年级上册 · 41 个可调参数例题 Lab + 16 个训练小游戏',
   features: [
     { icon: '🧮', text: '12 个单元 · 41 个可调参数 Lab' },
@@ -114,7 +115,7 @@ const G4: GradeInfo = {
   book: '《义务教育教科书·数学》苏教版四年级上册',
   tagline: '例题可视化 · 参数实验室',
   icon: '📏',
-  accent: 'emerald',
+  accent: 'primary',
   description: '苏教版四年级上册 · 28 个可调参数例题 Lab + 10 个训练小游戏',
   features: [
     { icon: '📏', text: '9 个单元 · 28 个可调参数 Lab' },
@@ -135,7 +136,7 @@ const G5: GradeInfo = {
   book: '《义务教育教科书·数学》苏教版五年级上册',
   tagline: '例题可视化 · 参数实验室',
   icon: '📐',
-  accent: 'emerald',
+  accent: 'primary',
   description: '苏教版五年级上册 · 33 个可调参数例题 Lab + 10 个训练小游戏',
   features: [
     { icon: '📐', text: '8 个单元 · 33 个可调参数 Lab' },
@@ -156,7 +157,7 @@ const G6: GradeInfo = {
   book: '《义务教育教科书·数学》苏教版六年级上册',
   tagline: '例题可视化 · 参数实验室',
   icon: '📚',
-  accent: 'emerald',
+  accent: 'primary',
   description: '苏教版六年级上册 · 33 个可调参数例题 Lab + 12 个训练小游戏',
   features: [
     { icon: '📚', text: '7 个单元 · 33 个可调参数 Lab' },

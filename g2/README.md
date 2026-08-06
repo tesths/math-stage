@@ -14,14 +14,16 @@
 ```
 g2/
 ├── README.md                 本文件
-├── ocr/pages/                课本 OCR（120 页 p001.txt 文字 + 整页图 + 插图）
+├── ocr/upper/pages/                课本 OCR（120 页 p001.txt 文字 + 整页图 + 插图）
 │   └── 书页 = PDF页 - 8（书页 1 = PDF p9）
-├── data/                     例题 Lab 数据（纯声明，计算在 game）
+├── ocr/lower/                未来下册 OCR 占位
+├── data/upper/                     例题 Lab 数据（纯声明，计算在 game）
 │   ├── schema/lab.ts         Lab 类型：参数定义（滑块范围/单位）+ kind + 公式
 │   ├── schema/validate.ts    运行时校验（id 唯一 / 参数合法）
 │   ├── chapters/meta.ts      10 单元元信息（书页区间来自课本目录）
 │   ├── chapters/c1.ts … c10.ts 各单元 Lab（c3 七巧板、c5 方向、c8 人民币为综合实践）
 │   └── index.ts              汇总（findLabById / byChapter / totalLabs=22）
+├── data/lower/               未来下册 Lab 数据占位
 ├── game/                     二年级 Nuxt4 应用（Nuxt UI，主色 emerald）
 │   ├── src/lib/engine/math.ts   纯数学工具（乘法口诀/中文数字/方向/三位数分解）
 │   ├── src/lib/labs/compute.ts  每种 kind 的求值与分步过程（17 种）
@@ -87,16 +89,16 @@ BASE_URL=/g2/ npm run generate:site   # 静态导出 .output/public
 ```
 
 已知约定（与五/六年级工程一致）：
-- `vitest.config.ts` 的 `@data` 别名指向 `../data`（本文件夹内）；`@shared` 别名指向仓库根 `shared/`。
+- `vitest.config.ts` 的 `@data` 别名指向 `../data/upper`（本文件夹内）；`@shared` 别名指向仓库根 `shared/`。
 - 布局使用共享 `shared/components/GradeShell.vue`（顶栏年级切换/页脚由 `shared/grades` 注册表驱动，
   注册后顶栏自动出现二年级入口）。
-- 书页 = PDF 页 - 8；OCR 产物在 `g2/ocr/pages`，勿与其他年级混淆。
+- 书页 = PDF 页 - 8；OCR 产物在 `g2/ocr/upper/pages`，勿与其他年级混淆。
 - 覆盖率分支统计对 `??`/`||`/可选链判空等防御分支零容忍：模板中不要直接读
   `props.values.x`，一律先 `computed(() => props.values.x ?? 默认值)` 再引用。
 
 ## 新增一个 Lab
 
-1. 在 `data/chapters/cN.ts` 加一条 `LabDef`（含 params 滑块定义、formula、可选 fixed 常量）。
+1. 在 `g2/data/upper/chapters/cN.ts` 加一条 `LabDef`（含 params 滑块定义、formula、可选 fixed 常量）。
 2. 若为全新可视化类型，在 `schema/lab.ts` 扩展 `LabKind`、`lib/labs/compute.ts` 加计算分支、
    `components/labs/` 写组件并注册到 `lib/labs/registry.ts`。
 3. 跑 `npm run test`（validateLabs 自动校验数据 + 全 kind 空参数挂载）+ `npm run typecheck`。

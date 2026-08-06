@@ -1,20 +1,19 @@
 import { defineNuxtConfig } from 'nuxt/config'
 import { fileURLToPath } from 'node:url'
-import { sharedNuxtConfig } from '../../shared/theme/nuxt-config'
+import { gradePrerenderIgnore, sharedNuxtConfig } from '../../shared/theme/nuxt-config'
 import { siteHead } from '../../shared/theme'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   srcDir: 'src/',
   modules: ['@nuxt/ui'],
-  css: ['~/assets/css/main.css'],
   ssr: true,
   // 统一入口：Nuxt UI 配置 / 图标 / 主色（emerald）/ 预渲染策略全部来自 shared
   ...sharedNuxtConfig({
     nitro: {
       prerender: {
-        // 顶栏有跨年级切换链接（/g1/、/g5/、/g6/），本应用没有这些路由，crawler 会 404 报错 —— 忽略
-        ignore: ['**/g1/**', '**/g5/**', '**/g6/**'],
+        // 顶栏跨年级链接由共享年级注册表生成 ignore 列表，避免新增年级漏改。
+        ignore: gradePrerenderIgnore('g2'),
       },
     },
     app: {
@@ -24,7 +23,7 @@ export default defineNuxtConfig({
     },
   }),
   alias: {
-    '@data': fileURLToPath(new URL('../data', import.meta.url)),
+    '@data': fileURLToPath(new URL('../data/upper', import.meta.url)),
     '@shared': fileURLToPath(new URL('../../shared', import.meta.url)),
   },
 })

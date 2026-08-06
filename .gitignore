@@ -2,6 +2,8 @@ node_modules/
 .nuxt/
 .output/
 dist/
+# Nuxt may create dist as a symlink in child apps; dist/ alone does not catch symlink paths.
+**/dist
 test-results/
 .DS_Store
 *.pdf

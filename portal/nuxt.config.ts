@@ -6,7 +6,6 @@ import { siteHead } from '../shared/theme'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   modules: ['@nuxt/ui'],
-  css: ['~/assets/css/main.css'],
   ssr: true,
   // 统一入口：Nuxt UI 配置 / 图标 / 主色（emerald）/ 预渲染策略全部来自 shared
   ...sharedNuxtConfig({
@@ -19,7 +18,7 @@ export default defineNuxtConfig({
     },
     app: {
       baseURL: process.env.BASE_URL ?? '/',
-      head: siteHead('小学数学互动学习平台', '人教版一年级 · 苏教版五年级 —— 例题可视化与训练小游戏总入口'),
+      head: siteHead('小学数学互动学习平台', '一至六年级数学例题可视化、训练小游戏与互动 Lab 总入口'),
     },
   }),
   alias: {

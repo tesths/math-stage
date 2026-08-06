@@ -3,7 +3,7 @@
 ## 书页映射
 
 - **书页 = PDF 页 - 8**（书页 1 = PDF p9 第一单元扉页；前 8 页为封面/书名/版权/目录等）。
-- 目录（依据课本目录整理，与 `data/chapters/meta.ts` 一致）：
+- 目录（依据课本目录整理，与 `data/upper/chapters/meta.ts` 一致）：
 
 | 单元 | 书页 | PDF 页 |
 | --- | --- | --- |
@@ -24,14 +24,14 @@
 
 ## OCR 产物
 
-`g3/ocr/pages/` 共 **132 页文字 + 216 张图**（每页 `pNNN.txt` 文字、`pNNN.jpg` 整页图、
+`g3/ocr/upper/pages/` 共 **132 页文字 + 216 张图**（每页 `pNNN.txt` 文字、`pNNN.jpg` 整页图、
 `pNNN-N.jpg` 自动裁出的插图区域），由 `ocr/src/ocr.swift` 生成。
 
 重跑命令（务必指定输出目录，避免覆盖一年级）：
 
 ```bash
 swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
-./ocr/src/ocr_bin "（根据2022年版课程标准修订）义务教育教科书•数学三年级上册.pdf" 1 132 "g3/ocr/pages"
+./ocr/src/ocr_bin "（根据2022年版课程标准修订）义务教育教科书•数学三年级上册.pdf" 1 132 "g3/ocr/upper/pages"
 ```
 
 ## 注意事项

@@ -12,14 +12,16 @@
 ```
 g5/
 ├── README.md                 本文件
-├── ocr/pages/                课本 OCR（131 页：p001.txt 文字 + 整页图 + 插图）
+├── ocr/upper/pages/                课本 OCR（131 页：p001.txt 文字 + 整页图 + 插图）
 │   └── 书页 = PDF页 - 2（书页 1 = PDF p3）
-├── data/                     例题 Lab 数据（纯声明，计算在 game）
+├── ocr/lower/                未来下册 OCR 占位
+├── data/upper/                     例题 Lab 数据（纯声明，计算在 game）
 │   ├── schema/lab.ts         Lab 类型：参数定义（滑块范围/单位）+ kind + 公式
 │   ├── schema/validate.ts    运行时校验（id 唯一 / 参数合法）
 │   ├── chapters/meta.ts      8 单元元信息（书页区间来自课本目录）
 │   ├── chapters/c1.ts … c8.ts 各单元 Lab（含探索规律 pinboard）
 │   └── index.ts              汇总（findLabById / byChapter / totalLabs=31）
+├── data/lower/               未来下册 Lab 数据占位
 ├── game/                     五年级 Nuxt4 应用（Nuxt UI，主色 emerald）
 │   ├── src/lib/engine/math.ts   纯数学工具（因数/质数/gcd/lcm/面积/皮克）
 │   ├── src/lib/labs/compute.ts  每种 kind 的求值与分步过程
@@ -81,15 +83,15 @@ npm run build        # 构建（nitro preset: cloudflare-pages，可部署 Pages
 
 已知约定（与一年级工程一致）：
 - `game/` 内 `package.json` 依赖与一年级完全一致，`node_modules` 可复制共享。
-- `vitest.config.ts` 的 `@data` 别名指向 `../data`（本文件夹内），与一年级互不影响；
+- `vitest.config.ts` 的 `@data` 别名指向 `../data/upper`（本文件夹内），与一年级互不影响；
   `@shared` 别名指向仓库根 `shared/`（共享设计系统）。
 - 布局使用共享 `shared/components/GradeShell.vue`（顶栏年级切换/页脚由 `shared/grades` 注册表驱动）。
 - 书页 = PDF 页 - 2；OCR 脚本 `ocr/src/ocr.swift` 支持第 5 参数指定输出目录，
-  五年级产物在 `g5/ocr/pages`，勿与一年级 `ocr/pages` 混淆。
+  五年级产物在 `g5/ocr/upper/pages`，勿与一年级 `g1/ocr/upper/pages` 混淆。
 
 ## 新增一个 Lab
 
-1. 在 `data/chapters/cN.ts` 加一条 `LabDef`（含 params 滑块定义、formula、可选 fixed 常量）。
+1. 在 `g5/data/upper/chapters/cN.ts` 加一条 `LabDef`（含 params 滑块定义、formula、可选 fixed 常量）。
 2. 若为全新可视化类型，在 `schema/lab.ts` 扩展 `LabKind`、`lib/labs/compute.ts` 加计算分支、
    `components/labs/` 写组件并注册到 `lib/labs/registry.ts`。
 3. 跑 `npm run test`（validateLabs 自动校验数据）+ `npm run typecheck`。

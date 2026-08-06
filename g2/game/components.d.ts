@@ -35,8 +35,8 @@ declare module 'vue' {
     TangramQuizGame: typeof import('./src/components/games/TangramQuizGame.vue')['default']
     TwodigitCalcGame: typeof import('./src/components/games/TwodigitCalcGame.vue')['default']
     TwodigitLab: typeof import('./src/components/labs/TwodigitLab.vue')['default']
-    UButton: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
-    UInput: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
+    UButton: typeof import('./../../node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
+    UInput: typeof import('./../../node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
   }
 }
 
@@ -65,6 +65,6 @@ declare global {
   const TangramQuizGame: typeof import('./src/components/games/TangramQuizGame.vue')['default']
   const TwodigitCalcGame: typeof import('./src/components/games/TwodigitCalcGame.vue')['default']
   const TwodigitLab: typeof import('./src/components/labs/TwodigitLab.vue')['default']
-  const UButton: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
-  const UInput: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
+  const UButton: typeof import('./../../node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
+  const UInput: typeof import('./../../node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
 }

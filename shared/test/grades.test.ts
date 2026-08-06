@@ -23,8 +23,10 @@ describe('年级注册表 grades registry', () => {
   })
 
   it('每个年级的主样式标识色非空且为合法 UI 色名', () => {
+    const validAccents = new Set(['primary', 'secondary', 'success', 'info', 'warning', 'error', 'neutral'])
     for (const g of GRADES) {
       expect(g.accent.length).toBeGreaterThan(0)
+      expect(validAccents.has(g.accent)).toBe(true)
       expect(g.title).toContain(g.label)
       expect(g.icon).toBeTruthy()
       expect(g.cta).toBeTruthy()
@@ -59,6 +61,7 @@ describe('年级注册表 grades registry', () => {
     expect(otherGrades('g4').map((g) => g.id)).toEqual(['g1', 'g2', 'g3', 'g5', 'g6'])
     expect(otherGrades('g5').map((g) => g.id)).toEqual(['g1', 'g2', 'g3', 'g4', 'g6'])
     expect(otherGrades('g6').map((g) => g.id)).toEqual(['g1', 'g2', 'g3', 'g4', 'g5'])
+    expect(otherGrades('g9')).toEqual([])
   })
 
   it('isKnownGrade 判定合法年级 id', () => {
@@ -81,8 +84,8 @@ describe('年级注册表 grades registry', () => {
     expect(gradeNoOf('g9')).toBe(0)
   })
 
-  it('五年级是主样式基准：其 accent 与全局主色一致', () => {
+  it('五年级是主样式基准：其 accent 使用全局 primary 语义色', () => {
     const g5 = gradeById('g5')
-    expect(g5?.accent).toBe('emerald')
+    expect(g5?.accent).toBe('primary')
   })
 })

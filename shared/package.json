@@ -2,7 +2,7 @@
   "name": "math-shared",
   "private": true,
   "type": "module",
-  "description": "全平台共享设计系统：年级注册表 / 主题令牌 / 工具函数（纯 TS/CSS，无运行时依赖）",
+  "description": "全平台共享层：年级注册表 / 主题令牌 / 工具函数 / runtime adapters（无外部运行时依赖）",
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"

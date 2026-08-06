@@ -10,22 +10,23 @@
 
 一个 GitHub 仓库（`tesths/math-stage`）、**一个** Cloudflare Pages 部署，
 同时承载多个年级的互动学习内容，外加一个门户首页。
-六个年级 + 一年级，共七个应用共用仓库根的 `shared/` 设计系统（主色统一为五年级的 **emerald**）：
+一至六年级 + 门户，共七个 Nuxt 应用共用仓库根的 `shared/` 设计系统（主色统一为五年级的 **emerald**）：
 
 | 部分 | 位置 | 内容 | 技术 |
 | --- | --- | --- | --- |
-| 共享设计系统 | `shared/` | 年级注册表 / 主题令牌 / 工具函数 / 统一布局组件 GradeShell / 共享 Nuxt 配置片段 | 纯 TS/CSS + 1 个 .vue，零运行时依赖 |
+| 共享设计系统 | `shared/` | 年级注册表 / 主题令牌 / 工具函数 / runtime adapters / 统一布局组件 GradeShell / 共享 Nuxt 配置片段 | 纯 TS + CSS + 1 个 .vue；无外部运行时依赖 |
 | 门户 | `portal/` | 年级入口（卡片由 `shared/grades` 生成） | Nuxt 4 + Nuxt UI（emerald） |
-| 一年级 | `data/` + `game/` | 人教版一年级上册：78 道例题答题游戏 + 20 个小游戏 | Nuxt 4 + Nuxt UI（emerald） |
-| 二年级 | `g2/data/` + `g2/game/` | 苏教版二年级上册：22 个可调参数可视化 Lab + 12 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
-| 三年级 | `g3/data/` + `g3/game/` | 苏教版三年级上册：41 个可调参数可视化 Lab + 16 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ three.js / animejs |
-| 四年级 | `g4/data/` + `g4/game/` | 苏教版四年级上册：28 个可调参数可视化 Lab + 10 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
-| 五年级 | `g5/data/` + `g5/game/` | 苏教版五年级上册：33 个可调参数可视化 Lab + 10 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ three.js / chart.js / animejs / jsxgraph |
-| 六年级 | `g6/data/` + `g6/game/` | 苏教版六年级上册：33 个可调参数可视化 Lab + 12 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
+| 一年级 | `g1/data/upper/` + `g1/game/` | 人教版一年级上册：78 道例题答题游戏 + 20 个小游戏 | Nuxt 4 + Nuxt UI（emerald） |
+| 二年级 | `g2/data/upper/` + `g2/game/` | 苏教版二年级上册：22 个可调参数可视化 Lab + 12 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
+| 三年级 | `g3/data/upper/` + `g3/game/` | 苏教版三年级上册：41 个可调参数可视化 Lab + 16 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ three.js / animejs |
+| 四年级 | `g4/data/upper/` + `g4/game/` | 苏教版四年级上册：28 个可调参数可视化 Lab + 10 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
+| 五年级 | `g5/data/upper/` + `g5/game/` | 苏教版五年级上册：33 个可调参数可视化 Lab + 10 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ three.js / chart.js / animejs / jsxgraph |
+| 六年级 | `g6/data/upper/` + `g6/game/` | 苏教版六年级上册：33 个可调参数可视化 Lab + 12 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
 
 部署后路由：`/` 门户，`/g1/*` 一年级，`/g2/*` 二年级，`/g3/*` 三年级，`/g4/*` 四年级，`/g5/*` 五年级，`/g6/*` 六年级。
-各年级仍是**完全独立的 Nuxt 工程**（管理上分开），构建时由 `scripts/site-build.mjs`
-各自静态导出到子路径并聚合为一个产物 `deploy/`。
+各年级仍保留**独立目录和 Nuxt 工程边界**（方便按年级维护），依赖与构建入口统一在仓库根：Node 24 + npm workspaces + 单一根 `package-lock.json`。
+年级目录统一使用 `gX/`：当前上册内容放 `gX/data/upper/` 与 `gX/ocr/upper/`，未来下册放 `gX/data/lower/` 与 `gX/ocr/lower/`，同一年级继续复用 `gX/game/`。
+构建时由 `scripts/site-build.mjs` 各自静态导出到子路径并聚合为一个产物 `deploy/`。
 
 ### 1.1 核心技术栈（各工程一致）
 
@@ -34,6 +35,7 @@
 - three.js（五年级三视图）、animejs v4（动画）、chart.js v4（统计图）、jsxgraph（数轴，备用）
 - Vitest（单元/组件）+ Playwright（E2E）+ vue-tsc（类型检查）
 - nitro preset `cloudflare-pages`（部署）；E2E 用 `NITRO_PRESET=node-server` 本地构建
+- Node 24（`.nvmrc` / `.node-version`）+ npm 12 workspace；依赖只在仓库根安装，子应用不维护独立 lockfile
 
 ### 1.2 共享设计系统（`shared/`，主样式基准 = 五年级）
 
@@ -42,13 +44,15 @@ shared/
 ├── grades/index.ts         年级注册表（GradeInfo：部署路径/标题/课标/配色/特性/页脚）
 │                           查询函数：gradeById / otherGrades / isKnownGrade…
 ├── theme/index.ts          设计令牌：THEME（primary=emerald）/ siteHead / unitNoText / pageRangeLabel
+├── theme/app.css           统一 CSS 入口（tailwindcss + @nuxt/ui + shared 覆盖层）
 ├── theme/main.css          统一 CSS 覆盖层（基础排版/交互反馈/卡片悬停/区块标题）
 ├── theme/nuxt-config.ts    共享 Nuxt 配置片段：sharedNuxtConfig()（ui 离线字体/图标扫描/
 │                           主色 emerald/三方库优化/预渲染策略）+ sharedIcon（含共享组件图标清单）
 ├── components/GradeShell.vue 全平台统一布局壳（顶栏+年级切换+首页+页脚），由年级注册表驱动
 ├── utils/index.ts          clamp / range / joinItems / countLabel
+├── runtime/                createStorage(prefix) / createSound(storage)，六个年级只保留薄 wrapper
 ├── test/                   独立 vitest 工程（node 环境，覆盖率阈值 95%）
-└── package.json            math-shared（无运行时依赖；测试复用 g5/game 的 vitest 二进制）
+└── package.json            math-shared（无外部运行时依赖；测试使用根 workspace 的 vitest）
 ```
 
 **为什么共享层没有更多 .vue？** 跨 Nuxt 工程 import 共享 .vue 组件可行（GradeShell 已验证），
@@ -83,43 +87,56 @@ math/
 │   ├── example-audit.md       一年级例题核对报告
 │   └── 游戏形式调研.md        一年级 20 个小游戏的课本出处调研
 ├── portal/                    门户（Nuxt 4 + Nuxt UI 应用：pages/index.vue 年级卡片，由 shared/grades 生成）
-├── package.json               根：build:site / build:site:local / preview / test:shared
+├── package.json               根：workspaces / 统一依赖 / build:site / typecheck / test:shared
+├── package-lock.json          全仓库唯一 lockfile（各年级不再维护独立 package-lock）
+├── .nvmrc / .node-version     Node 24 开发基线
+├── .npmrc                     engine-strict + hoisted 安装策略
 ├── scripts/
-│   ├── site-build.mjs         单 Pages 聚合构建脚本（五个 Nuxt 应用：g1/g2/g5/g6/门户）
-│   ├── test-shared.mjs        运行共享层测试（临时软链 g5/game 的 node_modules）
+│   ├── app-registry.mjs       聚合构建/验收共享应用注册表（g1~g6 + portal）
+│   ├── site-build.mjs         单 Pages 聚合构建脚本（根 npm ci + 年级并发 generate）
+│   ├── prepare-nuxt.mjs       全应用 Nuxt prepare（清理代理变量）
+│   ├── run-app-script.mjs     根层运行单个应用脚本（generate:g1 等）
+│   ├── test-shared.mjs        运行共享层测试（根 workspace vitest）
 │   ├── real-click-test.mjs    真实浏览器点击验收（npm run test:click，46 项）
 │   └── verify_examples.py     一年级例题↔课本 OCR 机器核对
 │
 ├── ── 一年级工程（人教版上册）──
-├── data/
-│   ├── schema/example.ts      例题类型定义（11 类题型）
-│   ├── schema/validate.ts     运行时校验器
-│   ├── chapters/meta.ts       9 单元元信息（书页区间/图标/简介）
-│   ├── chapters/c1.ts … c9.ts 各单元例题（共 78 道）
-│   └── index.ts               汇总（findById / byChapter）
-├── game/                      Nuxt4 应用（主色 emerald，统一来自 shared）
-│   ├── src/lib/engine/        纯逻辑引擎（checker/count/position/generator/registry）
-│   ├── src/lib/arcade/        20 个小游戏引擎 + 元数据 + slug→组件注册表
-│   ├── src/lib/storage.ts     localStorage 安全封装
-│   ├── src/lib/sound.ts       WebAudio 合成音效
-│   ├── src/components/games/  8 个教材题类组件（Count/AddSub/Compare…）
-│   ├── src/components/arcade/ 20 个小游戏组件
-│   ├── src/components/ui/     QuestionCard / AnswerPad / FeedbackOverlay
-│   ├── src/pages/             index / units/[id] / play/[id] / games/[slug] / games/
-│   ├── test/                  vitest（311 用例）+ e2e/（Playwright 34 用例）
-│   └── nuxt.config.ts         baseURL 支持 BASE_URL env；prerender.crawlLinks
+├── g1/
+│   ├── README.md              一年级上下册目录约定
+│   ├── data/upper/
+│   │   ├── schema/example.ts  例题类型定义（11 类题型）
+│   │   ├── schema/validate.ts 运行时校验器
+│   │   ├── chapters/meta.ts   9 单元元信息（书页区间/图标/简介）
+│   │   ├── chapters/c1.ts … c9.ts 各单元例题（共 78 道）
+│   │   └── index.ts           汇总（findById / byChapter）
+│   ├── data/lower/            未来一年级下册结构化数据占位
+│   ├── ocr/upper/             一年级上册 OCR 页与合订 Markdown
+│   ├── ocr/lower/             未来一年级下册 OCR 占位
+│   └── game/                  Nuxt4 应用（主色 emerald，统一来自 shared）
+│       ├── src/lib/engine/    纯逻辑引擎（checker/count/position/generator/registry）
+│       ├── src/lib/arcade/    20 个小游戏引擎 + 元数据 + slug→组件注册表
+│       ├── src/lib/storage.ts shared/runtime/storage 的年级前缀 wrapper
+│       ├── src/lib/sound.ts   shared/runtime/sound 的音效 wrapper
+│       ├── src/components/games/  8 个教材题类组件（Count/AddSub/Compare…）
+│       ├── src/components/arcade/ 20 个小游戏组件
+│       ├── src/components/ui/ QuestionCard / AnswerPad / FeedbackOverlay
+│       ├── src/pages/         index / units/[id] / play/[id] / games/[slug] / games/
+│       ├── test/              vitest（311 用例）+ e2e/（Playwright 34 用例）
+│       └── nuxt.config.ts     baseURL 支持 BASE_URL env；prerender.crawlLinks
 │
 ├── ── 二年级工程（苏教版上册）──
 ├── g2/
 │   ├── README.md              二年级工程说明
 │   ├── docs/                  课本 OCR 与页面映射说明（书页 = PDF页 - 8）
-│   ├── ocr/pages/             120 页 OCR 产物（txt + 整页图 + 插图）
-│   ├── data/
+│   ├── ocr/upper/pages/       上册 120 页 OCR 产物（txt + 整页图 + 插图）
+│   ├── ocr/lower/             未来下册 OCR 占位
+│   ├── data/upper/
 │   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/fixed 常量/kind/公式）
 │   │   ├── schema/validate.ts 运行时校验（id 唯一/参数范围）
 │   │   ├── chapters/meta.ts   10 单元元信息（c3 七巧板/c5 方向/c8 人民币为综合实践）
 │   │   ├── chapters/c1.ts … c10.ts  22 个 Lab
 │   │   └── index.ts           汇总（findLabById / byChapter / totalLabs=22）
+│   ├── data/lower/            未来下册 Lab 数据占位
 │   └── game/                  Nuxt4 应用（主色 emerald，统一来自 shared）
 │       ├── src/lib/engine/math.ts   纯数学工具（乘法口诀/中文数字/方向/三位数分解）
 │       ├── src/lib/labs/             Lab 计算引擎（compute.ts，17 种 kind）+ kind→组件注册表
@@ -136,13 +153,15 @@ math/
 ├── g3/
 │   ├── README.md              三年级工程说明
 │   ├── docs/                  课本 OCR 与页面映射说明（书页 = PDF页 - 8）
-│   ├── ocr/pages/             132 页 OCR 产物（txt + 整页图 + 插图）
-│   ├── data/
+│   ├── ocr/upper/pages/       上册 132 页 OCR 产物（txt + 整页图 + 插图）
+│   ├── ocr/lower/             未来下册 OCR 占位
+│   ├── data/upper/
 │   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/fixed 常量/kind/公式）
 │   │   ├── schema/validate.ts 运行时校验（id 唯一/参数范围）
 │   │   ├── chapters/meta.ts   12 单元元信息（c2/c4/c5/c9/c12 为综合实践/探索无 tocLabel）
 │   │   ├── chapters/c1.ts … c12.ts  41 个 Lab
 │   │   └── index.ts           汇总（findLabById / byChapter / totalLabs=41）
+│   ├── data/lower/            未来下册 Lab 数据占位
 │   └── game/                  Nuxt4 应用（主色 emerald，统一来自 shared）
 │       ├── src/lib/engine/math.ts   纯数学工具（运算顺序/时间12制/长度/质量/除法竖式/正字/倍）
 │       ├── src/lib/labs/             Lab 计算引擎（compute.ts，23 种 kind）+ kind→组件注册表
@@ -153,19 +172,21 @@ math/
 │       ├── src/components/ui/        GameAnswerBar（选项/输入两种模式）
 │       ├── src/pages/                index / units/[id] / labs/[id] / games/[slug] / games/
 │       ├── test/                     vitest（10 文件 112 用例）+ e2e/（Playwright 6 用例）
-│       └── nuxt.config.ts            baseURL + prerender.crawlLinks；prerender.ignore g1/g2/g5/g6
+│       └── nuxt.config.ts            baseURL + gradePrerenderIgnore('g3')
 │
 ├── ── 四年级工程（苏教版上册）──
 ├── g4/
 │   ├── README.md              四年级工程说明
 │   ├── docs/                  课本 OCR 与页面映射说明
-│   ├── ocr/pages/             121 页 OCR 产物（txt + 整页图 + 插图）
-│   ├── data/
+│   ├── ocr/upper/pages/       上册 121 页 OCR 产物（txt + 整页图 + 插图）
+│   ├── ocr/lower/             未来下册 OCR 占位
+│   ├── data/upper/
 │   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/fixed 常量/kind/公式）
 │   │   ├── schema/validate.ts 运行时校验（id 唯一/参数范围）
 │   │   ├── chapters/meta.ts   9 单元元信息
 │   │   ├── chapters/c1.ts … c9.ts  28 个 Lab
 │   │   └── index.ts           汇总（findLabById / byChapter / totalLabs=28）
+│   ├── data/lower/            未来下册 Lab 数据占位
 │   └── game/                  Nuxt4 应用（主色 emerald，统一来自 shared）
 │       ├── src/lib/engine/math.ts   纯数学工具（数位/四舍五入/大数格式化）
 │       ├── src/lib/labs/             Lab 计算引擎（compute.ts）+ kind→组件注册表
@@ -176,19 +197,21 @@ math/
 │       ├── src/components/ui/        GameAnswerBar（选项/输入两种模式）
 │       ├── src/pages/                index / units/[id] / labs/[id] / games/[slug] / games/
 │       ├── test/                     vitest（119 用例，branches ≥95%，其余 100%）+ e2e/（Playwright 6 用例）
-│       └── nuxt.config.ts            baseURL + prerender.crawlLinks；prerender.ignore g1/g2/g3/g5/g6
+│       └── nuxt.config.ts            baseURL + gradePrerenderIgnore('g4')
 │
 ├── ── 五年级工程（苏教版上册）──
 ├── g5/
 │   ├── README.md              五年级工程说明
 │   ├── docs/                  课本 OCR 与页面映射说明
-│   ├── ocr/pages/             131 页 OCR 产物（txt + 整页图 + 插图）
-│   ├── data/
+│   ├── ocr/upper/pages/       上册 131 页 OCR 产物（txt + 整页图 + 插图）
+│   ├── ocr/lower/             未来下册 OCR 占位
+│   ├── data/upper/
 │   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/fixed 常量/kind/公式）
 │   │   ├── schema/validate.ts 运行时校验（id 唯一/参数范围）
 │   │   ├── chapters/meta.ts   8 单元元信息
 │   │   ├── chapters/c1.ts … c8.ts  33 个 Lab（含探索规律 pinboard 挂在 c6）
 │   │   └── index.ts           汇总（findLabById / byChapter / totalLabs）
+│   ├── data/lower/            未来下册 Lab 数据占位
 │   └── game/                  Nuxt4 应用（主色 emerald，统一来自 shared）
 │       ├── src/lib/engine/math.ts   纯数学工具（因数/质数/gcd/lcm/面积/皮克）
 │       ├── src/lib/labs/             Lab 计算引擎（compute.ts）+ kind→组件注册表
@@ -205,13 +228,15 @@ math/
 ├── g6/
 │   ├── README.md              六年级工程说明
 │   ├── docs/                  课本 OCR 与页面映射说明
-│   ├── ocr/pages/             131 页 OCR 产物（txt + 整页图 + 插图）
-│   ├── data/
+│   ├── ocr/upper/pages/       上册 131 页 OCR 产物（txt + 整页图 + 插图）
+│   ├── ocr/lower/             未来下册 OCR 占位
+│   ├── data/upper/
 │   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/fixed 常量/kind/公式）
 │   │   ├── schema/validate.ts 运行时校验（id 唯一/参数范围）
 │   │   ├── chapters/meta.ts   7 单元元信息
 │   │   ├── chapters/c1.ts … c7.ts  33 个 Lab（c2 附分段计费、c3 附二进制、c4 附黄金比）
 │   │   └── index.ts           汇总（findLabById / byChapter / totalLabs）
+│   ├── data/lower/            未来下册 Lab 数据占位
 │   └── game/                  Nuxt4 应用（主色 emerald，统一来自 shared）
 │       ├── src/lib/engine/math.ts   纯数学工具（四舍五入/进一去尾/分数/比/π）
 │       ├── src/lib/labs/             Lab 计算引擎（compute.ts，33 种 kind）+ kind→组件注册表
@@ -231,7 +256,7 @@ math/
 
 ## 3. 一年级工程（人教版上册）
 
-### 3.1 数据层 `data/`
+### 3.1 数据层 `g1/data/upper/`
 
 **例题 = 一条 `GameQuestion`**（`schema/example.ts`）：
 
@@ -252,13 +277,13 @@ interface GameQuestion extends BaseQuestion {
 `addsub`（加减法）/ `compare`（比多少）/ `position`（方位）/
 `ordinal`（第几个）/ `shape3d`（立体图形）/ `numberline`（十几）/ `sequence`（顺数）/ `ten`（抢10）。
 每类题型有专属 config（如 `AddSubConfig { a, b, op, answer, emoji, options }`），
-判定逻辑全部在 `game/src/lib/engine/`，**数据只声明题目内容**。
+判定逻辑全部在 `g1/game/src/lib/engine/`，**数据只声明题目内容**。
 
 **单元（9 个）**：c1 数学游戏分享 / c2 0~5的认识和加减法 / c3 生活中的位置 /
 c4 6~9的认识和加减法 / c5 图形的初步认识（一）/ c6 10的认识和加减法 /
 c7 好玩的"抢10" / c8 认识11~19 / c9 期末复习。
 
-### 3.2 前端 `game/`
+### 3.2 前端 `g1/game/`
 
 - `src/lib/engine/`：`checker.ts`（判定）、`count.ts`（emoji 可见字符统计）、
   `position.ts`（方位规则：左/上/前取前一项）、`generator.ts`、`registry.ts`（type→组件）。
@@ -269,7 +294,7 @@ c7 好玩的"抢10" / c8 认识11~19 / c9 期末复习。
 
 ### 3.3 新增一道例题
 
-1. 在对应 `data/chapters/cN.ts` 加一条符合 `schema/example.ts` 的记录（保证 `answer` 与 config 一致）。
+1. 在对应 `g1/data/upper/chapters/cN.ts` 加一条符合 `schema/example.ts` 的记录（保证 `answer` 与 config 一致）。
 2. 跑 `npm run test`（validate 自动校验）、`npm run typecheck`。
 3. 准确性回归：`python3 scripts/verify_examples.py`（STRONG/MEDIUM/FIG 三级证据），
    并同步 `docs/example-audit.md`。
@@ -297,13 +322,13 @@ c7 好玩的"抢10" / c8 认识11~19 / c9 期末复习。
   ② `UButton as="a" href` → Nuxt 给 `href` 自动加 baseURL 前缀（`/g5/` 变 `/g1/g5/`）→ 404；
   ③ `UButton to="/"` 首页按钮 → 被 baseURL 解析成本年级首页（`/g1/`）而非门户；
   ④ crawler 爬跨年级链接在本应用 404 → 构建中断，需 `nitro.prerender.failOnError: false` 兑底。
-  正确写法见 `game/src/layouts/default.vue`（原生 `<a>` + `UIcon` + 手写按钮类）。
+  正确写法见 `g1/game/src/layouts/default.vue`（原生 `<a>` + `UIcon` + 手写按钮类）。
 
 ---
 
 ## 4. 五年级工程（苏教版上册）
 
-### 4.1 数据层 `g5/data/`
+### 4.1 数据层 `g5/data/upper/`
 
 **Lab = 一条 `LabDef`**（`schema/lab.ts`）：
 
@@ -347,7 +372,7 @@ coin-flip（抛硬币统计，animejs 3D 翻转）/ unit-convert（单位换算�
 
 ### 4.4 新增一个 Lab
 
-1. `g5/data/chapters/cN.ts` 加一条 `LabDef`（params 滑块、formula、必要时 fixed）。
+1. `g5/data/upper/chapters/cN.ts` 加一条 `LabDef`（params 滑块、formula、必要时 fixed）。
 2. 若为全新可视化类型：`schema/lab.ts` 扩展 `LabKind`；
    `game/src/lib/labs/compute.ts` 加 `computeLab` 分支（返回 value/text/steps/conclusion）；
    `components/labs/` 写组件并注册到 `lib/labs/registry.ts`。
@@ -380,13 +405,13 @@ coin-flip（抛硬币统计，animejs 3D 翻转）/ unit-convert（单位换算�
 | c3 多边形的面积 | 30–50 | | c7 用字母表示数 | 96–109 |
 | c4 小数乘除（一） | 55–64 | | c8 观察物体（三） | 112–118 |
 
-探索规律"钉子板上的多边形"（书页 110–111）挂在 c6 单元尾部（`g5/data/chapters/c8.ts` 的 `pinboardLabs`）。
+探索规律"钉子板上的多边形"（书页 110–111）挂在 c6 单元尾部（`g5/data/upper/chapters/c8.ts` 的 `pinboardLabs`）。
 
 ---
 
 ## 5. 四年级工程（苏教版上册）
 
-### 5.1 数据层 `g4/data/`
+### 5.1 数据层 `g4/data/upper/`
 
 **Lab = 一条 `LabDef`**（`schema/lab.ts`，类型与五年级同款）：id 前缀 `g4-`、
 `kind` 28 种、`params` 滑块定义、`fixed` 常量、`formula`。校验器 `validate.ts`
@@ -420,7 +445,7 @@ big-mul-quiz（大数乘法）。
 
 ### 5.4 新增一个 Lab
 
-与五年级流程一致（见 §4.4）：`data/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
+与五年级流程一致（见 §4.4）：`data/upper/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
 `schema/lab.ts` 的 `LabKind` + `compute.ts` 加分支 + `components/labs/` 写组件并注册到
 `lib/labs/registry.ts` → 跑 `npm run test` + `npm run test:coverage`。
 
@@ -438,7 +463,7 @@ big-mul-quiz（大数乘法）。
   （如 100000 → 1 个十万，而非 10 个万），与课本"10 个一万是十万"的口径一致。
 - **`div-oral` 商就是口算商**：60 ÷ 20 = 3，不要把"几个十"的商再 ×10（历史 bug 已修）。
 - 跨应用导航/顶栏切换用共享 GradeShell 的原生 `<a>`（见 §3.5 四坑）；
-  `nuxt.config.ts` 的 `prerender.ignore` 需覆盖 g1/g2/g3/g5/g6 跨年级链接。
+  `nuxt.config.ts` 用 `gradePrerenderIgnore('g4')` 从年级注册表自动覆盖跨年级链接。
 - 类型检查：与五年级同源的一处共享 theme 类型提示（`nuxt/config` 在仓库根无 node_modules）
   属既有基线，其余 0 错误（见 §13 排错）。
 
@@ -458,7 +483,7 @@ big-mul-quiz（大数乘法）。
 
 ## 6. 二年级工程（苏教版上册）
 
-### 5.1 数据层 `g2/data/`
+### 5.1 数据层 `g2/data/upper/`
 
 **Lab = 一条 `LabDef`**（`schema/lab.ts`，类型与五年级同款）：id 前缀 `g2-`、
 `kind` 17 种、`params` 滑块定义、`fixed` 常量、`formula`。校验器 `validate.ts`
@@ -493,7 +518,7 @@ remainder-quiz（有余数除法）/ direction-quiz（辨认方向）/ tangram-q
 
 ### 5.4 新增一个 Lab
 
-与五年级流程一致（见 §4.4）：`data/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
+与五年级流程一致（见 §4.4）：`data/upper/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
 `schema/lab.ts` 的 `LabKind` + `compute.ts` 加分支 + `components/labs/` 写组件并注册到
 `lib/labs/registry.ts` → 跑 `npm run test` + `npm run typecheck`。
 
@@ -521,7 +546,7 @@ remainder-quiz（有余数除法）/ direction-quiz（辨认方向）/ tangram-q
 
 ## 6. 三年级工程（苏教版上册）
 
-### 6.1 数据层 `g3/data/`
+### 6.1 数据层 `g3/data/upper/`
 
 **Lab = 一条 `LabDef`**（`schema/lab.ts`，类型与五年级同款）：id 前缀 `g3-`、
 `kind` 23 种、`params` 滑块定义、`fixed` 常量、`formula`。校验器 `validate.ts`
@@ -560,7 +585,7 @@ times-quiz（倍的挑战）。
 
 ### 6.4 新增一个 Lab
 
-与五年级流程一致（见 §4.4）：`data/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
+与五年级流程一致（见 §4.4）：`data/upper/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
 `schema/lab.ts` 的 `LabKind` + `compute.ts` 加分支 + `components/labs/` 写组件并注册到
 `lib/labs/registry.ts` → 跑 `npm run test` + `npm run typecheck`。
 
@@ -577,7 +602,7 @@ times-quiz（倍的挑战）。
 - **模板禁止直接读 `props.values.x`**（类型是 `number | undefined`）：一律
   `computed(() => props.values.x ?? 默认)` 后再引用（与六年级 §7.5 相同约定）。
 - 跨应用导航/顶栏切换用共享 GradeShell 的原生 `<a>`（见 §3.5 四坑）；
-  `nuxt.config.ts` 的 `prerender.ignore` 需覆盖 g1/g2/g5/g6 跨年级链接（构建 404 兜底）。
+  `nuxt.config.ts` 用 `gradePrerenderIgnore('g3')` 从年级注册表自动覆盖跨年级链接（构建 404 兜底）。
 - 类型检查：与五年级同源的一处共享 theme 类型提示（`nuxt/config` 在仓库根无 node_modules）
   属既有基线，其余 0 错误（见 §13 排错）。
 
@@ -598,7 +623,7 @@ times-quiz（倍的挑战）。
 
 ## 7. 六年级工程（苏教版上册）
 
-### 7.1 数据层 `g6/data/`
+### 7.1 数据层 `g6/data/upper/`
 
 **Lab = 一条 `LabDef`**（`schema/lab.ts`，类型与五年级同款）：id 前缀 `g6-`、
 `kind` 33 种、`params` 滑块定义、`fixed` 常量、`formula`。校验器 `validate.ts`
@@ -633,7 +658,7 @@ solve-ratio（解比例）/ circle-calc（圆的计算）/ scale-map（比例尺
 
 ### 7.4 新增一个 Lab
 
-与五年级流程一致（见 §4.4）：`data/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
+与五年级流程一致（见 §4.4）：`data/upper/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
 `schema/lab.ts` 的 `LabKind` + `compute.ts` 加分支 + `components/labs/` 写组件并注册到
 `lib/labs/registry.ts` → 跑 `npm run test` + `npm run typecheck`。
 
@@ -672,9 +697,9 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 ./ocr/src/ocr_bin "<pdf>" <startPage> <endPage> [输出目录]
 ```
 
-**第 5 参数（输出目录）必须指定**：缺省写 `ocr/pages`（一年级），
-二年级务必传 `g2/ocr/pages`、三年级传 `g3/ocr/pages`、四年级传 `g4/ocr/pages`、
-五年级务必传 `g5/ocr/pages`、六年级传 `g6/ocr/pages`，否则会覆盖一年级产物（历史事故，已用 git 恢复过一次）。
+**第 5 参数（输出目录）必须指定**：缺省写 `g1/ocr/upper/pages`（一年级），
+二年级务必传 `g2/ocr/upper/pages`、三年级传 `g3/ocr/upper/pages`、四年级传 `g4/ocr/upper/pages`、
+五年级务必传 `g5/ocr/upper/pages`、六年级传 `g6/ocr/upper/pages`，否则会覆盖一年级产物（历史事故，已用 git 恢复过一次）。
 
 每页产物：`pNNN.txt`（OCR 文字）、`pNNN.jpg`（整页图）、`pNNN-N.jpg`（插图裁剪，
 基于"非文本 + 非纯白"网格瓦片 8-连通聚簇，需 ≥2×2 瓦片且 ≤75% 页面）。
@@ -690,7 +715,7 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 
 ### 8.3 一年级合订正文
 
-`ocr/src/merge.py` 把 txt/图合并为 `ocr/book/上册_正文.md`（每页 = 标题→整页图→文字→插图片段）。
+`ocr/src/merge.py` 把 txt/图合并为 `g1/ocr/upper/book/上册_正文.md`（每页 = 标题→整页图→文字→插图片段）。
 
 ---
 
@@ -698,7 +723,7 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 
 | 项目 | 命令（在各工程目录内） | 用例 | 说明 |
 | --- | --- | --- | --- |
-| 共享层 | `npm run test:shared`（仓库根） | 25 | 独立 vitest（node 环境，覆盖率 100%） |
+| 共享层 | `npm run test:shared`（仓库根） | 32 | 独立 vitest（node 环境，覆盖率 100%） |
 | 真实点击验收 | `npm run test:click`（仓库根，先 `build:site:local`） | 46 | Playwright 真实浏览器点击：门户↔年级导航/答题/滑块/动画/three.js/移动端溢出 |
 | 一年级 | `npm run test` | 311 | vitest 单元 + 组件 |
 | 一年级 | `npm run test:e2e` | 34 | Playwright（构建产物运行，20 游戏矩阵） |
@@ -743,20 +768,21 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 ```
 GitHub: tesths/math-stage（main 分支）
         └─ npm run build:site（Cloudflare 构建命令）
-              ├─ game/   : npm ci + BASE_URL=/g1/ nuxi generate → 111 页静态
-              ├─ g2/game/: npm ci + BASE_URL=/g2/ nuxi generate → 48 页静态
-              ├─ g3/game/: npm ci + BASE_URL=/g3/ nuxi generate → 73 页静态
-              ├─ g4/game/: npm ci + BASE_URL=/g4/ nuxi generate → 100 页静态
-              ├─ g5/game/: npm ci + BASE_URL=/g5/ nuxi generate → 55 页静态
-              ├─ g6/game/: npm ci + BASE_URL=/g6/ nuxi generate → 56 页静态
-              └─ portal/ : npm ci + BASE_URL=/ nuxi generate（门户 Nuxt 应用）
+              ├─ 根目录: npm ci --ignore-scripts --no-audit --no-fund（单一 workspace 依赖树）
+              ├─ g1/game/: BASE_URL=/g1/ nuxi generate → 111 页静态
+              ├─ g2/game/: BASE_URL=/g2/ nuxi generate → 48 页静态
+              ├─ g3/game/: BASE_URL=/g3/ nuxi generate → 73 页静态
+              ├─ g4/game/: BASE_URL=/g4/ nuxi generate → 51 页静态
+              ├─ g5/game/: BASE_URL=/g5/ nuxi generate → 55 页静态
+              ├─ g6/game/: BASE_URL=/g6/ nuxi generate → 56 页静态
+              └─ portal/ : BASE_URL=/ nuxi generate（门户 Nuxt 应用）
               → 聚合产物 deploy/
 Cloudflare Pages 输出目录 deploy/
   /       门户（Nuxt 静态站，卡片用原生 <a href="/g1/" "/g2/" "/g3/" "/g4/" "/g5/" "/g6/">）
   /g1/*   一年级（111 页全量预渲染，直接命中静态文件）
   /g2/*   二年级（48 页全量预渲染，直接命中静态文件）
   /g3/*   三年级（73 页全量预渲染，直接命中静态文件）
-  /g4/*   四年级（100 页全量预渲染，直接命中静态文件）
+  /g4/*   四年级（51 页全量预渲染，直接命中静态文件）
   /g5/*   五年级（55 页全量预渲染，直接命中静态文件）
   /g6/*   六年级（56 页全量预渲染，直接命中静态文件）
   404     由各子应用自带 404.html 兜底
@@ -766,17 +792,20 @@ Cloudflare Pages 输出目录 deploy/
 
 - **七个 nuxt.config.ts 都从 `shared/theme/nuxt-config.ts` 引入统一片段**：
   `sharedNuxtConfig({...})` 提供 UI 离线字体 / 图标按需扫描（含共享组件图标清单）/ 主色 emerald /
-  三方库优化 / 预渲染策略；各应用再覆盖 `nitro.prerender.ignore`（跨年级链接）与 `app`（baseURL/head）。
+  CSS 入口 / 三方库优化 / 预渲染策略；各年级用 `gradePrerenderIgnore('gX')` 覆盖跨年级链接，
+  各应用只保留 `app`（baseURL/head）的本地差异。
 - **`app.baseURL = process.env.BASE_URL ?? '/'`**（本地默认根路径）；
   `nitro.prerender.crawlLinks = true`（静态导出时自动爬取全部路由）。
 - **`nuxi generate`（Nuxt4 cloudflare-pages preset）输出到 `.output/public`**：
   页面在根目录（index.html 即应用首页），资源链接带 BASE_URL 前缀（`/g1/_nuxt/...`）；
   聚合脚本复制 `.output/public` → `deploy/gX`。
-- **`scripts/site-build.mjs`**：清空 deploy → 对七个应用执行 `npm ci`（`build:site:local` 才跳过安装）→
-  分别 `BASE_URL=... nuxi generate` → 复制 `.output/public` → 写 `_redirects`（仅注释）/`_headers`。
+- **`scripts/app-registry.mjs`**：六个年级 + 门户的唯一构建注册表；新增年级改这里，聚合构建与真实点击验收共用。
+- **`scripts/site-build.mjs`**：清空 deploy → 根目录一次 `npm ci --ignore-scripts`（`build:site:local` 跳过安装）→
+  默认并发 2 分别 `BASE_URL=... nuxi generate` → 复制 `.output/public` → 写 `_redirects`（仅注释）/`_headers`。
+- **代理处理**：npm 安装可继承 `http_proxy` / `https_proxy`；Nuxt `prepare` / `generate` 脚本会清理代理变量，避免 `socks5h://` 被 Undici 当作 HTTP proxy URL 解析失败。
   ⚠️ 不要在 `_redirects` 里加 `/g1/* → /g1/200.html 200` 这类 SPA 重写：
   它会在 Cloudflare 上抢在静态文件前命中目录请求，被 clean URL 解析成 `/g1/200`，造成 308 循环（线上事故记录）。
-- 根 `package.json`（无依赖，仅脚本）：`build:site` / `build:site:local`（跳过安装）/ `preview`。
+- 根 `package.json`：Node 24/npm 12 约束、workspaces、统一依赖版本、`build:site` / `build:site:local` / `prepare:nuxt` / `typecheck` / `preview`。
 
 ### 10.3 Cloudflare Pages 配置（一次）
 
@@ -786,15 +815,17 @@ Cloudflare Pages 输出目录 deploy/
 | 构建命令 | `npm run build:site` |
 | 构建输出目录 | `deploy` |
 
-首次构建需装七个应用依赖，约 10~20 分钟（免费额度 20 分钟内）；若超时，
-把脚本里 `npm ci` 改 `npm install`（利用 Cloudflare 构建缓存）或拆分触发。
+依赖安装已集中为一次根 workspace 安装；本机 Node 24 冷安装验证约 15 秒量级。
+年级静态导出默认并发 2；如 Cloudflare 内存压力较大，可设置 `SITE_BUILD_CONCURRENCY=1`。
 
 ### 10.4 本地构建与预览
 
 ```bash
-npm run build:site:local   # 聚合构建（跳过六个应用依赖安装）
+npm run build:site:local   # 聚合构建（复用根 node_modules，跳过 npm ci）
 npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
 ```
+
+GitHub Actions 的 `CI` 工作流使用 `.node-version` 中的 Node 24，并升级到 npm 12 后执行：根 `npm ci --ignore-scripts`、`npm run typecheck`、`npm run test:unit`、`npm run build:site:local`。
 
 ### 10.5 新增年级（三年级等）
 
@@ -802,7 +833,7 @@ npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
    （含 `sharedNuxtConfig` 引入、`BASE_URL` 支持、`@shared` alias）。
 2. **`shared/grades/index.ts` 加一条 `GradeInfo` 记录**（id/base/label/title/accent/features…）——
    门户卡片、顶栏切换、页脚文案自动生成，无需改 portal 页面。
-3. `scripts/site-build.mjs` 的 `APPS` 数组加一项 `{ dir: 'g3', base: '/g3/' }`。
+3. `scripts/app-registry.mjs` 加一项应用记录；聚合构建、根层 generate 脚本和真实点击验收会复用同一注册表。
 4. Cloudflare 无需改动（构建命令/输出目录不变）。
 
 ---
@@ -811,13 +842,13 @@ npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
 
 | 场景 | 命令 |
 | --- | --- |
-| 一年级 dev | `cd game && npm run dev`（PORT 3000） |
+| 一年级 dev | `cd g1/game && npm run dev`（PORT 3000） |
 | 二年级 dev | `cd g2/game && npm run dev`（PORT 3000，勿同时开两个 dev 端口冲突，可用 PORT=3200） |
 | 三年级 dev | `cd g3/game && npm run dev`（PORT 3000，勿同时开两个 dev 端口冲突，可用 PORT=3100） |
 | 四年级 dev | `cd g4/game && npm run dev`（PORT 3000，勿同时开两个 dev 端口冲突，可用 PORT=3100） |
 | 五年级 dev | `cd g5/game && npm run dev`（PORT 3000，勿同时开两个 dev 端口冲突，可用 PORT=3100） |
 | 六年级 dev | `cd g6/game && npm run dev`（PORT 3000，与五年级错开端口） |
-| 一年级测试 | `cd game && npm run test` |
+| 一年级测试 | `cd g1/game && npm run test` |
 | 二年级测试 | `cd g2/game && npm run test` |
 | 三年级测试 | `cd g3/game && npm run test` |
 | 四年级测试 | `cd g4/game && npm run test` |
@@ -830,7 +861,7 @@ npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
 | 三年级 E2E | `cd g3/game && npm run test:e2e`（自动 NITRO_PRESET=node-server 构建，端口 3100） |
 | 四年级 E2E | `cd g4/game && npm run test:e2e`（自动 NITRO_PRESET=node-server 构建，端口 3100） |
 | 五年级 E2E | `cd g5/game && npm run test:e2e`（自动 NITRO_PRESET=node-server 构建，端口 3100） |
-| 类型检查 | `cd <game|g2/game|g3/game|g4/game|g5/game|g6/game> && npm run typecheck` |
+| 类型检查 | 仓库根 `npm run typecheck`（先 prepare 七个 Nuxt 应用，再跑 workspace typecheck） |
 | 聚合构建 | 仓库根 `npm run build:site:local` |
 
 > E2E 端口注意：一年级 e2e 用 3000；三/四/五年级用 3100 且 `reuseExistingServer: true`，
@@ -843,29 +874,32 @@ npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
 
 ```bash
 # 部署相关（仓库根）
-npm run build:site          # 完整聚合构建（含七个应用 npm ci，Cloudflare 用）
-npm run build:site:local    # 本地聚合（跳过依赖安装）
+npm run build:site          # 完整聚合构建（根 npm ci + 七个应用 generate，Cloudflare 用）
+npm run build:site:local    # 本地聚合（跳过 npm ci，复用根 node_modules）
+npm run prepare:nuxt        # 为七个 Nuxt 应用生成 .nuxt 类型，自动清理代理变量
+npm run typecheck           # prepare:nuxt + 全 workspace typecheck
+npm run test:unit           # 全 workspace 单元测试
 npm run preview             # npx serve deploy
-npm run test:shared         # 共享层测试（25 用例，复用 g5/game 的 vitest）
+npm run test:shared         # 共享层测试（32 用例，使用根 vitest）
 npm run test:shared:coverage # 共享层覆盖率（阈值 95%）
-npm run test:click          # 真实点击验收（需先 build:site:local；46 项，暂不含 g2/g3/g4/g6）
+npm run test:click          # 真实点击验收（需先 build:site:local；门户入口覆盖 g1~g6）
 
 # 单工程（game/、g2/game/、g3/game/、g4/game/、g5/game/ 或 g6/game/ 内）
 npm run dev                 # 开发
 npm run test                # vitest
 npm run test:coverage       # 覆盖率
 npm run test:e2e            # Playwright（三/四/五年级）
-npm run typecheck           # vue-tsc
+npm run typecheck           # vue-tsc（也可在仓库根统一执行）
 npm run build               # 生产构建
 npm run generate:site       # 静态导出（配合 BASE_URL=/g1/、/g2/、/g3/、/g4/、/g5/ 或 /g6/）
 
 # OCR
 swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
-./ocr/src/ocr_bin "pdf路径" 1 120 "g2/ocr/pages"   # 二年级务必带输出目录
-./ocr/src/ocr_bin "pdf路径" 1 132 "g3/ocr/pages"   # 三年级务必带输出目录
-./ocr/src/ocr_bin "pdf路径" 1 121 "g4/ocr/pages"   # 四年级务必带输出目录
-./ocr/src/ocr_bin "pdf路径" 1 131 "g5/ocr/pages"   # 五年级务必带输出目录
-./ocr/src/ocr_bin "pdf路径" 1 131 "g6/ocr/pages"   # 六年级同上
+./ocr/src/ocr_bin "pdf路径" 1 120 "g2/ocr/upper/pages"   # 二年级务必带输出目录
+./ocr/src/ocr_bin "pdf路径" 1 132 "g3/ocr/upper/pages"   # 三年级务必带输出目录
+./ocr/src/ocr_bin "pdf路径" 1 121 "g4/ocr/upper/pages"   # 四年级务必带输出目录
+./ocr/src/ocr_bin "pdf路径" 1 131 "g5/ocr/upper/pages"   # 五年级务必带输出目录
+./ocr/src/ocr_bin "pdf路径" 1 131 "g6/ocr/upper/pages"   # 六年级同上
 ```
 
 ---
@@ -878,10 +912,10 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 | 网格线整体偏移一格 | `v-for="i in n"` 从 1 开始，须用 `(i-1)*cell` |
 | three.js 页面 canvas 空白 | 本地检查用 playwright `--enable-unsafe-swiftshader`；真实浏览器均有 WebGL |
 | `npm run test:e2e` 连到错误站点 | 端口被旧服务占用（3000/3100），先 `lsof -i :3000 -i :3100` 清掉 |
-| vue-tsc 报 `Load plugin failed: vue-router/volar/sfc-route-blocks` | Node 24 + vue-tsc 2.2 环境兼容问题（各工程均如此，非代码问题）；用 `nuxt build` + vitest 保证类型/行为正确 |
-| 二/三/五/六年级 `vue-tsc` 报 `Cannot find module 'nuxt/config'`（shared/theme/nuxt-config.ts） | 仓库根无 node_modules，该共享文件里的类型导入无法从仓库根解析——二/三/五/六年级同源，属既有基线；`nuxt build` 不受影响（Nuxt 用自己的解析） |
+| vue-tsc 输出 `Load plugin failed: vue-router/volar/sfc-route-blocks` | Node 24 + vue-tsc 2.2 下的 vue-router Volar 插件兼容警告；当前 `npm run typecheck` 仍返回 0，按错误码判断是否失败 |
+| 带代理执行 Nuxt 报 `Invalid URL protocol` | npm 联网可使用代理；Nuxt 本地 `prepare` / `generate` 不需要网络，统一走 `npm run prepare:nuxt`、`npm run build:site` 或根层 `generate:gN` 脚本，它们会清理代理变量 |
 | 部署后主色仍是旧色（一年级橙/门户蓝） | 聚合脚本曾复制旧 `dist/`；已改为复制 `.output/public`，重新 `npm run build:site:local` |
-| Cloudflare 构建报 `ENOENT ... game/.output/public` | **Cloudflare Pages 设 `CF_PAGES=1`**，std-env 把 nitro provider 识别为 `cloudflare_pages`，`nuxi generate` 自动改用 `cloudflare-pages-static` 预设（输出 `dist/<baseURL>/`），而脚本复制 `.output/public` → 已在 `site-build.mjs` 显式传 `NITRO_PRESET=static` 强制统一输出；本地可用 `CF_PAGES=1 npm run build:site:local` 复现/验证 |
+| Cloudflare 构建报 `ENOENT ... g1/game/.output/public` | **Cloudflare Pages 设 `CF_PAGES=1`**，std-env 把 nitro provider 识别为 `cloudflare_pages`，`nuxi generate` 自动改用 `cloudflare-pages-static` 预设（输出 `dist/<baseURL>/`），而脚本复制 `.output/public` → 已在 `site-build.mjs` 显式传 `NITRO_PRESET=static` 强制统一输出；本地可用 `CF_PAGES=1 npm run build:site:local` 复现/验证 |
 | 部署后 /g1/ 404 | 确认 Cloudflare 构建命令是 `npm run build:site`、输出目录 `deploy`；真实页面应已预渲染到 `deploy/g1/` |
 | 从门户/年级点卡片进到 404（Nuxt 404 页） | 跨应用链接用了 NuxtLink/UButton → 改原生 `<a href>`（见 §3.5/§4.5/§6.5 跨应用导航四坑） |
 | 点击后 URL 是 /g5/200 且 404/循环 | 旧版 `_redirects` SPA 200 重写残留 → 已删；若浏览器缓存，硬刷新/清缓存/Cloudflare Purge |

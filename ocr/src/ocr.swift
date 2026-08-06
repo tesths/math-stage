@@ -7,7 +7,7 @@ import PDFKit
 //   <outputDir>/pNNN.txt   每页 OCR 文字
 //   <outputDir>/pNNN.png   每页渲染整版图片（图文对照）
 //   <outputDir>/pNNN-*.png 自动识别出的插图/图片区域（白底小图之外）
-// outputDir 缺省为 ocr/pages（相对当前目录）
+// outputDir 缺省为 g1/ocr/upper/pages（相对当前目录）
 let args = CommandLine.arguments
 guard args.count >= 4,
       let pageStart = Int(args[2]),
@@ -22,7 +22,7 @@ if args.count >= 5 {
     pagesDir = URL(fileURLWithPath: args[4])
 } else {
     pagesDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        .appendingPathComponent("ocr/pages")
+        .appendingPathComponent("g1/ocr/upper/pages")
 }
 
 guard let doc = PDFDocument(url: URL(fileURLWithPath: pdfPath)) else {

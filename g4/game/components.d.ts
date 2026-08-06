@@ -35,8 +35,8 @@ declare module 'vue' {
     SegmentLab: typeof import('./src/components/labs/SegmentLab.vue')['default']
     ShapeLab: typeof import('./src/components/labs/ShapeLab.vue')['default']
     SpeedQuizGame: typeof import('./src/components/games/SpeedQuizGame.vue')['default']
-    UButton: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
-    UInput: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
+    UButton: typeof import('./../../node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
+    UInput: typeof import('./../../node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
   }
 }
 
@@ -65,6 +65,6 @@ declare global {
   const SegmentLab: typeof import('./src/components/labs/SegmentLab.vue')['default']
   const ShapeLab: typeof import('./src/components/labs/ShapeLab.vue')['default']
   const SpeedQuizGame: typeof import('./src/components/games/SpeedQuizGame.vue')['default']
-  const UButton: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
-  const UInput: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
+  const UButton: typeof import('./../../node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
+  const UInput: typeof import('./../../node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
 }

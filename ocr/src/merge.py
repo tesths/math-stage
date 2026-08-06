@@ -1,6 +1,10 @@
 """生成上册合订图文版 markdown，标注书页码，并嵌入整页图与自动识别的插图。"""
 import glob
 import os
+import sys
+
+PAGES_DIR = sys.argv[1] if len(sys.argv) > 1 else "g1/ocr/upper/pages"
+BOOK_DIR = sys.argv[2] if len(sys.argv) > 2 else "g1/ocr/upper/book"
 
 FRONT = {
     1: "封面",
@@ -26,8 +30,8 @@ def book_page_label(pdf_pg: int) -> str:
     return f"书页 {pdf_pg - 7}"
 
 def page_figures(pdf_pg: int) -> list[str]:
-    """返回该页所有插图裁剪图（相对 ocr/book/ 的路径，按编号排序）。"""
-    files = glob.glob(f"ocr/pages/p{pdf_pg:03d}-*.jpg")
+    """返回该页所有插图裁剪图（相对 book 输出目录的路径，按编号排序）。"""
+    files = glob.glob(os.path.join(PAGES_DIR, f"p{pdf_pg:03d}-*.jpg"))
     files.sort(key=lambda f: int(f.split("-")[-1].split(".")[0]))
     return [os.path.join("../pages", os.path.basename(f)) for f in files]
 
@@ -41,7 +45,7 @@ def main():
     out.append("> OCR 原始行按识别顺序保留，个别符号/图内文字可能不准，正文阅读可用。")
     out.append("")
 
-    pages = sorted(glob.glob("ocr/pages/p*.txt"))
+    pages = sorted(glob.glob(os.path.join(PAGES_DIR, "p*.txt")))
     total_figs = 0
     for f in pages:
         pdf_p = int(f.split("/")[-1].replace("p", "").replace(".txt", ""))
@@ -67,14 +71,17 @@ def main():
             out.append("")
     out.append("")
     out.append("--- 完 ---")
-    with open("ocr/book/上册_正文.md", "w", encoding="utf-8") as fh:
+    os.makedirs(BOOK_DIR, exist_ok=True)
+    body_path = os.path.join(BOOK_DIR, "上册_正文.md")
+    with open(body_path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(out))
-    print(f"written ocr/book/上册_正文.md (pages={len(pages)}, figures={total_figs})")
+    print(f"written {body_path} (pages={len(pages)}, figures={total_figs})")
 
-    toc = [l.strip() for l in open("ocr/pages/p006.txt", encoding="utf-8") if l.strip()]
+    toc = [l.strip() for l in open(os.path.join(PAGES_DIR, "p006.txt"), encoding="utf-8") if l.strip()]
     t = ["# 目录（OCR 原文，PDF p006）", "", "```", *toc, "```", ""]
-    with open("ocr/book/上册_目录.md", "w", encoding="utf-8") as fh:
+    toc_path = os.path.join(BOOK_DIR, "上册_目录.md")
+    with open(toc_path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(t))
-    print("written ocr/book/上册_目录.md")
+    print(f"written {toc_path}")
 
 main()

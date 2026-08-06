@@ -11,10 +11,14 @@
 """
 import glob
 import re
+import sys
+
+OCR_PAGES_DIR = sys.argv[1] if len(sys.argv) > 1 else "g1/ocr/upper/pages"
+DATA_CHAPTERS_DIR = sys.argv[2] if len(sys.argv) > 2 else "g1/data/upper/chapters"
 
 def load_pages():
     text = {}
-    for f in glob.glob("ocr/pages/p*.txt"):
+    for f in glob.glob(f"{OCR_PAGES_DIR}/p*.txt"):
         pdfp = int(re.search(r"p(\d+)\.txt", f).group(1))
         raw = open(f, encoding="utf-8").read()
         text[pdfp - 7] = raw  # 书页码
@@ -170,7 +174,7 @@ def check(q, page_text):
 def main():
     pages = load_pages()
     qs = []
-    for f in sorted(glob.glob("data/chapters/c*.ts")):
+    for f in sorted(glob.glob(f"{DATA_CHAPTERS_DIR}/c*.ts")):
         qs.extend(parse_chapter(f))
     rows = []
     for q in qs:
