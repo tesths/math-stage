@@ -20,7 +20,7 @@ export const c7Labs: LabDef[] = [
   {
     id: 'g4-c7-num-place',
     chapter: 'c7',
-    page: 81,
+    page: 78,
     source: '例题',
     title: '数位顺序表 · 十进制计数法',
     prompt:

@@ -5,7 +5,7 @@ export const c5Labs: LabDef[] = [
   {
     id: 'g6-c5-circle-feature',
     chapter: 'c5',
-    page: 72,
+    page: 70,
     source: '例题',
     title: '认识圆 · 圆心半径直径',
     prompt:
@@ -18,7 +18,7 @@ export const c5Labs: LabDef[] = [
   {
     id: 'g6-c5-sector',
     chapter: 'c5',
-    page: 74,
+    page: 72,
     source: '例题',
     title: '扇形与圆心角',
     prompt:
@@ -31,7 +31,7 @@ export const c5Labs: LabDef[] = [
   {
     id: 'g6-c5-circumference',
     chapter: 'c5',
-    page: 79,
+    page: 77,
     source: '例题',
     title: '圆的周长 · 圆周率',
     prompt:
@@ -44,7 +44,7 @@ export const c5Labs: LabDef[] = [
   {
     id: 'g6-c5-circle-area',
     chapter: 'c5',
-    page: 82,
+    page: 80,
     source: '例题',
     title: '圆的面积 · 剪拼成近似长方形',
     prompt:
@@ -60,7 +60,7 @@ export const c5Labs: LabDef[] = [
   {
     id: 'g6-c5-annulus',
     chapter: 'c5',
-    page: 83,
+    page: 81,
     source: '例题',
     title: '环形面积 · 外圆减内圆',
     prompt:
@@ -76,7 +76,7 @@ export const c5Labs: LabDef[] = [
   {
     id: 'g6-c5-circle-composite',
     chapter: 'c5',
-    page: 83,
+    page: 81,
     source: '试一试',
     title: '组合图形的面积 · 窗户',
     prompt:

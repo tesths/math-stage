@@ -53,7 +53,7 @@ export const c12Labs: LabDef[] = [
   {
     id: 'g3-c12-times-mix',
     chapter: 'c12',
-    page: 117,
+    page: 116,
     source: '练习',
     title: '倍的混合练习',
     prompt:

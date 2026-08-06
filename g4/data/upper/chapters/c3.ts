@@ -1,11 +1,11 @@
 import type { LabDef } from '../schema/lab'
 
-/** 三 周长与面积的变化（书页 42-43） */
+/** 三 周长与面积的变化（书页 43-44） */
 export const c3Labs: LabDef[] = [
   {
     id: 'g4-c3-peri-area-change',
     chapter: 'c3',
-    page: 42,
+    page: 43,
     source: '探索',
     title: '周长与面积的变化',
     prompt:

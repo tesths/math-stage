@@ -5,7 +5,7 @@ export const c1Labs: LabDef[] = [
   {
     id: 'g6-c1-mul-decimal',
     chapter: 'c1',
-    page: 4,
+    page: 2,
     source: '例题',
     title: '一个数乘小数 · 方格模型',
     prompt:
@@ -21,7 +21,7 @@ export const c1Labs: LabDef[] = [
   {
     id: 'g6-c1-mul-compare',
     chapter: 'c1',
-    page: 8,
+    page: 6,
     source: '练习',
     title: '积与因数的大小比较',
     prompt:
@@ -37,7 +37,7 @@ export const c1Labs: LabDef[] = [
   {
     id: 'g6-c1-mul-approx',
     chapter: 'c1',
-    page: 6,
+    page: 4,
     source: '例题',
     title: '积的近似值 · 苹果',
     prompt:
@@ -54,7 +54,7 @@ export const c1Labs: LabDef[] = [
   {
     id: 'g6-c1-div-decimal',
     chapter: 'c1',
-    page: 9,
+    page: 7,
     source: '例题',
     title: '一个数除以小数 · 转化',
     prompt:
@@ -68,7 +68,7 @@ export const c1Labs: LabDef[] = [
   {
     id: 'g6-c1-div-approx',
     chapter: 'c1',
-    page: 11,
+    page: 9,
     source: '例题',
     title: '商的近似值 · 海狮游速',
     prompt:
@@ -81,7 +81,7 @@ export const c1Labs: LabDef[] = [
   {
     id: 'g6-c1-round-life',
     chapter: 'c1',
-    page: 12,
+    page: 10,
     source: '例题',
     title: '合理取近似值 · 进一去尾',
     prompt:

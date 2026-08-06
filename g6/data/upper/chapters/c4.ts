@@ -5,7 +5,7 @@ export const c4Labs: LabDef[] = [
   {
     id: 'g6-c4-ratio-intro',
     chapter: 'c4',
-    page: 47,
+    page: 45,
     source: '例题',
     title: '比的认识 · 橙汁饮料',
     prompt:
@@ -21,7 +21,7 @@ export const c4Labs: LabDef[] = [
   {
     id: 'g6-c4-ratio-value',
     chapter: 'c4',
-    page: 49,
+    page: 47,
     source: '例题',
     title: '比值与形状 · 长方形名片',
     prompt:
@@ -37,7 +37,7 @@ export const c4Labs: LabDef[] = [
   {
     id: 'g6-c4-ratio-simplify',
     chapter: 'c4',
-    page: 55,
+    page: 53,
     source: '例题',
     title: '化简比 · 化成最简整数比',
     prompt:
@@ -52,7 +52,7 @@ export const c4Labs: LabDef[] = [
   {
     id: 'g6-c4-ratio-distribute',
     chapter: 'c4',
-    page: 56,
+    page: 54,
     source: '例题',
     title: '按比例分配 · 青团皮',
     prompt:
@@ -69,7 +69,7 @@ export const c4Labs: LabDef[] = [
   {
     id: 'g6-c4-proportion-basic',
     chapter: 'c4',
-    page: 61,
+    page: 59,
     source: '例题',
     title: '比例的基本性质 · 内外项积',
     prompt:
@@ -86,7 +86,7 @@ export const c4Labs: LabDef[] = [
   {
     id: 'g6-c4-solve-proportion',
     chapter: 'c4',
-    page: 62,
+    page: 60,
     source: '例题',
     title: '解比例 · 同样甜的糖水',
     prompt:
@@ -103,7 +103,7 @@ export const c4Labs: LabDef[] = [
   {
     id: 'g6-c4-golden-ratio',
     chapter: 'c4',
-    page: 66,
+    page: 64,
     source: '探索',
     title: '神奇的黄金比 · 0.618',
     prompt:

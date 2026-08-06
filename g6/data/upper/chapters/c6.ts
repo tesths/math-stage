@@ -5,7 +5,7 @@ export const c6Labs: LabDef[] = [
   {
     id: 'g6-c6-scale-shape',
     chapter: 'c6',
-    page: 95,
+    page: 93,
     source: '例题',
     title: '图形的放大与缩小 · 方格纸',
     prompt:
@@ -22,7 +22,7 @@ export const c6Labs: LabDef[] = [
   {
     id: 'g6-c6-map-scale',
     chapter: 'c6',
-    page: 100,
+    page: 98,
     source: '例题',
     title: '比例尺 · 图上距离与实际距离',
     prompt:

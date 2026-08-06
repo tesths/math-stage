@@ -5,7 +5,7 @@ export const c7Labs: LabDef[] = [
   {
     id: 'g6-c7-coordinate',
     chapter: 'c7',
-    page: 106,
+    page: 104,
     source: '例题',
     title: '用数对确定位置 · 严军的座位',
     prompt:
@@ -21,7 +21,7 @@ export const c7Labs: LabDef[] = [
   {
     id: 'g6-c7-direction',
     chapter: 'c7',
-    page: 108,
+    page: 106,
     source: '例题',
     title: '用方向和距离确定位置 · 浮雷',
     prompt:

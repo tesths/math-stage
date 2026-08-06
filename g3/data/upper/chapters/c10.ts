@@ -26,10 +26,10 @@ export const c10Labs: LabDef[] = [
     source: '想想做做',
     title: '线段图：多几、少几',
     prompt:
-      '篮球有 25 个，排球比篮球多 15 个，足球比排球多 20 个。拖动数据，观察"多几"的线段图。',
+      '篮球有 50 个，排球比篮球多 15 个，足球比排球多 20 个。拖动数据，观察"多几"的线段图。',
     kind: 'segment',
     params: [
-      { key: 'base', label: '篮球个数', min: 10, max: 100, step: 1, default: 25, unit: '个' },
+      { key: 'base', label: '篮球个数', min: 10, max: 100, step: 1, default: 50, unit: '个' },
       { key: 'more1', label: '排球多几个', min: 1, max: 50, step: 1, default: 15, unit: '个' },
       { key: 'more2', label: '足球多几个', min: 1, max: 50, step: 1, default: 20, unit: '个' },
     ],
