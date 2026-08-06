@@ -53,7 +53,7 @@ describe('math 工具', () => {
   it('roundTo：四舍五入', () => {
     expect(roundTo(3.146, 2)).toBe(3.15)
     expect(roundTo(2.5, 0)).toBe(3)
-    expect(roundTo(40 * 1000 / 3600, 2)).toBe(11.11)
+    expect(roundTo(40 * 1000 / 60, 2)).toBe(666.67)
   })
 
   it('isTerminatingDecimal', () => {

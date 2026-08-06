@@ -43,3 +43,12 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 
 - 课本为新版（2022 课标修订），单元结构与此前旧版差异较大（新增图形的运动/可能性/观察物体，小数乘除分两册）。
 - 二单元（统计表）暂无 Lab：条形统计图建议用课本"双休日时间安排"等活动页 p27 结合 UChart 自行扩展。
+
+## GLM 强化识别（2026-08）
+
+- 全量批处理 `scripts/glm_ocr_math.py`：本册 131 页全部经智谱 GLM-OCR 识别，
+  原始响应与文字在 `work/glm_ocr/g5/`（每页 pNNN.json + pNNN.md，产物不入库）。
+- 合订正文：`scripts/merge_book_glm.py` 重建 `g5/ocr/upper/book/上册_正文.md`
+  （GLM 文字 + 整页图 + 插图裁剪，另含 `上册_目录.md`）。
+- 例题核对：`scripts/verify_glm_examples.py` 以 GLM 文字核对全部 Lab，
+  全量报告见 `docs/example-audit-glm.md`。

@@ -29,9 +29,9 @@ describe('computeLab 一 小数乘法和除法', () => {
     expect(computeLab('div-decimal', { sel: 2 }).value).toBe(20)
   })
 
-  it('div-approx：40 千米/时 ≈ 11.11 米/分', () => {
+  it('div-approx：40 千米/时 ≈ 666.67 米/分', () => {
     const r = computeLab('div-approx', { speed: 40 })
-    expect(r.value).toBeCloseTo(11.11, 2)
+    expect(r.value).toBeCloseTo(666.67, 2)
   })
 
   it('round-life：去尾 / 进一', () => {

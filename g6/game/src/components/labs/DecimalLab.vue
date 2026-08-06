@@ -119,7 +119,7 @@ const roundResult = computed(() =>
     <template v-else-if="kind === 'div-approx'">
       <div class="approx-card">
         <p class="div-title">海狮游速 {{ divSpeed }} 千米/时</p>
-        <p class="big-expr">{{ divSpeed }} × 1000 ÷ 3600 ≈ {{ ((divSpeed * 1000) / 3600).toFixed(2) }} 米/秒</p>
+        <p class="big-expr">{{ divSpeed }} × 1000 ÷ 60 ≈ {{ ((divSpeed * 1000) / 60).toFixed(2) }} 米/分</p>
         <p class="note">得数保留两位小数：先除到小数点后第三位，再四舍五入</p>
       </div>
     </template>

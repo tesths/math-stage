@@ -98,7 +98,8 @@ describe('Lab 组件渲染', () => {
     const lab = findLabById('g4-c3-peri-area-change')!
     const wrapper = mount(PuzzleLab, { props: { lab, values: { rows: 4 } } })
     expect(wrapper.find('.combo-table').exists()).toBe(true)
-    expect(wrapper.text()).toContain('24')
+    expect(wrapper.text()).toContain('36')
+    expect(wrapper.text()).toContain('24 厘米')
   })
 
   it('QuantityLab：乘法意义', () => {

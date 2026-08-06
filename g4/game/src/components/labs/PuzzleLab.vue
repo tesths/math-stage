@@ -8,7 +8,7 @@ import type { LabDef, ParamValues } from '@data/schema/lab'
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
 const rows = computed(() => Math.round(props.values.rows ?? 4))
-const total = 24
+const total = 36
 const cols = computed(() => total / rows.value)
 const perimeter = computed(() => (rows.value + cols.value) * 2)
 const cell = computed(() => {

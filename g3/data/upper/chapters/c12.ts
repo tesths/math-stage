@@ -57,14 +57,14 @@ export const c12Labs: LabDef[] = [
     source: '练习',
     title: '倍的混合练习',
     prompt:
-      '爸爸今年 32 岁，妈妈比爸爸小 3 岁，小阳 7 岁。拖动数据，分别求妈妈年龄和倍的关系。',
+      '妈妈今年 32 岁，爸爸比妈妈大 3 岁，小阳 7 岁。拖动数据，分别求爸爸年龄和倍的关系。',
     kind: 'times-div',
     params: [
-      { key: 'dad', label: '爸爸年龄', min: 24, max: 60, step: 1, default: 32, unit: '岁' },
-      { key: 'less', label: '妈妈小几岁', min: 1, max: 10, step: 1, default: 3, unit: '岁' },
+      { key: 'mom', label: '妈妈年龄', min: 24, max: 60, step: 1, default: 32, unit: '岁' },
+      { key: 'more', label: '爸爸比妈妈大', min: 1, max: 10, step: 1, default: 3, unit: '岁' },
       { key: 'son', label: '小阳年龄', min: 1, max: 12, step: 1, default: 7, unit: '岁' },
     ],
-    formula: '妈妈 = 爸爸 − 少；爸爸 ÷ 小阳 = 几倍',
-    tip: '先求妈妈年龄：32 − 3 = 29 岁；再求爸爸年龄是小阳的几倍：32 ÷ 7 ≈ 4（倍）。',
+    formula: '爸爸 = 妈妈 + 大；爸爸 ÷ 小阳 = 几倍',
+    tip: '先求爸爸年龄：32 + 3 = 35 岁；再求爸爸年龄是小阳的几倍：35 ÷ 7 = 5（倍）。',
   },
 ]

@@ -668,7 +668,8 @@ solve-ratio（解比例）/ circle-calc（圆的计算）/ scale-map（比例尺
   会抛错且拉低分支覆盖率）：一律 `computed(() => props.values.x ?? 默认)` 后再引用；
   `test/component/labs.test.ts` 有**全 kind 空参数挂载**专门覆盖 `??` 兜底分支。
   （`mul-approx` 早期就因此崩过，已改为 computed 默认。）
-- **`div-approx` 海狮游速**：`千米/时 → 米/秒` 必须 ÷3600（不是 ÷60，历史 bug 已修）。
+- **`div-approx` 海狮游速**：`千米/时 → 米/分` 必须 ÷60（40 千米/时 ≈ 666.67 米/分，
+  与课本"海狮的游速大约是多少米/分"一致；曾误写成 ÷3600 得米/秒，2026-08 按 GLM OCR 修正）。
 - 无 Playwright E2E（未配 `playwright.config.ts`），页面行为由 vitest 组件层覆盖；
    `npm run test:click`（§9 真实点击验收）目前**不含 g6**。
 - 跨应用导航/顶栏切换用共享 GradeShell 的原生 `<a>`（见 §3.5 四坑）。
@@ -716,6 +717,31 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 ### 8.3 一年级合订正文
 
 `ocr/src/merge.py` 把 txt/图合并为 `g1/ocr/upper/book/上册_正文.md`（每页 = 标题→整页图→文字→插图片段）。
+
+### 8.4 GLM-OCR 强化识别（六本全量）
+
+在 Vision OCR 之上，用智谱 GLM-OCR（`layout_parsing` + `glm-ocr` 模型）对六本课本
+逐页做版面感知识别，文字质量显著优于 Vision（如 "认识0"、"10比9大" 等小号/嵌图文字）。
+
+- 批处理：`scripts/glm_ocr_math.py`（读环境变量 `ZHIPU_API_KEY`，key 不落盘）。
+  遍历 `gX/ocr/upper/pages/pNNN.jpg`（729 页），输出 `work/glm_ocr/<年级>/pNNN.json`
+  （原始响应）与 `pNNN.md`（`md_results`）；断点续跑（已有 json 即跳过）、失败清单、
+  `summary.json`、遇 "欠费/401" 即停。产物不入库（`.gitignore` 已含 `work/`）。
+- 例题核对：`scripts/verify_glm_examples.py`。按书页偏移映射
+  （g1 -7 / g2、g3 -8 / g4 -3 / g5、g6 -2），对每年级每条例题在对应书页 GLM 文字中
+  查印刷证据：g1 复用 11 种题型逻辑（addsub/compare/split/ten/ordinal/position/
+  shape3d/count/write/numberline/sequence）；g2-g6 从 title/prompt/formula/tip 提取
+  关键数字（含中文口诀数字）与关键词（2~4 字切词），判定 STRONG/MEDIUM/FIG。
+  报告输出 `docs/example-audit-glm.md`（含 FIG 人工复核结论与数据修正记录）。
+  GLM 漏读的嵌入小字以 Vision OCR 交叉验证兜底。
+- 合订正文：`scripts/merge_book_glm.py [g1..g6]`，用 GLM 文字重建
+  `gX/ocr/upper/book/上册_正文.md`（+`上册_目录.md`），保留整页图与插图裁剪。
+
+### 8.5 核对结果与数据修正
+
+2026-08 全量核对：STRONG 200 / MEDIUM 27 / FIG 8（图内内容类，人工复核全部确认）。
+核对发现并修正 2 处例题数据：`g4-c3-peri-area-change` 页码 42→43（探索活动实际在
+书页43）；`g3-c10-segment-more` 篮球基数 25→50（书页90 想想做做原文为 50 个）。
 
 ---
 

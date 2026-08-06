@@ -44,6 +44,7 @@ math/
 ├── g2/                             二年级（苏教版上册）独立文件夹：
 │   ├── README.md                  二年级工程说明
 │   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 8）
+│   ├── ocr/upper/book/            上册 GLM 合订正文（上册_正文.md + 目录）
 │   ├── ocr/lower/                 未来下册 OCR 占位
 │   ├── data/upper/                上册 22 个可调参数 Lab 数据
 │   ├── data/lower/                未来下册 Lab 数据占位
@@ -52,6 +53,7 @@ math/
 ├── g3/                             三年级（苏教版上册）独立文件夹：
 │   ├── README.md                  三年级工程说明
 │   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 8，132 页）
+│   ├── ocr/upper/book/            上册 GLM 合订正文
 │   ├── ocr/lower/                 未来下册 OCR 占位
 │   ├── data/upper/                上册 41 个可调参数 Lab 数据
 │   ├── data/lower/                未来下册 Lab 数据占位
@@ -60,6 +62,7 @@ math/
 ├── g4/                             四年级（苏教版上册）独立文件夹：
 │   ├── README.md                  四年级工程说明
 │   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 3，121 页）
+│   ├── ocr/upper/book/            上册 GLM 合订正文
 │   ├── ocr/lower/                 未来下册 OCR 占位
 │   ├── data/upper/                上册 28 个可调参数 Lab 数据
 │   ├── data/lower/                未来下册 Lab 数据占位
@@ -68,6 +71,7 @@ math/
 ├── g5/                             五年级（苏教版上册）独立文件夹：
 │   ├── README.md                  五年级工程说明
 │   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 2）
+│   ├── ocr/upper/book/            上册 GLM 合订正文
 │   ├── ocr/lower/                 未来下册 OCR 占位
 │   ├── data/upper/                上册 33 个可调参数 Lab 数据
 │   ├── data/lower/                未来下册 Lab 数据占位
@@ -76,6 +80,7 @@ math/
 ├── g6/                             六年级（苏教版上册）独立文件夹：
 │   ├── README.md                  六年级工程说明
 │   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 2）
+│   ├── ocr/upper/book/            上册 GLM 合订正文
 │   ├── ocr/lower/                 未来下册 OCR 占位
 │   ├── data/upper/                上册 33 个可调参数 Lab 数据
 │   ├── data/lower/                未来下册 Lab 数据占位
@@ -83,9 +88,10 @@ math/
 │   └── docs/                      课本 OCR 与页面映射
 ├── （…）·数学一年级上册.pdf        原始扫描 PDF（105 页）
 ├── ocr/                           共享 OCR 工具源码（各年级输出到 gX/ocr/{upper,lower}/）
-│   ├── src/ocr.swift              可执行 OCR：文字 + 整页图 + 插图自动裁剪
+│   ├── src/ocr.swift              可执行 OCR：文字 + 整页图 + 插图自动裁剪（macOS Vision）
 │   ├── src/ocr_bin                ocr.swift 的编译产物（swiftc -O 生成）
-│   └── src/merge.py               txt/图 → gX/ocr/{upper,lower}/book/*.md
+│   └── src/merge.py               Vision txt/图 → g1 合订 Markdown（GLM 版本见 scripts/merge_book_glm.py）
+├── work/glm_ocr/                  GLM-OCR 批处理产物（不入库）：每页 pNNN.json + pNNN.md
 ├── scripts/
 │   ├── site-build.mjs       单 Pages 聚合构建脚本（六个年级 Nuxt 应用 + 门户）
 │   ├── app-registry.mjs     聚合构建/验收共享应用注册表（六个年级 + 门户）
@@ -93,9 +99,13 @@ math/
 │   ├── run-app-script.mjs   根层运行单个应用脚本（generate:g1 等）
 │   ├── test-shared.mjs      共享层测试（npm run test:shared）
 │   ├── real-click-test.mjs  真实点击验收（npm run test:click，46 项）
-│   └── verify_examples.py   例题 ↔ 课本文字机器核对（STRONG/MEDIUM/FIG 三级证据）
+│   ├── verify_examples.py   一年级例题 ↔ Vision OCR 机器核对（STRONG/MEDIUM/FIG 三级证据）
+│   ├── glm_ocr_math.py      六本全量 GLM-OCR 批处理（729 页 → work/glm_ocr/）
+│   ├── verify_glm_examples.py 六本例题 ↔ GLM OCR 全量核对（→ docs/example-audit-glm.md）
+│   └── merge_book_glm.py    用 GLM 文字重建六本合订正文 gX/ocr/upper/book/
 └── docs/                          其他文档
-    ├── example-audit.md           例题逐条核对报告（书页↔课本原文，含需看图复核清单）
+    ├── example-audit.md           一年级例题逐条核对报告（Vision OCR，含需看图复核清单）
+    ├── example-audit-glm.md       六本例题 ↔ GLM OCR 全量核对报告（2026-08，含 FIG 复核结论与数据修正记录）
     └── 游戏形式调研.md            20 个小游戏的课本出处/玩法设计调研
 ```
 
@@ -114,6 +124,20 @@ math/
 插图识别启发式：页面按 6×5 网格分瓦片，某瓦片"文字覆盖率 ≤55% 且采样子像素非白占比 ≥10%"则标为插图候选，8-连通聚簇为矩形；要求面积 ≥ 2×2 瓦片、≤整页 75%（更大即整页，避免与整页图重复）。
 
 然后 `python3 ocr/src/merge.py` 生成合订 `g1/ocr/upper/book/上册_正文.md`：每页即"标题 → 整页图 → OCR 文字 → 插图片段"，共嵌入 182 张图（105 整页 + 77 插图）。
+
+### GLM-OCR 强化识别（六本全量）
+
+2026-08 在 Vision OCR 之上，用智谱 GLM-OCR（`layout_parsing` + `glm-ocr` 模型）对六本课本逐页做版面感知识别（共 729 页），小号/嵌图文字质量显著优于 Vision。
+
+- 批处理：`scripts/glm_ocr_math.py`（key 从环境变量 `ZHIPU_API_KEY` 读取，不落盘）。
+  遍历 `gX/ocr/upper/pages/pNNN.jpg` → `work/glm_ocr/<年级>/pNNN.json|md`（原始响应 +
+  `md_results`）；断点续跑、失败清单、`summary.json`，遇"欠费/401"即停。
+- 例题核对：`scripts/verify_glm_examples.py` 按书页偏移（g1 -7 / g2、g3 -8 / g4 -3 /
+  g5、g6 -2）对每年级每条例题在对应书页 GLM 文字中查印刷证据（g1 复用 11 种题型逻辑；
+  g2-g6 提取关键数字与关键词），三级结论见 `docs/example-audit-glm.md`。
+- 合订正文：`scripts/merge_book_glm.py` 用 GLM 文字重建六本
+  `gX/ocr/upper/book/上册_正文.md`（+`上册_目录.md`），保留整页图与插图裁剪。
+- 产物不入库（`.gitignore` 含 `work/`）；GLM 漏读的嵌入小字以 Vision OCR 交叉验证兜底。
 
 ### 页面映射约定
 
@@ -140,6 +164,11 @@ shape3d / numberline / sequence / ten。位置判定规则：左/上/前取前�
 标注书页的 OCR 文字中查"印刷证据"，三级结论：STRONG 64（算式/不等式/填空/关键数
 与课本印刷一致）、MEDIUM 9（故事题/文字题可在该页印证）、FIG 5（仅图内数量，全在
 第 1 单元，需人工看图）。跨课本逐条对照见 `docs/example-audit.md`。
+
+**GLM 全量核对（2026-08）**：`scripts/verify_glm_examples.py` 以 GLM OCR 文字对六本
+235 条例题全量核对：STRONG 200 / MEDIUM 27 / FIG 8（图内内容类，人工复核全部确认）。
+核对发现并修正 2 处数据：`g4-c3-peri-area-change` 页码 42→43、`g3-c10-segment-more`
+篮球基数 25→50。完整报告与 FIG 复核结论见 `docs/example-audit-glm.md`。
 
 ## 测试与构建
 

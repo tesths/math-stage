@@ -44,3 +44,12 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 - 两个探索规律单元（二进制的秘密 p42-43、神奇的黄金比 p64-67）分别挂在 c3、c4 单元尾部；
   综合与实践（生活中的分段计费 p26-29、体育中的数学 p88-91）作为 Lab/游戏纳入对应单元。
 - 比例尺（图上距离/实际距离换算）在"六 放大与缩小"单元（p98-102，书页 92-102）。
+
+## GLM 强化识别（2026-08）
+
+- 全量批处理 `scripts/glm_ocr_math.py`：本册 120 页全部经智谱 GLM-OCR 识别，
+  原始响应与文字在 `work/glm_ocr/g6/`（每页 pNNN.json + pNNN.md，产物不入库）。
+- 合订正文：`scripts/merge_book_glm.py` 重建 `g6/ocr/upper/book/上册_正文.md`
+  （GLM 文字 + 整页图 + 插图裁剪，另含 `上册_目录.md`）。
+- 例题核对：`scripts/verify_glm_examples.py` 以 GLM 文字核对全部 Lab，
+  全量报告见 `docs/example-audit-glm.md`。

@@ -663,21 +663,21 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       }
     }
     case 'times-div': {
-      const isMix = p.dad !== undefined && p.less !== undefined
+      const isMix = p.mom !== undefined && p.more !== undefined
       if (isMix) {
-        const dad = p.dad ?? 32
-        const less = p.less ?? 3
+        const mom = p.mom ?? 32
+        const more = p.more ?? 3
         const son = p.son ?? 7
-        const mom = dad - less
+        const dad = mom + more
         const { times, exact } = timesOf(dad, son)
         return {
           value: Math.round(times),
-          text: `妈妈 ${fmt(mom)} 岁，爸爸年龄是小阳的约 ${fmt(times)} 倍`,
+          text: `爸爸 ${fmt(dad)} 岁，爸爸年龄是小阳的 ${fmt(times)} 倍`,
           steps: [
-            { expr: `先求妈妈年龄`, result: `${fmt(dad)} − ${fmt(less)} = ${fmt(mom)} 岁` },
+            { expr: `先求爸爸年龄`, result: `${fmt(mom)} + ${fmt(more)} = ${fmt(dad)} 岁` },
             { expr: `爸爸是小阳的几倍`, result: `${fmt(dad)} ÷ ${fmt(son)} = ${fmt(times)}（倍）` },
           ],
-          conclusion: `妈妈 ${fmt(mom)} 岁。爸爸 ${fmt(dad)} 岁是小阳 ${fmt(son)} 岁的 ${fmt(times)} 倍${exact ? '' : '（约）'}。`,
+          conclusion: `爸爸 ${fmt(dad)} 岁是小阳 ${fmt(son)} 岁的 ${fmt(times)} 倍${exact ? '' : '（约）'}。妈妈 ${fmt(mom)} 岁。`,
         }
       }
       const total = p.total ?? 6

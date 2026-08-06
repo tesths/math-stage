@@ -10,5 +10,8 @@ test-results/
 coverage/
 deploy/
 # OCR 生成的图片（整页渲染图 + 插图裁剪）不入库；OCR 文字产物 pNNN.txt 保留
-**/ocr/pages/*.jpg
-**/ocr/pages/*.png
+**/ocr/*/pages/*.jpg
+**/ocr/*/pages/*.png
+# GLM OCR 批处理产物（原始 JSON + md）不入库
+work/
+__pycache__/

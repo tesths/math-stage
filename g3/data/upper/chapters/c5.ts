@@ -31,9 +31,9 @@ export const c5Labs: LabDef[] = [
     kind: 'stat',
     params: [
       { key: 'campus', label: '校园童话', min: 0, max: 20, step: 1, default: 10, unit: '人' },
-      { key: 'animal', label: '动物童话', min: 0, max: 20, step: 1, default: 5, unit: '人' },
-      { key: 'scifi', label: '科幻童话', min: 0, max: 20, step: 1, default: 8, unit: '人' },
-      { key: 'detective', label: '侦探童话', min: 0, max: 20, step: 1, default: 3, unit: '人' },
+      { key: 'animal', label: '动物童话', min: 0, max: 20, step: 1, default: 7, unit: '人' },
+      { key: 'scifi', label: '科幻童话', min: 0, max: 20, step: 1, default: 15, unit: '人' },
+      { key: 'detective', label: '侦探童话', min: 0, max: 20, step: 1, default: 8, unit: '人' },
     ],
     formula: '合计 = 四类人数之和',
     tip: '正字每 5 画为一个人。条形统计图的高矮能直观比较各类人数多少。',

@@ -41,3 +41,12 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
   综合实践与探索规律单元。
 - c2（一天的时间）、c4（曹冲称象）、c5（数据收集与整理）、c9（间隔排列）、c12（倍的认识）
   均无课本目录序号（`tocLabel` 为空），首页徽章按课本样式不显示序号。
+
+## GLM 强化识别（2026-08）
+
+- 全量批处理 `scripts/glm_ocr_math.py`：本册 132 页全部经智谱 GLM-OCR 识别，
+  原始响应与文字在 `work/glm_ocr/g3/`（每页 pNNN.json + pNNN.md，产物不入库）。
+- 合订正文：`scripts/merge_book_glm.py` 重建 `g3/ocr/upper/book/上册_正文.md`
+  （GLM 文字 + 整页图 + 插图裁剪，另含 `上册_目录.md`）。
+- 例题核对：`scripts/verify_glm_examples.py` 以 GLM 文字核对全部 Lab，
+  全量报告见 `docs/example-audit-glm.md`。

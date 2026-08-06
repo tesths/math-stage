@@ -247,9 +247,9 @@ describe('computeLab · 倍的认识', () => {
     expect(r.value).toBe(2)
   })
 
-  it('times-div：混合（爸爸/妈妈/小阳）', () => {
-    const r = computeLab('times-div', { dad: 32, less: 3, son: 7 })
-    expect(r.text).toContain('妈妈')
-    expect(r.value).toBe(Math.round(32 / 7))
+  it('times-div：混合（妈妈/爸爸/小阳）', () => {
+    const r = computeLab('times-div', { mom: 32, more: 3, son: 7 })
+    expect(r.text).toContain('爸爸 35 岁')
+    expect(r.value).toBe(5)
   })
 })

@@ -29,11 +29,11 @@ const baseDiv = computed(() => Math.round(props.values.base ?? 3))
 const divTimes = computed(() => totalDiv.value / baseDiv.value)
 const divList = computed(() => Array.from({ length: Math.min(totalDiv.value, 30) }, (_, i) => i))
 
-/* 混合：爸爸/妈妈/小阳 */
-const dad = computed(() => Math.round(props.values.dad ?? 32))
-const less = computed(() => Math.round(props.values.less ?? 3))
+/* 混合：妈妈/爸爸/小阳 */
+const mom = computed(() => Math.round(props.values.mom ?? 32))
+const more = computed(() => Math.round(props.values.more ?? 3))
 const son = computed(() => Math.round(props.values.son ?? 7))
-const mom = computed(() => dad.value - less.value)
+const dad = computed(() => mom.value + more.value)
 
 const maxDots = 30
 </script>
@@ -113,10 +113,10 @@ const maxDots = 30
         </div>
       </div>
       <div class="formula-row">
-        <span class="chip">妈妈：{{ dad }} − {{ less }} = {{ mom }}</span>
+        <span class="chip">爸爸：{{ mom }} + {{ more }} = {{ dad }}</span>
         <span class="chip result">爸爸 ÷ 小阳：{{ dad }} ÷ {{ son }} ≈ {{ Math.round(dad / son) }} 倍</span>
       </div>
-      <p class="tip">先求妈妈年龄，再求爸爸年龄是小阳年龄的几倍</p>
+      <p class="tip">先求爸爸年龄，再求爸爸年龄是小阳年龄的几倍</p>
     </template>
   </div>
 </template>

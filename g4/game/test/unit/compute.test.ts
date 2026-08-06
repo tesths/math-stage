@@ -96,10 +96,12 @@ describe('computeLab 各 kind', () => {
     expect(r.value).toBe(300)
   })
 
-  it('peri-area-change：24 个小正方形 4 行', () => {
+  it('peri-area-change：36 个小正方形 4 行', () => {
     const r = computeLab('peri-area-change', { rows: 4 })
-    expect(r.text).toContain('24')
+    expect(r.text).toContain('36')
+    expect(r.text).toContain('周长 26')
     expect(r.conclusion).toContain('周长越短')
+    expect(r.conclusion).toContain('24 厘米')
   })
 
   it('mul-meaning：4×3 = 12', () => {

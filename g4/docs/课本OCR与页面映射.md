@@ -44,3 +44,12 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
   多位数的认识、大数的运算"（周长与面积含面积单位与换算，多位数的认识含数字编码）。
 - 综合实践单元（周长与面积的变化 / 制订旅游计划 / 度量衡的故事）无课本目录序号。
 - 期末复习（书页 109–115）无 Lab。
+
+## GLM 强化识别（2026-08）
+
+- 全量批处理 `scripts/glm_ocr_math.py`：本册 121 页全部经智谱 GLM-OCR 识别，
+  原始响应与文字在 `work/glm_ocr/g4/`（每页 pNNN.json + pNNN.md，产物不入库）。
+- 合订正文：`scripts/merge_book_glm.py` 重建 `g4/ocr/upper/book/上册_正文.md`
+  （GLM 文字 + 整页图 + 插图裁剪，另含 `上册_目录.md`）。
+- 例题核对：`scripts/verify_glm_examples.py` 以 GLM 文字核对全部 Lab，
+  全量报告见 `docs/example-audit-glm.md`。

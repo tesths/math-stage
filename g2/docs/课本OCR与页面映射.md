@@ -67,3 +67,12 @@
 - `g2/ocr/upper/pages/pNNN.jpg`：每页整版图
 - `g2/ocr/upper/pages/pNNN-N.jpg`：插图自动裁剪片段
 - `ocr/ocr_run.log`：运行日志（120 页，末尾 done）
+
+## GLM 强化识别（2026-08）
+
+- 全量批处理 `scripts/glm_ocr_math.py`：本册 120 页全部经智谱 GLM-OCR 识别，
+  原始响应与文字在 `work/glm_ocr/g2/`（每页 pNNN.json + pNNN.md，产物不入库）。
+- 合订正文：`scripts/merge_book_glm.py` 重建 `g2/ocr/upper/book/上册_正文.md`
+  （GLM 文字 + 整页图 + 插图裁剪，另含 `上册_目录.md`）。
+- 例题核对：`scripts/verify_glm_examples.py` 以 GLM 文字核对全部 Lab，
+  全量报告见 `docs/example-audit-glm.md`。

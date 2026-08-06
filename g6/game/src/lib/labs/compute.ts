@@ -93,17 +93,17 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
     case 'div-approx': {
       const speed = p.speed ?? 40
       const metersPerHour = speed * 1000
-      const perSec = metersPerHour / 3600
-      const approx = roundTo(perSec, 2)
+      const perMin = metersPerHour / 60
+      const approx = roundTo(perMin, 2)
       return {
         value: approx,
-        text: `${speed} 千米/时 ≈ ${approx.toFixed(2)} 米/秒`,
+        text: `${speed} 千米/时 ≈ ${approx.toFixed(2)} 米/分`,
         steps: [
           { expr: `${speed} 千米 = ${speed * 1000} 米`, result: `${metersPerHour} 米/时` },
-          { expr: `1 时 = 3600 秒`, result: `${metersPerHour} ÷ 3600 = ${fmt(perSec)}` },
-          { expr: `保留两位小数（四舍五入）`, result: `${approx.toFixed(2)} 米/秒` },
+          { expr: `1 时 = 60 分`, result: `${metersPerHour} ÷ 60 = ${fmt(perMin)}` },
+          { expr: `保留两位小数（四舍五入）`, result: `${approx.toFixed(2)} 米/分` },
         ],
-        conclusion: `求商的近似值，先算出比需要保留的位数多一位的商，再按"四舍五入"写出结果：${speed} 千米/时 ≈ ${approx.toFixed(2)} 米/秒。`,
+        conclusion: `求商的近似值，先算出比需要保留的位数多一位的商，再按"四舍五入"写出结果：${speed} 千米/时 ≈ ${approx.toFixed(2)} 米/分。`,
       }
     }
     case 'round-life': {

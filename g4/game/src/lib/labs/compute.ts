@@ -190,7 +190,7 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
     /* ============ 三 周长与面积的变化 ============ */
     case 'peri-area-change': {
       const rows = Math.round(p.rows ?? 4)
-      const total = 24
+      const total = 36
       const cols = total / rows
       const w = Math.max(cols, rows)
       const h = Math.min(cols, rows)
@@ -199,11 +199,11 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
         value: perimeter,
         text: `长 ${fmt(cols)}、宽 ${fmt(rows)}：面积 ${fmt(total)}，周长 ${fmt(perimeter)}`,
         steps: [
-          { expr: `24 个小正方形拼成长 × 宽`, result: `${fmt(cols)} × ${fmt(rows)}` },
+          { expr: `36 个小正方形拼成长 × 宽`, result: `${fmt(cols)} × ${fmt(rows)}` },
           { expr: `面积 = ${fmt(cols)} × ${fmt(rows)}`, result: `${fmt(total)} 平方厘米` },
           { expr: `周长 = (长 + 宽) × 2`, result: `${fmt(perimeter)} 厘米` },
         ],
-        conclusion: `面积都是 ${fmt(total)} 平方厘米，但周长不同；长和宽越接近，周长越短，正方形（6×6）时周长最短（20 厘米）。`,
+        conclusion: `面积都是 ${fmt(total)} 平方厘米，但周长不同；长和宽越接近，周长越短，正方形（6×6）时周长最短（24 厘米）。`,
       }
     }
 
