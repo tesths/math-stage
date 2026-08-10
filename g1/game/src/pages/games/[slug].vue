@@ -15,7 +15,7 @@ const game = computed(() => arcadeComponentFor(slug.value))
 </script>
 
 <template>
-  <UContainer v-if="meta" class="max-w-3xl py-6 md:py-8">
+  <UContainer v-if="meta" class="max-w-7xl py-6 md:py-8">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
       <UButton
         to="/games"
@@ -38,7 +38,7 @@ const game = computed(() => arcadeComponentFor(slug.value))
     </div>
 
     <UCard
-      class="game-slot min-h-[320px]"
+      class="game-slot min-h-[460px]"
       :ui="{ body: 'flex flex-col justify-center gap-3' }"
     >
       <ClientOnly>

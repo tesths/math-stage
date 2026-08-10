@@ -195,7 +195,7 @@ const planTotal = computed(() => tCost.value + tiCost.value + hCost.value + food
   gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: 420px;
+  max-width: 588px;
 }
 .item-box {
   display: flex;

@@ -148,7 +148,7 @@ const boardPins = computed(() => {
   align-items: center;
 }
 svg {
-  max-width: 460px;
+  max-width: 644px;
 }
 .board {
   fill: var(--ui-bg-muted);

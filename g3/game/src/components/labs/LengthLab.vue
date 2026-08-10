@@ -149,7 +149,7 @@ const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / 
 }
 .ruler-svg {
   width: 100%;
-  max-width: 24rem;
+  max-width: 34rem;
 }
 .ruler-body {
   fill: var(--ui-bg-muted);
@@ -198,7 +198,7 @@ const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / 
   font-size: 0.9rem;
   color: var(--ui-text-toned);
   text-align: center;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .tip b {
   color: var(--ui-primary);
@@ -206,7 +206,7 @@ const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / 
 .dm-visual,
 .road-visual {
   width: 100%;
-  max-width: 24rem;
+  max-width: 34rem;
 }
 .dm-meter {
   display: flex;

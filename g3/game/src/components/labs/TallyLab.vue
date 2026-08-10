@@ -110,7 +110,7 @@ function barHeight(count: number): number {
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
-  max-width: 24rem;
+  max-width: 34rem;
 }
 .zheng-row {
   display: flex;
@@ -151,7 +151,7 @@ function barHeight(count: number): number {
   font-size: 0.92rem;
   color: var(--ui-text-toned);
   text-align: center;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .total-line b {
   color: var(--ui-primary);
@@ -162,7 +162,7 @@ function barHeight(count: number): number {
   align-items: flex-end;
   justify-content: center;
   width: 100%;
-  max-width: 28rem;
+  max-width: 39rem;
 }
 .bar {
   display: flex;

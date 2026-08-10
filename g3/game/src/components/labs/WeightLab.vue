@@ -150,7 +150,7 @@ const stoneList = computed(() => Array.from({ length: Math.min(stones.value, 12)
 .unit-tip {
   font-size: 0.9rem;
   color: var(--ui-text-toned);
-  max-width: 24rem;
+  max-width: 34rem;
   text-align: center;
 }
 .unit-tip b {

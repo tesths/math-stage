@@ -168,7 +168,7 @@ const notebookCount = computed(() => Math.min(count.value, 9))
   gap: 0.4rem;
   font-size: 0.95rem;
   color: var(--ui-text-toned);
-  max-width: 24rem;
+  max-width: 34rem;
 }
 .step-line b {
   color: var(--ui-primary);
@@ -178,7 +178,7 @@ const notebookCount = computed(() => Math.min(count.value, 9))
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 0.8rem;
   width: 100%;
-  max-width: 30rem;
+  max-width: 42rem;
 }
 .calc-card {
   border: 1px solid var(--ui-border-accented);
@@ -244,7 +244,7 @@ const notebookCount = computed(() => Math.min(count.value, 9))
 .warn-line {
   font-size: 0.85rem;
   color: var(--ui-error, #dc2626);
-  max-width: 26rem;
+  max-width: 36rem;
   text-align: center;
 }
 </style>

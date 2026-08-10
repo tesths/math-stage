@@ -186,12 +186,12 @@ const ticks = computed(() => Array.from({ length: 25 }, (_, i) => i))
 .hint {
   font-size: 0.85rem;
   color: var(--ui-text-muted);
-  max-width: 26rem;
+  max-width: 36rem;
   text-align: center;
 }
 .timeline {
   width: 100%;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .tl-line {
   stroke: var(--ui-text-muted);

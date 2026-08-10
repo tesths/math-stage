@@ -83,7 +83,7 @@ watch(labId, () => {
 </script>
 
 <template>
-  <UContainer v-if="lab" class="max-w-4xl py-6 md:py-8">
+  <UContainer v-if="lab" class="max-w-7xl py-6 md:py-8">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
       <UButton
         :to="`/units/${lab.chapter}`"
@@ -129,9 +129,9 @@ watch(labId, () => {
         </template>
 
         <!-- 参数面板 -->
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_290px]">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
           <ClientOnly>
-            <div class="lab-visual min-h-[320px]">
+            <div class="lab-visual min-h-[460px]">
               <component
                 :is="labComponentFor(lab.kind)"
                 :key="`${lab.id}-${shapeKey}`"
@@ -140,7 +140,7 @@ watch(labId, () => {
               />
             </div>
             <template #fallback>
-              <div class="flex min-h-[320px] items-center justify-center text-(--ui-text-muted)">
+              <div class="flex min-h-[460px] items-center justify-center text-(--ui-text-muted)">
                 加载可视化…
               </div>
             </template>
@@ -171,7 +171,7 @@ watch(labId, () => {
 
             <div ref="resultBoxRef" class="result-box">
               <p class="text-xs text-(--ui-text-muted)">{{ lab.formula }}</p>
-              <p class="mt-1 text-2xl font-bold text-(--ui-primary)">{{ result.text }}</p>
+              <p class="mt-1 text-3xl font-bold text-(--ui-primary)">{{ result.text }}</p>
             </div>
 
             <UButton size="sm" variant="outline" color="neutral" icon="i-heroicons-arrow-path" @click="resetParams">

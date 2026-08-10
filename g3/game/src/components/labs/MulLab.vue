@@ -293,7 +293,7 @@ const isZero = computed(() => props.values.mid !== undefined)
   gap: 0.35rem;
   font-size: 0.9rem;
   color: var(--ui-text-toned);
-  max-width: 18rem;
+  max-width: 25rem;
 }
 .note-result {
   margin-top: 0.4rem;

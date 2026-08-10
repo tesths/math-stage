@@ -11,7 +11,7 @@ const grouped = Object.entries(
 </script>
 
 <template>
-  <UContainer class="max-w-4xl py-6 md:py-8">
+  <UContainer class="max-w-7xl py-6 md:py-8">
     <UButton to="/" variant="ghost" color="neutral" icon="i-heroicons-arrow-left" label="返回首页" class="mb-4" />
 
     <h1 class="text-2xl font-bold text-(--ui-text-highlighted)">🎮 训练小游戏专区</h1>

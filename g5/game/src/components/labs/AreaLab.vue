@@ -246,7 +246,7 @@ const gridRows = computed(() => Math.ceil((gridBottom.value - gridTop.value) / c
   align-items: center;
 }
 svg {
-  max-width: 480px;
+  max-width: 672px;
 }
 .grid-lines line {
   stroke: var(--ui-border);

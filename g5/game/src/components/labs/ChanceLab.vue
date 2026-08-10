@@ -327,7 +327,7 @@ function tallyChars(n: number): string {
 }
 .tally {
   width: 100%;
-  max-width: 30rem;
+  max-width: 42rem;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;

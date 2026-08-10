@@ -110,7 +110,7 @@ const enough = computed(() => change.value >= 0)
   border-radius: var(--ui-radius-lg);
   padding: 0.5rem 0.8rem;
   background: var(--ui-bg-muted);
-  max-width: 24rem;
+  max-width: 34rem;
 }
 .bill {
   font-size: 1.25rem;

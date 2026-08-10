@@ -17,7 +17,7 @@ const relatedGames = computed(() =>
 </script>
 
 <template>
-  <UContainer v-if="unit" class="max-w-3xl py-8 md:py-10">
+  <UContainer v-if="unit" class="max-w-7xl py-8 md:py-10">
     <UButton
       to="/"
       variant="ghost"

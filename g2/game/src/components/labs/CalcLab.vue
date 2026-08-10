@@ -142,7 +142,7 @@ const remRows = computed(() =>
   border-radius: var(--ui-radius-lg);
   padding: 0.7rem;
   background: var(--ui-bg-muted);
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .pgroup {
   display: flex;

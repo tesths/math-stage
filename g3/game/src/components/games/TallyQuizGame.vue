@@ -95,7 +95,7 @@ const game = useQuizGame(makeRound)
 }
 .expr-card {
   text-align: left;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .tally-q {
   font-size: 1.05rem;

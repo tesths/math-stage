@@ -20,7 +20,7 @@ import { THEME } from '@shared/theme'
       </p>
     </div>
 
-    <div class="mx-auto mt-10 grid max-w-4xl gap-5 md:grid-cols-2">
+    <div class="mx-auto mt-10 grid max-w-7xl gap-5 md:grid-cols-2 xl:grid-cols-3">
       <a
         v-for="g in GRADES"
         :key="g.id"

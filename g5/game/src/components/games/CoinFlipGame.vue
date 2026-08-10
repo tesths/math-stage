@@ -158,7 +158,7 @@ function tallyChars(n: number): string {
 }
 .tally {
   width: 100%;
-  max-width: 26rem;
+  max-width: 36rem;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -222,6 +222,6 @@ function tallyChars(n: number): string {
   font-size: 0.9rem;
   color: var(--ui-primary);
   font-weight: 600;
-  max-width: 24rem;
+  max-width: 34rem;
 }
 </style>

@@ -164,7 +164,7 @@ const resultChars = computed(() => toFixed2(pointResult.value).split(''))
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  max-width: 430px;
+  max-width: 602px;
   justify-content: center;
 }
 .price-chip {
@@ -213,11 +213,11 @@ const resultChars = computed(() => toFixed2(pointResult.value).split(''))
 .col-note {
   font-size: 0.78rem;
   color: var(--ui-text-muted);
-  max-width: 18rem;
+  max-width: 25rem;
   text-align: center;
 }
 .grid-svg {
-  max-width: 210px;
+  max-width: 294px;
   max-height: 220px;
 }
 .grid-note {

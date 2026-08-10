@@ -15,7 +15,7 @@ const game = computed(() => gameComponentFor(slug.value))
 </script>
 
 <template>
-  <UContainer v-if="meta" class="max-w-3xl py-6 md:py-8">
+  <UContainer v-if="meta" class="max-w-7xl py-6 md:py-8">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
       <UButton
         to="/games"
@@ -35,7 +35,7 @@ const game = computed(() => gameComponentFor(slug.value))
       <p class="mt-1 text-sm text-(--ui-text-toned)">玩法：{{ meta.howTo }}</p>
     </div>
 
-    <UCard class="game-slot min-h-[320px]" :ui="{ body: 'flex flex-col justify-center gap-3' }">
+    <UCard class="game-slot min-h-[460px]" :ui="{ body: 'flex flex-col justify-center gap-3' }">
       <ClientOnly>
         <component :is="game" v-if="game" />
       </ClientOnly>

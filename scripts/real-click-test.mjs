@@ -144,8 +144,8 @@ async function run() {
     await page.screenshot({ path: `${SHOT}/02-g1-home.png`, fullPage: true })
 
     await step(page, '一年级：点单元 c1 → 单元页', async () => {
-      await page.locator('a[href="/g1/units/c1"]').first().click()
-      await page.waitForURL(/\/g1\/units\/c1$/)
+      await page.locator('a[href="/g1/units/c1"], a[href="/g1/units/c1/"]').first().click()
+      await page.waitForURL(/\/g1\/units\/c1\/?$/)
     })
     await step(page, '一年级：单元页点第一道例题 → 答题页', async () => {
       await page.locator('a[href*="/g1/play/"]').first().click()
@@ -181,12 +181,12 @@ async function run() {
     })
     await page.screenshot({ path: `${SHOT}/07-g5-home.png`, fullPage: true })
     await step(page, '五年级：点单元 c3 → 单元页', async () => {
-      await page.locator('a[href="/g5/units/c3"]').first().click()
-      await page.waitForURL(/\/g5\/units\/c3$/)
+      await page.locator('a[href="/g5/units/c3"], a[href="/g5/units/c3/"]').first().click()
+      await page.waitForURL(/\/g5\/units\/c3\/?$/)
     })
     await step(page, '五年级：进入平行四边形面积 Lab', async () => {
       await page.locator('a[href*="/g5/labs/g5-c3-area-parallelogram"]').first().click()
-      await page.waitForURL(/\/g5\/labs\/g5-c3-area-parallelogram$/)
+      await page.waitForURL(/\/g5\/labs\/g5-c3-area-parallelogram\/?$/)
     })
     await step(page, '五年级：拖动滑块 → 面积实时变化', async () => {
       const areaSel = '.area-value strong, [class*="area-value"] strong, .lab-result'
@@ -207,10 +207,10 @@ async function run() {
     await page.screenshot({ path: `${SHOT}/10-g5-lab-cut.png`, fullPage: true })
     await step(page, '五年级：顶栏「训练游戏」→ 游戏列表', async () => {
       await page.getByRole('link', { name: '训练游戏' }).first().click()
-      await page.waitForURL(/\/g5\/games$/)
+      await page.waitForURL(/\/g5\/games\/?$/)
     })
     await step(page, '五年级：面积速算答题', async () => {
-      await page.locator('a[href="/g5/games/area-race"]').first().click()
+      await page.locator('a[href="/g5/games/area-race"], a[href="/g5/games/area-race/"]').first().click()
       await page.waitForURL(/\/g5\/games\/area-race/)
       await answerOne(page)
       await page.waitForTimeout(400)

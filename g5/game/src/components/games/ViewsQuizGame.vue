@@ -317,7 +317,7 @@ function restart() {
 }
 .three-mount {
   width: 100%;
-  max-width: 420px;
+  max-width: 588px;
   height: 260px;
   border-radius: var(--ui-radius-xl);
   border: 1px solid var(--ui-border);

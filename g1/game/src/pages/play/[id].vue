@@ -73,7 +73,7 @@ function nextQuestion() {
 </script>
 
 <template>
-  <UContainer v-if="question" class="max-w-3xl py-6 md:py-8">
+  <UContainer v-if="question" class="max-w-7xl py-6 md:py-8">
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
       <UButton
         :to="`/units/${question.chapter}`"
@@ -114,7 +114,7 @@ function nextQuestion() {
         :source="question.source"
       />
       <UCard
-        class="game-slot mt-4 min-h-[260px]"
+        class="game-slot mt-4 min-h-[400px]"
         :ui="{ body: 'flex flex-col justify-center gap-3' }"
       >
         <ClientOnly>

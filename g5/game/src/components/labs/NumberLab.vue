@@ -239,7 +239,7 @@ const lcmLine = computed(() => {
   gap: 0.35rem;
   justify-content: center;
   align-items: center;
-  max-width: 440px;
+  max-width: 616px;
 }
 .factor-chip {
   border-radius: 9999px;
@@ -363,7 +363,7 @@ const lcmLine = computed(() => {
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
-  max-width: 460px;
+  max-width: 644px;
   align-items: center;
 }
 </style>

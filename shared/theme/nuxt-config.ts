@@ -12,6 +12,15 @@ export const sharedCss = ['@shared/theme/app.css']
 /** Nuxt UI 离线字体（不拉 Google Fonts） */
 export const sharedUi = { fonts: false }
 
+/** 站内 NuxtLink 链接统一输出带尾斜杠，与预渲染文件形态一致，消除 Cloudflare 308 永久重定向与旧缓存隐患 */
+export const sharedLinkDefaults = {
+  experimental: {
+    defaults: {
+      nuxtLink: { trailingSlash: 'append' },
+    },
+  },
+} satisfies Pick<Partial<NuxtConfig>, 'experimental'>
+
 /** 图标按需扫描（离线图标解析）；共享组件在 srcDir 外，需显式列出其图标 */
 export const sharedIcon = {
   clientBundle: {
@@ -57,6 +66,7 @@ export function sharedNuxtConfig(extra: Partial<NuxtConfig> = {}): Partial<NuxtC
     icon: sharedIcon,
     appConfig: sharedAppConfig,
     vite: sharedVite,
+    experimental: sharedLinkDefaults.experimental,
     nitro: {
       ...nitro,
       prerender: {

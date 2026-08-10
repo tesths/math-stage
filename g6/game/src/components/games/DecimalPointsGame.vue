@@ -122,7 +122,7 @@ function restart() {
   font-size: 0.8rem;
   color: var(--ui-text-muted);
   margin-top: 0.3rem;
-  max-width: 22rem;
+  max-width: 31rem;
 }
 .finish {
   display: flex;

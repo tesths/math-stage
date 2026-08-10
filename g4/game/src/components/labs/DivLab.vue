@@ -202,7 +202,7 @@ const perFloor = computed(() => perShelf.value / floor.value)
 }
 .div-svg {
   width: 100%;
-  max-width: 380px;
+  max-width: 532px;
 }
 .qd-digit {
   font-size: 20px;
@@ -276,7 +276,7 @@ const perFloor = computed(() => perShelf.value / floor.value)
   gap: 0.6rem;
   align-items: center;
   width: 100%;
-  max-width: 420px;
+  max-width: 588px;
 }
 .shelf-root {
   border: 2px dashed var(--ui-border-accented);

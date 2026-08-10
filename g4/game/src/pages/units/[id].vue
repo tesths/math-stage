@@ -16,7 +16,7 @@ const labs = computed(() => labsOfChapter(chapterId.value))
 </script>
 
 <template>
-  <UContainer v-if="chapter" class="max-w-4xl py-6 md:py-8">
+  <UContainer v-if="chapter" class="max-w-7xl py-6 md:py-8">
     <UButton to="/" variant="ghost" color="neutral" icon="i-heroicons-arrow-left" label="返回首页" class="mb-4" />
 
     <div class="mb-6">

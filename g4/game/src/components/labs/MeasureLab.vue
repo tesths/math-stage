@@ -113,7 +113,7 @@ const jinG = computed(() => jin.value * 250)
   font-size: 0.85rem;
   color: var(--ui-text-toned);
   text-align: center;
-  max-width: 440px;
+  max-width: 616px;
 }
 .note b {
   color: var(--ui-primary);

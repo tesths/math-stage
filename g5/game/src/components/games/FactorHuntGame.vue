@@ -162,7 +162,7 @@ function restart() {
   flex-wrap: wrap;
   gap: 0.45rem;
   justify-content: center;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .factor-btn {
   width: 2.6rem;

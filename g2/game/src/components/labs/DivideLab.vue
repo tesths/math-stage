@@ -126,7 +126,7 @@ const prod = computed(() => qb.value * qa.value)
   border-radius: var(--ui-radius-lg);
   padding: 0.8rem;
   background: var(--ui-bg-muted);
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .pgroup {
   display: flex;

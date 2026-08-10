@@ -148,7 +148,7 @@ const yiMeters = computed(() => yiCm.value / 100)
 }
 .mul-svg {
   width: 100%;
-  max-width: 340px;
+  max-width: 476px;
 }
 .mul-d {
   font-size: 20px;
@@ -196,7 +196,7 @@ const yiMeters = computed(() => yiCm.value / 100)
   font-size: 0.85rem;
   color: var(--ui-text-toned);
   text-align: center;
-  max-width: 460px;
+  max-width: 644px;
 }
 .note b {
   color: var(--ui-primary);

@@ -160,7 +160,7 @@ const moreMax = computed(() => Math.max(football.value, 40))
 }
 .seg-svg {
   width: 100%;
-  max-width: 24rem;
+  max-width: 34rem;
 }
 .bar-title {
   fill: var(--ui-text-highlighted);
@@ -235,7 +235,7 @@ const moreMax = computed(() => Math.max(football.value, 40))
   font-size: 0.9rem;
   color: var(--ui-text-toned);
   text-align: center;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .tip b {
   color: var(--ui-primary);

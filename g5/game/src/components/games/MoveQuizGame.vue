@@ -165,7 +165,7 @@ function restart() {
   text-align: center;
 }
 .move-svg {
-  max-width: 340px;
+  max-width: 476px;
 }
 .grid-lines line {
   stroke: var(--ui-border);

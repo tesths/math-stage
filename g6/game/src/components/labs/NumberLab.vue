@@ -231,7 +231,7 @@ const binarySteps = computed(() => {
   padding: 1rem 1.4rem;
   text-align: center;
   min-width: 16rem;
-  max-width: 22rem;
+  max-width: 31rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;

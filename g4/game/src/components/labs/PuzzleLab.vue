@@ -117,7 +117,7 @@ const allCombos = computed(() => {
 }
 .combo-table {
   width: 100%;
-  max-width: 420px;
+  max-width: 588px;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   overflow: hidden;

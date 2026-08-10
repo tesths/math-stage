@@ -109,7 +109,7 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  max-width: 420px;
+  max-width: 588px;
   justify-content: center;
 }
 .frog {

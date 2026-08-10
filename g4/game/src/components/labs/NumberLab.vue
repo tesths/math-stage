@@ -290,7 +290,7 @@ const dateCode = computed(() => `${year.value}${String(month.value).padStart(2, 
   gap: 0.6rem;
   align-items: center;
   width: 100%;
-  max-width: 420px;
+  max-width: 588px;
 }
 .id-title {
   font-size: 0.9rem;

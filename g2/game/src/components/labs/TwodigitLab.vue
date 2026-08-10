@@ -159,7 +159,7 @@ const subResult = computed(() => subA.value - subB.value)
   gap: 2px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: 5rem;
+  max-width: 7rem;
 }
 .bead {
   width: 0.9rem;

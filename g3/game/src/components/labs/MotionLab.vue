@@ -113,7 +113,7 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
 }
 .motion-svg {
   width: 100%;
-  max-width: 22rem;
+  max-width: 31rem;
 }
 .shape {
   fill: color-mix(in srgb, var(--ui-primary) 45%, white);
@@ -161,7 +161,7 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
   font-size: 0.9rem;
   color: var(--ui-text-toned);
   text-align: center;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .tip b {
   color: var(--ui-primary);

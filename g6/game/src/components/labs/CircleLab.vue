@@ -209,7 +209,7 @@ const windowTotal = computed(() => toFixed2(windowSq.value + windowSemi.value))
   justify-content: center;
 }
 .svg-box.half svg {
-  max-width: 170px;
+  max-width: 240px;
   height: auto;
 }
 .area-grid {

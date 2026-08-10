@@ -127,7 +127,7 @@ const MAX_KM = 20
   flex-direction: column;
   gap: 0.7rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 560px;
 }
 .rope-row {
   display: flex;
@@ -163,7 +163,7 @@ const MAX_KM = 20
   flex-direction: column;
   gap: 0.4rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 560px;
 }
 .method {
   border-radius: var(--ui-radius-lg);
@@ -185,7 +185,7 @@ const MAX_KM = 20
   gap: 0.8rem;
   align-items: center;
   width: 100%;
-  max-width: 420px;
+  max-width: 588px;
 }
 .shop-title {
   font-size: 1.05rem;
@@ -246,7 +246,7 @@ const MAX_KM = 20
   gap: 1rem;
   align-items: center;
   width: 100%;
-  max-width: 440px;
+  max-width: 616px;
 }
 .km-track {
   position: relative;

@@ -142,7 +142,7 @@ const hours = computed(() => 1 / rateSum.value)
   gap: 0.9rem;
   align-items: center;
   width: 100%;
-  max-width: 440px;
+  max-width: 616px;
 }
 .seg-title {
   font-size: 1rem;

@@ -150,7 +150,7 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
   font-size: 0.85rem;
   color: var(--ui-text-muted);
   text-align: center;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .map-block {
   display: flex;
@@ -158,7 +158,7 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
   gap: 1rem;
   align-items: center;
   width: 100%;
-  max-width: 460px;
+  max-width: 644px;
 }
 .ruler {
   width: 100%;

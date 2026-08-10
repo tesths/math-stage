@@ -188,7 +188,7 @@ const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
   font-size: 0.85rem;
   color: var(--ui-text-muted);
   text-align: center;
-  max-width: 24rem;
+  max-width: 34rem;
 }
 .t-lbl {
   font-size: 12px;

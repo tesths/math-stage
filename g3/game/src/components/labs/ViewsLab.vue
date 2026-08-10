@@ -140,7 +140,7 @@ const views = computed(() => [
 }
 .iso-svg {
   width: 100%;
-  max-width: 20rem;
+  max-width: 28rem;
 }
 .face {
   stroke: #0f172a;
@@ -186,6 +186,6 @@ const views = computed(() => [
   font-size: 0.85rem;
   color: var(--ui-text-toned);
   text-align: center;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 </style>

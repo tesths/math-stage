@@ -104,7 +104,7 @@ const game = useQuizGame(makeRound)
 }
 .expr-card {
   text-align: center;
-  max-width: 28rem;
+  max-width: 39rem;
 }
 .expr {
   font-size: 1.15rem;

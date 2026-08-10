@@ -204,7 +204,7 @@ const RATIO = 0.618
   gap: 0.7rem;
   align-items: center;
   width: 100%;
-  max-width: 420px;
+  max-width: 588px;
 }
 .cup-set {
   display: flex;
@@ -293,7 +293,7 @@ const RATIO = 0.618
   padding: 1rem 1.4rem;
   text-align: center;
   min-width: 16rem;
-  max-width: 22rem;
+  max-width: 31rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

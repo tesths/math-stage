@@ -109,7 +109,7 @@ const relationText = computed(() => {
 }
 .interval-svg {
   width: 100%;
-  max-width: 22rem;
+  max-width: 31rem;
 }
 .ground {
   stroke: var(--ui-border-accented);
@@ -154,7 +154,7 @@ const relationText = computed(() => {
   font-size: 0.9rem;
   color: var(--ui-text-toned);
   text-align: center;
-  max-width: 26rem;
+  max-width: 36rem;
 }
 .tip b {
   color: var(--ui-primary);

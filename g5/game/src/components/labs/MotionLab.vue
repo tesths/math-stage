@@ -215,7 +215,7 @@ const arcEnd = computed(() => {
   align-items: center;
 }
 svg {
-  max-width: 460px;
+  max-width: 644px;
 }
 .grid-lines line {
   stroke: var(--ui-border);
@@ -271,6 +271,6 @@ svg {
   font-size: 0.8rem;
   color: var(--ui-text-muted);
   text-align: center;
-  max-width: 42rem;
+  max-width: 59rem;
 }
 </style>
