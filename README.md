@@ -274,6 +274,19 @@ GitHub Actions 使用 Node 24 + npm 12，按根 workspace 顺序执行 `npm ci -
 > 依赖安装已经集中到根 workspace；本地冷安装验证约 15 秒量级，Cloudflare 缓存命中后只需复用根 lockfile。
 > 年级构建默认并发 2，可用 `SITE_BUILD_CONCURRENCY=1` 降低内存压力。
 
+> ⚠️ **Node/npm 版本（务必保持）**：根 `.npmrc` 为 `engine-strict`，`engines` 必须保持
+> `node >=24 <25`、`npm >=11`（Cloudflare 自带 node 24.13.1 + npm 11.8.0）。
+> **根 `package.json` 禁止添加 `packageManager` 字段**（npm 11 会因此切换执行 npm@12 → EBADENGINE 构建失败，2026-08 线上事故）。
+> 详见 `docs/DEPLOYMENT.md` §4.2 与 `docs/DEVELOPMENT.md` §13 排错速查。
+
+### 部署后验证
+
+```bash
+node scripts/link-audit.mjs        # 本地产物全量链接审计（期望 ✅ 无断链）
+node scripts/link-audit.mjs --live # 浏览器级爬取线上全站逐页核对（部署完成后必跑）
+npm run test:click                 # 真实点击验收 46 项（需先 npm run build:site:local）
+```
+
 ### 新增年级（三年级等）
 
 1. 新建独立 Nuxt 工程（如 `g3/`，管理上独立），复制现有 nuxt.config 骨架（引入 `sharedNuxtConfig`）。

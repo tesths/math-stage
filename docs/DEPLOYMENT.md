@@ -68,6 +68,7 @@ Cloudflare 边缘网络 → 用户浏览器
 | 14 | 门户样式 | `shared/theme/nuxt-config.ts` + `pages/index.vue` | primary: emerald | 与年级一致的 Nuxt UI 风格 | 改共享主题/注册表 |
 | 15 | 依赖安装方式 | 根 workspace | `npm ci` | 用根 `package-lock.json` 一次性安装所有 workspace 依赖 | 改根 package/lock；不再维护各应用 lockfile |
 | 16 | 产物忽略 | 根 `.gitignore` | `deploy/`、`dist/`、`node_modules/` 等 | 构建产物不提交 | 一般不改 |
+| 17 | Node/npm 版本 | 根 package.json `engines` | node `>=24 <25`、npm `>=11` | CF 自带 node24.13.1+npm11.8.0，`engine-strict` 强制校验；**禁写 `packageManager` 字段**（npm11 会切到 npm12 → EBADENGINE） | 见 §4.2 版本约束 |
 
 ---
 
@@ -94,7 +95,17 @@ Cloudflare 边缘网络 → 用户浏览器
   `deploy/ 共 397 个 HTML 页面 / 门户 / 一年级 111 页 / 二年级 48 页 / 三年级 73 页 / 四年级 51 页 / 五年级 55 页 / 六年级 56 页`。
 - 访问 `https://<项目名>.pages.dev/` → 应看到门户六张卡片。
 - 点"进入一年级"→ URL 变 `/g1/`；二至六年级入口分别进入 `/g2/`、`/g3/`、`/g4/`、`/g5/`、`/g6/`。
-- 抽查深层页面：`/g1/play/c1-count-01`、`/g2/labs/g2-c6-abacus`、`/g3/labs/g3-c3-mul-pen`、`/g4/labs/g4-c1-div-pen`、`/g5/labs/g5-c3-area-parallelogram`、`/g6/labs/g6-c1-mul-decimal`。
+- **全量断链审计（推荐，覆盖本地与线上）**：
+  ```bash
+  node scripts/link-audit.mjs        # 本地 deploy/ 全量 href 审计（11867+ 条链接，0 断链）
+  node scripts/link-audit.mjs --live # 浏览器级爬取线上全站逐页核对（约 3 分钟，防限流间隔 200ms）
+  ```
+  应输出 `✅ 无断链`；出现 `❌ 本地断链` / `❌ 线上校验失败` 时按路径定位。
+- 抽查深层页面（均应为 200）：
+  `/g1/play/c1-count-01/`、`/g2/labs/g2-c6-abacus/`、`/g3/labs/g3-c3-mul-pen/`、
+  `/g4/labs/g4-c1-div-pen/`、`/g5/labs/g5-c3-area-parallelogram/`、`/g6/labs/g6-c1-mul-decimal/`。
+  注意：预渲染链接**统一带尾斜杠**（`shared/theme/nuxt-config.ts` 的 `experimental.defaults.nuxtLink.trailingSlash: 'append'`），
+  浏览器与审计均按带尾斜杠形态校验；无尾斜杠深链由 Cloudflare 自动 308 到规范形态。
 
 ### 3.3 已有旧项目（之前部署的是 game 目录）怎么改
 
@@ -162,6 +173,19 @@ export const gradeApps = [
 - 面板构建命令填 `npm run build:site`。
 - 本地预览：`npm run build:site:local && npm run preview`。
 - 想调整构建行为（如 CI 上强制重装）就改这里的参数，不要改面板。
+
+**⚠️ Node/npm 版本约束（2026-08 线上事故教训，改 package.json 前必读）**
+
+- Cloudflare Pages 的 Node 由 `.node-version`/`.nvmrc` 决定，但实际装的是**自身快照的最新 24.x**
+  （实测为 `v24.13.1`），且**自带 npm 11.8.0**，与本地 npm 12 不同。
+- 根 `.npmrc` 设了 `engine-strict=true`，因此 `engines` 校验会拦截版本不兼容：
+  - `engines.node`：`>=24 <25`（CF 的 24.13.1 满足）。
+  - `engines.npm`：**必须 `>=11`**（CF 自带 npm 11.8.0；不要写 `>=12`，否则 CF 构建第一步就 EBADENGINE）。
+- **禁止在根 `package.json` 写 `packageManager` 字段**：npm ≥11 会读取该字段自动切换执行指定版本，
+  npm@12.0.1 要求 node `^22.22.2 || ^24.15.0 || >=26.0.0`，而 CF 的 node 24.13.1 不满足 → 构建报
+  `EBADENGINE Unsupported engine ... npm@12.0.1 ... Not compatible`。
+- 本地/CI 用 npm 12 没问题（不依赖 `packageManager` 字段），CF 用自带 npm 11 也没问题；
+  发布上线前先在本地过 `npm run typecheck` + `npm run build:site:local`，再用 §3.2 的 `link-audit --live` 复测。
 
 ### 4.3 各年级应用 `nuxt.config.ts` —— 子路径与预渲染
 

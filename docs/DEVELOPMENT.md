@@ -831,7 +831,11 @@ Cloudflare Pages 输出目录 deploy/
 - **代理处理**：npm 安装可继承 `http_proxy` / `https_proxy`；Nuxt `prepare` / `generate` 脚本会清理代理变量，避免 `socks5h://` 被 Undici 当作 HTTP proxy URL 解析失败。
   ⚠️ 不要在 `_redirects` 里加 `/g1/* → /g1/200.html 200` 这类 SPA 重写：
   它会在 Cloudflare 上抢在静态文件前命中目录请求，被 clean URL 解析成 `/g1/200`，造成 308 循环（线上事故记录）。
-- 根 `package.json`：Node 24/npm 12 约束、workspaces、统一依赖版本、`build:site` / `build:site:local` / `prepare:nuxt` / `typecheck` / `preview`。
+- 根 `package.json`：Node 24 约束、workspaces、统一依赖版本、`build:site` / `build:site:local` / `prepare:nuxt` / `typecheck` / `preview`。
+  **版本陷阱**：`engine-strict=true` + `engines.npm >=11`（CF 自带 npm 11.8.0，见排错速查 EBADENGINE）；**根 package.json 禁止写 `packageManager` 字段**。
+- **站内链接统一带尾斜杠**：`shared/theme/nuxt-config.ts` 里 `experimental.defaults.nuxtLink.trailingSlash: 'append'`，
+  使所有 NuxtLink 输出的 href 与预渲染目录形态一致（`/g3/units/c1/`）。
+  手写链接（跨应用 `<a href>`、测试选择器、文档示例）也请统一用带尾斜杠形态，避免无谓的 308 跳转与浏览器永久重定向缓存。
 
 ### 10.3 Cloudflare Pages 配置（一次）
 
@@ -909,6 +913,8 @@ npm run preview             # npx serve deploy
 npm run test:shared         # 共享层测试（32 用例，使用根 vitest）
 npm run test:shared:coverage # 共享层覆盖率（阈值 95%）
 npm run test:click          # 真实点击验收（需先 build:site:local；门户入口覆盖 g1~g6）
+node scripts/link-audit.mjs         # 全站链接审计：deploy/ 全部 href 对照实际文件（断链即失败）
+node scripts/link-audit.mjs --live  # 浏览器级爬取线上全站逐页核对（部署后必跑）
 
 # 单工程（game/、g2/game/、g3/game/、g4/game/、g5/game/ 或 g6/game/ 内）
 npm run dev                 # 开发
@@ -942,6 +948,9 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 | 带代理执行 Nuxt 报 `Invalid URL protocol` | npm 联网可使用代理；Nuxt 本地 `prepare` / `generate` 不需要网络，统一走 `npm run prepare:nuxt`、`npm run build:site` 或根层 `generate:gN` 脚本，它们会清理代理变量 |
 | 部署后主色仍是旧色（一年级橙/门户蓝） | 聚合脚本曾复制旧 `dist/`；已改为复制 `.output/public`，重新 `npm run build:site:local` |
 | Cloudflare 构建报 `ENOENT ... g1/game/.output/public` | **Cloudflare Pages 设 `CF_PAGES=1`**，std-env 把 nitro provider 识别为 `cloudflare_pages`，`nuxi generate` 自动改用 `cloudflare-pages-static` 预设（输出 `dist/<baseURL>/`），而脚本复制 `.output/public` → 已在 `site-build.mjs` 显式传 `NITRO_PRESET=static` 强制统一输出；本地可用 `CF_PAGES=1 npm run build:site:local` 复现/验证 |
+| Cloudflare 构建报 `EBADENGINE Unsupported engine ... npm@12.0.1 ... Not compatible with your version of node/npm` | CF 用自身快照的 node `v24.13.1` + 自带 npm 11.8.0。根 `packageManager: "npm@12.0.1"` 会让 npm11 自动切换执行 npm12，而 npm12 要求 node `^22.22.2 || ^24.15.0 || >=26.0.0`（24.13.1 不满足）→ **必须删除 `packageManager` 字段**，并保证 `engines.npm >= 11`（CF 自带 npm 11.8.0 才能过 `engine-strict`）。本地/CI 仍可用 npm 12（不依赖该字段） |
+| Cloudflare 构建报 `EBADENGINE ... Not compatible ... Actual node v24.13.1`（假定已删 packageManager） | 其余 Engine 校验来自根 `.npmrc` 的 `engine-strict=true`：确认 `engines.node: >=24 <25` 与 `engines.npm: >=11`，两者 CF 均满足 |
+| 浏览器点击站内链接仍跳到 404，直接输入 URL 却正常 | 旧版无尾斜杠链接触发过 308 永久重定向，浏览器会**永久缓存** 308 链 → 已通过 `trailingSlash: 'append'` 让所有链接带尾斜杠从源头消除；仍异常则硬刷新/清站点数据 |
 | 部署后 /g1/ 404 | 确认 Cloudflare 构建命令是 `npm run build:site`、输出目录 `deploy`；真实页面应已预渲染到 `deploy/g1/` |
 | 从门户/年级点卡片进到 404（Nuxt 404 页） | 跨应用链接用了 NuxtLink/UButton → 改原生 `<a href>`（见 §3.5/§4.5/§6.5 跨应用导航四坑） |
 | 点击后 URL 是 /g5/200 且 404/循环 | 旧版 `_redirects` SPA 200 重写残留 → 已删；若浏览器缓存，硬刷新/清缓存/Cloudflare Purge |
