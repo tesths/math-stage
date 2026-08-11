@@ -62,6 +62,16 @@ export interface BaseQuestion {
 /** 题源小节类型（对应课本小标题） */
 export type SourceKind = '例题' | '试一试' | '想想做做' | '练习' | '活动'
 
+/** 可选视觉配置（见 docs/example-visual-upgrade-spec.md §3.1） */
+export interface VisualSpec {
+  /** 同一 kind 下的具体视觉分支，如 compare: pairing；count: two-hands */
+  variant?: string
+  /** 课本情境关键词，如 balls、hands、bricks、paper、stars，不写展示文案 */
+  scene?: string
+  /** 截图/计数中使用的量词，如 根、个、箱 */
+  unitLabel?: string
+}
+
 export interface CountConfig {
   /** 物品 emoji 串，长度即数量 */
   emoji: string
@@ -69,6 +79,8 @@ export interface CountConfig {
   answer: number
   /** 候选选项 */
   options: number[]
+  /** 可选视觉配置 */
+  visual?: VisualSpec
 }
 
 export interface WriteConfig {

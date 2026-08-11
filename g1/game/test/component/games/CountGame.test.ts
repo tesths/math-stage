@@ -12,9 +12,18 @@ function q(over: object, page = 12): GameQuestion {
 }
 
 describe('CountGame count 类型', () => {
-  it('按物品数量渲染 emoji', () => {
+  it('按物品数量显示对象（十框淡显可数）', () => {
     const w = mount(CountGame, { props: { question: q({}) } })
-    expect(w.findAll('.count-item').length).toBe(3)
+    expect(w.findAll('.tf-cell').length).toBe(10)
+    expect(w.findAll('.tf-obj').length).toBe(3)
+  })
+
+  it('点击格子逐个点亮并显示计数轨迹', async () => {
+    const w = mount(CountGame, { props: { question: q({}) } })
+    expect(w.findAll('.tf-cell.lit').length).toBe(0)
+    await w.findAll('.tf-cell')[2].trigger('click')
+    expect(w.findAll('.tf-cell.lit').length).toBe(3)
+    expect(w.text()).toContain('数到 3')
   })
 
   it('answer 为 0 时显示"一个也没有"', () => {
@@ -22,7 +31,7 @@ describe('CountGame count 类型', () => {
       props: { question: q({ config: { type: 'count', emoji: '', answer: 0, options: [0, 1, 2, 3] } }) },
     })
     expect(w.text()).toContain('一个也没有')
-    expect(w.findAll('.count-item').length).toBe(0)
+    expect(w.findAll('.tf-cell.lit').length).toBe(0)
   })
 
   it('点对选项 → 反馈正确并锁定', async () => {

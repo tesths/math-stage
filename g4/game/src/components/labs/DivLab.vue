@@ -2,7 +2,7 @@
 /**
  * 除法 Lab：整十数口算 / 竖式试商 / 笔算竖式 / 两步连除
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { digitsOf } from '@/lib/engine/math'
 
@@ -63,6 +63,34 @@ const shelf = computed(() => Math.round(props.values.shelf ?? 2))
 const floor = computed(() => Math.round(props.values.floor ?? 4))
 const perShelf = computed(() => total.value / shelf.value)
 const perFloor = computed(() => perShelf.value / floor.value)
+
+/* ---------- 竖式逐步演示 ---------- */
+const started = computed(() => penSteps.value.filter((s) => s.started))
+const cur = ref(Math.max(started.value.length - 1, 0))
+const setCur = (i: number) => {
+  cur.value = Math.min(Math.max(i, 0), started.value.length - 1)
+}
+const roundNotes = computed(() => {
+  const digs = digitsOf(dividend.value)
+  return started.value.map((s, i) => {
+    const prev = i === 0 ? 0 : started.value[i - 1]!.rem
+    return { idx: i, col: s.col, qd: s.qd, sub: s.sub, rem: s.rem, curVal: prev * 10 + digs[s.col]! }
+  })
+})
+const activeRound = computed(() => roundNotes.value[cur.value])
+
+/* ---------- 试商流程 ---------- */
+const tryFlow = computed(() => {
+  const est = Math.floor(divisor.value / 10) * 10
+  const qd = Math.floor(dividend.value / divisor.value)
+  const sub = qd * divisor.value
+  return [
+    { label: `估除数≈${est}` },
+    { label: `试商 ${qd}` },
+    { label: `${qd} × ${divisor.value} = ${sub}` },
+    { label: `${dividend.value} − ${sub} = ${dividend.value - sub}${dividend.value - sub >= 0 ? ' ✓' : ' ✗ 调商'}` },
+  ]
+})
 </script>
 
 <template>
@@ -90,14 +118,25 @@ const perFloor = computed(() => perShelf.value / floor.value)
     <!-- 竖式（试商/笔算） -->
     <template v-else-if="kind === 'div-try' || kind === 'div-pen'">
       <svg viewBox="0 0 380 230" class="div-svg">
-        <text
-          v-for="(s, si) in penSteps"
-          :key="'q' + si"
-          :x="30 + s.col * 34"
-          :y="30"
-          text-anchor="middle"
-          class="qd-digit"
-        >{{ s.started ? s.qd : '' }}</text>
+        <!-- 商位 -->
+        <template v-for="(s, si) in penSteps" :key="'q' + si">
+          <text
+            :x="30 + s.col * 34"
+            :y="30"
+            text-anchor="middle"
+            class="qd-digit"
+            :class="{ active: s.started && started.findIndex((x) => x === s) === cur, zero: !s.started }"
+          >{{ s.started ? s.qd : '' }}</text>
+          <rect
+            v-if="!s.started"
+            :x="30 + s.col * 34 - 10"
+            :y="16"
+            width="20"
+            height="28"
+            rx="3"
+            class="zero-box"
+          />
+        </template>
 
         <text x="20" y="30" class="divisor">{{ divisor }}</text>
         <text x="52" y="30" class="div-sym">)⎯</text>
@@ -108,28 +147,61 @@ const perFloor = computed(() => perShelf.value / floor.value)
           :y="30"
           text-anchor="middle"
           class="dd-digit"
+          :class="{ colactive: roundNotes[cur] && roundNotes[cur]!.col === i }"
         >{{ d }}</text>
 
-        <template v-for="(s, si) in penSteps.filter((s) => s.started)" :key="'r' + si">
-          <text
-            v-for="(d, di) in String(s.sub).padStart(s.col + 1, '0').split('')"
-            :key="'s' + di"
-            :x="72 + (s.col - String(s.sub).length + 1 + di) * 34"
-            :y="62 + si * 40"
-            text-anchor="middle"
-            class="sub-digit"
-          >{{ d === '0' ? '' : d }}</text>
-          <line :x1="66 + (s.col - String(s.sub).length + 1) * 34 - 6" :x2="66 + (s.col + 1) * 34 + 2" :y1="72 + si * 40" :y2="72 + si * 40" class="sub-line" />
-          <text
-            v-for="(d, di) in String(s.rem).padStart(s.col + 1, '0').split('')"
-            :key="'m' + di"
-            :x="72 + (s.col - String(s.rem).length + 1 + di) * 34"
-            :y="82 + si * 40"
-            text-anchor="middle"
-            class="rem-digit"
-          >{{ d === '0' ? '' : d }}</text>
+        <!-- 逐轮：当前轮高亮 + 连接线 -->
+        <template v-for="(s, si) in started" :key="'r' + si">
+          <g :class="si === cur ? 'round-active' : 'round-dim'">
+            <text
+              v-for="(d, di) in String(s.sub).padStart(s.col + 1, '0').split('')"
+              :key="'s' + di"
+              :x="72 + (s.col - String(s.sub).length + 1 + di) * 34"
+              :y="62 + si * 40"
+              text-anchor="middle"
+              class="sub-digit"
+            >{{ d === '0' ? '' : d }}</text>
+            <line :x1="66 + (s.col - String(s.sub).length + 1) * 34 - 6" :x2="66 + (s.col + 1) * 34 + 2" :y1="72 + si * 40" :y2="72 + si * 40" class="sub-line" />
+            <text
+              v-for="(d, di) in String(s.rem).padStart(s.col + 1, '0').split('')"
+              :key="'m' + di"
+              :x="72 + (s.col - String(s.rem).length + 1 + di) * 34"
+              :y="82 + si * 40"
+              text-anchor="middle"
+              class="rem-digit"
+            >{{ d === '0' ? '' : d }}</text>
+          </g>
+          <g v-if="si === cur" class="connector">
+            <line :x1="30 + s.col * 34" :y1="30" :x2="72 + s.col * 34" :y2="60" class="conn-line" />
+            <line :x1="72 + s.col * 34" :y1="72" :x2="72 + s.col * 34" :y2="84" class="conn-line" />
+          </g>
         </template>
       </svg>
+
+      <!-- 试商流程条 -->
+      <div v-if="kind === 'div-try'" class="try-bar">
+        <template v-for="(f, i) in tryFlow" :key="i">
+          <span class="try-chip">{{ f.label }}</span>
+          <span v-if="i < tryFlow.length - 1" class="try-arrow">→</span>
+        </template>
+      </div>
+
+      <div class="step-bar">
+        <button
+          v-for="(n, i) in roundNotes"
+          :key="i"
+          type="button"
+          class="step-chip"
+          :class="{ on: i === cur }"
+          @click="setCur(i)"
+        >
+          {{ i + 1 }}
+        </button>
+      </div>
+      <p v-if="activeRound" class="round-note">
+        第 {{ cur + 1 }} 轮：{{ activeRound.curVal }} ÷ {{ divisor }} = {{ activeRound.qd }}……{{ activeRound.rem }}（商写 {{ activeRound.qd }}，乘积 {{ activeRound.sub }}）
+      </p>
+
       <div class="formula-row">
         <span class="chip big">{{ dividend }} ÷ {{ divisor }} =</span>
         <span class="chip op">{{ Math.floor(dividend / divisor) }}{{ dividend % divisor ? ' …… ' + (dividend % divisor) : '' }}</span>
@@ -208,6 +280,18 @@ const perFloor = computed(() => perShelf.value / floor.value)
   font-size: 20px;
   font-weight: 800;
   fill: var(--ui-primary);
+  transition: opacity 0.2s ease;
+}
+.qd-digit.zero {
+  fill: var(--ui-text-muted);
+}
+.qd-digit.active {
+  font-size: 22px;
+}
+.zero-box {
+  fill: none;
+  stroke: var(--ui-text-muted);
+  stroke-dasharray: 3 3;
 }
 .divisor {
   font-size: 17px;
@@ -223,6 +307,10 @@ const perFloor = computed(() => perShelf.value / floor.value)
   font-weight: 700;
   fill: var(--ui-text-highlighted);
 }
+.dd-digit.colactive {
+  fill: var(--ui-primary);
+  font-size: 21px;
+}
 .sub-digit {
   font-size: 15px;
   fill: var(--ui-text-muted);
@@ -235,6 +323,74 @@ const perFloor = computed(() => perShelf.value / floor.value)
   font-size: 15px;
   font-weight: 700;
   fill: var(--ui-primary);
+}
+.round-active .sub-digit {
+  fill: var(--ui-primary);
+  font-weight: 800;
+}
+.round-active .rem-digit {
+  fill: var(--ui-primary);
+  font-weight: 800;
+}
+.round-dim {
+  opacity: 0.35;
+}
+.conn-line {
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.step-bar {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.step-chip {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 9999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-muted);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.step-chip:hover {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+.step-chip.on {
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+  color: white;
+}
+.round-note {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ui-primary);
+  text-align: center;
+}
+.try-bar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.try-chip {
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-warning, #f59e0b) 45%, white);
+  color: var(--ui-text-highlighted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+}
+.try-arrow {
+  color: var(--ui-warning, #f59e0b);
+  font-weight: 800;
 }
 .formula-row {
   display: flex;

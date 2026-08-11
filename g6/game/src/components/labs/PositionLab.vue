@@ -57,15 +57,20 @@ const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
       <div class="seat-block">
         <div class="seat-grid">
           <div class="seat-head">
-            <span v-for="c in COLS" :key="'h' + c" class="seat-label">{{ c }}</span>
+            <span
+              v-for="c in COLS"
+              :key="'h' + c"
+              class="seat-label"
+              :class="{ axis: c === col }"
+            >{{ c }}</span>
           </div>
           <div v-for="r in ROWS" :key="r" class="seat-row">
-            <span class="seat-label">{{ r }}</span>
+            <span class="seat-label" :class="{ axis: r === row }">{{ r }}</span>
             <button
               v-for="c in COLS"
               :key="c"
               class="seat"
-              :class="{ active: c === col && r === row }"
+              :class="{ 'col-hl': c === col, 'row-hl': r === row, active: c === col && r === row }"
               :disabled="true"
             >
               <span v-if="c === col && r === row" class="seat-pin">严军</span>
@@ -150,6 +155,10 @@ const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
   color: var(--ui-text-muted);
   text-align: center;
 }
+.seat-label.axis {
+  color: var(--ui-primary);
+  font-weight: 800;
+}
 .seat {
   width: 1.9rem;
   height: 1.7rem;
@@ -159,6 +168,13 @@ const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
   padding: 0;
   position: relative;
   transition: all 0.25s;
+}
+.seat.col-hl {
+  background: color-mix(in srgb, var(--ui-primary) 34%, white);
+  border-color: color-mix(in srgb, var(--ui-primary) 60%, white);
+}
+.seat.row-hl {
+  border-color: color-mix(in srgb, var(--ui-primary) 45%, white);
 }
 .seat.active {
   background: var(--ui-primary);

@@ -18,6 +18,15 @@ describe('SplitGame', () => {
     expect(w.findAll('.split-item').length).toBe(6)
     expect(w.text()).toContain('2')
     expect(w.text()).toContain('?')
+    expect(w.findAll('.split-tray').length).toBe(2)
+  })
+
+  it('点移动按钮把圆片移到右边（双盘联动）', async () => {
+    const w = mount(SplitGame, { props: { question: q({}) } })
+    expect(w.findAll('.split-tray.right .split-item').length).toBe(4)
+    await w.findAll('.split-move')[0].trigger('click') // 移 1 个到右边
+    expect(w.findAll('.split-tray.left .split-item').length).toBe(3)
+    expect(w.findAll('.split-tray.right .split-item').length).toBe(3)
   })
 
   it('答对发出 answered', async () => {

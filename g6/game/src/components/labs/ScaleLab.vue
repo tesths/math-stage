@@ -38,6 +38,19 @@ const SHAPES = [
 const current = computed(() => SHAPES[shape.value % SHAPES.length]!)
 const gridCols = 14
 
+/* ---------- 对应边标注：底边（红）与高（蓝） ---------- */
+const baseLen = computed(() => (shape.value % SHAPES.length === 2 ? 64 : 64))
+const heightLen = computed(() => (shape.value % SHAPES.length === 0 ? 32 : shape.value % SHAPES.length === 1 ? 48 : 32))
+const baseEdge = computed(() => `M 0 ${heightLen.value} L ${baseLen.value} ${heightLen.value}`)
+const baseEdgeS = computed(() => `M 0 ${heightLen.value * f.value} L ${baseLen.value * f.value} ${heightLen.value * f.value}`)
+const heightEdge = computed(() => `M 0 ${heightLen.value} L 0 0`)
+const heightEdgeS = computed(() => `M 0 ${heightLen.value * f.value} L 0 0`)
+const baseLabel = computed(() => `${baseLen.value} → ${Math.round(baseLen.value * f.value)}（×${toFixed2(f.value)}）`)
+const heightLabel = computed(() => `${heightLen.value} → ${Math.round(heightLen.value * f.value)}（×${toFixed2(f.value)}）`)
+/** 放大图动态网格尺寸，避免大比例时图形超出画布 */
+const sW = computed(() => Math.ceil((baseLen.value * f.value + 12) / 16))
+const sH = computed(() => Math.ceil((heightLen.value * f.value + 12) / 16))
+
 /* ---------- 比例尺 ---------- */
 const scaleDen = computed(() => Math.round(props.values.scaleDen ?? 1000))
 const cm = computed(() => props.values.cm ?? 5)
@@ -64,21 +77,34 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
               <line :x1="0" :y1="y * cell" :x2="224" :y2="y * cell" stroke="var(--ui-border-accented)" stroke-width="0.5" />
             </template>
             <path :d="current.orig" fill="color-mix(in srgb, var(--ui-primary) 30%, white)" stroke="var(--ui-primary)" stroke-width="2" />
+            <path :d="baseEdge" class="edge-base" />
+            <path :d="heightEdge" class="edge-height" />
+            <text :x="baseLen / 2" :y="heightLen + 12" text-anchor="middle" class="edge-label base">{{ baseLabel }}</text>
+            <text :x="12" :y="heightLen / 2" text-anchor="middle" class="edge-label height">{{ heightLabel }}</text>
           </svg>
         </div>
         <span class="arrow">→</span>
         <div class="shape-col">
           <span class="shape-tag">后</span>
-          <svg :width="gridCols * cell" :height="Math.min(6, 4 * f) * cell" viewBox="0 0 224 96">
-            <template v-for="x in gridCols" :key="'s' + x">
-              <line :x1="x * cell" :y1="0" :x2="x * cell" :y2="96" stroke="var(--ui-border-accented)" stroke-width="0.5" />
+          <svg :width="sW * cell" :height="sH * cell" :viewBox="`0 0 ${sW * cell} ${sH * cell}`">
+            <template v-for="x in sW" :key="'s' + x">
+              <line :x1="x * cell" :y1="0" :x2="x * cell" :y2="sH * cell" stroke="var(--ui-border-accented)" stroke-width="0.5" />
             </template>
-            <template v-for="y in 6" :key="'sy' + y">
-              <line :x1="0" :y1="y * cell" :x2="224" :y2="y * cell" stroke="var(--ui-border-accented)" stroke-width="0.5" />
+            <template v-for="y in sH" :key="'sy' + y">
+              <line :x1="0" :y1="y * cell" :x2="sW * cell" :y2="y * cell" stroke="var(--ui-border-accented)" stroke-width="0.5" />
             </template>
             <path :d="current.scale(f)" fill="color-mix(in srgb, var(--ui-primary) 50%, white)" stroke="var(--ui-primary)" stroke-width="2" />
+            <path :d="baseEdgeS" class="edge-base" />
+            <path :d="heightEdgeS" class="edge-height" />
+            <text :x="(baseLen * f) / 2" :y="heightLen * f + 12" text-anchor="middle" class="edge-label base">{{ baseLabel }}</text>
+            <text :x="12" :y="(heightLen * f) / 2" text-anchor="middle" class="edge-label height">{{ heightLabel }}</text>
           </svg>
         </div>
+      </div>
+      <div class="edge-legend">
+        <span class="legend-chip base">底边对应</span>
+        <span class="legend-chip height">高对应</span>
+        <span class="legend-text">对应边按同一比放大/缩小，形状不变</span>
       </div>
       <p class="note">放大或缩小前后，图形的大小变了，形状不变（对应角相等，对应边的比都是 {{ n }}:{{ d }}）</p>
     </template>
@@ -145,6 +171,51 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
   font-size: 1.6rem;
   color: var(--ui-primary);
   font-weight: 800;
+}
+.edge-base,
+.edge-height {
+  fill: none;
+  stroke-width: 3;
+}
+.edge-base {
+  stroke: #ef4444;
+}
+.edge-height {
+  stroke: #2563eb;
+}
+.edge-label {
+  font-size: 10px;
+  font-weight: 800;
+  fill: var(--ui-text-highlighted);
+}
+.edge-label.base {
+  fill: #b91c1c;
+}
+.edge-label.height {
+  fill: #1d4ed8;
+}
+.edge-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+.legend-chip {
+  border-radius: 9999px;
+  padding: 0.15rem 0.6rem;
+  font-weight: 700;
+  color: white;
+}
+.legend-chip.base {
+  background: #ef4444;
+}
+.legend-chip.height {
+  background: #2563eb;
+}
+.legend-text {
+  color: var(--ui-text-muted);
 }
 .note {
   font-size: 0.85rem;

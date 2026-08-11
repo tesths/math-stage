@@ -30,7 +30,7 @@ export const c2Examples: GameQuestion[] = [
     title: '数一数，认一认',
     prompt: '认识4、5。数一数，天上有几颗星星？',
     type: 'count',
-    config: { type: 'count', emoji: '⭐⭐⭐⭐', answer: 4, options: [2, 3, 4, 5] },
+    config: { type: 'count', emoji: '⭐⭐⭐⭐', answer: 4, options: [2, 3, 4, 5], visual: { scene: 'stars', unitLabel: '颗' } },
   },
   {
     id: 'c2-write-02',

@@ -114,9 +114,16 @@ const hours = computed(() => 1 / rateSum.value)
             </div>
             <span class="wp-rate">每小时 1/{{ b }} = {{ toFixed2(rateB) }}</span>
           </div>
+          <div class="work-part">
+            <span class="wp-name">合作效率叠加</span>
+            <div class="wp-track combined">
+              <div class="wp-fill sum" :style="{ width: `${rateSum * 100}%` }">{{ toFixed2(rateSum) }}</div>
+            </div>
+            <span class="wp-rate">1/{{ a }} + 1/{{ b }} = {{ toFixed2(rateSum) }}</span>
+          </div>
         </div>
         <p class="seg-result">
-          一起每小时 1/{{ a }} + 1/{{ b }} = {{ toFixed2(rateSum) }}
+          合作每小时完成 {{ toFixed2(rateSum) }}，把总工作量 1 分成每小时一小段：
           <br />
           合作时间 = 1 ÷ {{ toFixed2(rateSum) }} = <b>{{ toFixed2(hours) }} 小时</b>
         </p>
@@ -271,6 +278,14 @@ const hours = computed(() => 1 / rateSum.value)
 .wp-fill.alt {
   background: color-mix(in srgb, var(--ui-primary) 45%, white);
   color: var(--ui-text-highlighted);
+}
+.wp-track.combined {
+  height: 1.8rem;
+  border-color: var(--ui-warning, #f59e0b);
+}
+.wp-fill.sum {
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 62%, white);
+  color: white;
 }
 .wp-rate {
   font-size: 0.8rem;

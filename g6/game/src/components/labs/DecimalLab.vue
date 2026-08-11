@@ -33,6 +33,14 @@ const divExamples = [
 ]
 const divSel = computed(() => divExamples[Math.round(props.values.sel ?? 0) % 3]!)
 
+/** 除以小数：转化动画用的位权数字（统一放大到整数后） */
+const divMove = computed(() => {
+  const d = divSel.value
+  // 除数的小数位数即需要右移的位数
+  const shift = String(d.v).includes('.') ? String(d.v).split('.')[1]!.length : 0
+  return { shift, d1: d.i1, d2: d.i2, q: d.q }
+})
+
 /* ---------- 积的近似值 ---------- */
 const approxPrice = computed(() => props.values.price ?? 16.8)
 const approxCount = computed(() => props.values.count ?? 2.4)
@@ -103,24 +111,59 @@ const roundResult = computed(() =>
     <template v-else-if="kind === 'div-decimal'">
       <div class="div-card">
         <p class="div-title">{{ divSel.name }}</p>
-        <p class="big-expr">
-          {{ toFixed2(divSel.d) }} ÷ {{ toFixed2(divSel.v) }} = {{ divSel.q }}
-        </p>
-        <div class="transform-arrow">
-          <span class="from">{{ toFixed2(divSel.d) }} ÷ {{ toFixed2(divSel.v) }}</span>
-          <span class="arrow">小数点同时右移 →</span>
-          <span class="to">{{ divSel.i1 }} ÷ {{ divSel.i2 }}</span>
+        <p class="big-expr">{{ toFixed2(divSel.d) }} ÷ {{ toFixed2(divSel.v) }} = {{ divSel.q }}</p>
+        <div class="dp-track">
+          <div class="dp-row">
+            <span class="dp-tag">被除数</span>
+            <span class="dp-chips">
+              <span
+                v-for="(c, i) in String(toFixed2(divSel.d)).split('')"
+                :key="'a' + i"
+                class="dp-chip"
+                :class="{ dot: c === '.' }"
+              >{{ c }}</span>
+            </span>
+            <span class="dp-arrow">右移 {{ divMove.shift }} 位 →</span>
+            <span class="dp-chips">
+              <span v-for="(c, i) in String(divSel.i1).split('')" :key="'a1' + i" class="dp-chip int">{{ c }}</span>
+            </span>
+          </div>
+          <div class="dp-row">
+            <span class="dp-tag">除数</span>
+            <span class="dp-chips">
+              <span
+                v-for="(c, i) in String(toFixed2(divSel.v)).split('')"
+                :key="'b' + i"
+                class="dp-chip"
+                :class="{ dot: c === '.' }"
+              >{{ c }}</span>
+            </span>
+            <span class="dp-arrow">右移 {{ divMove.shift }} 位 →</span>
+            <span class="dp-chips">
+              <span v-for="(c, i) in String(divSel.i2).split('')" :key="'b1' + i" class="dp-chip int">{{ c }}</span>
+            </span>
+          </div>
         </div>
-        <p class="note">被除数和除数的小数点同时向右移动相同的位数，转化成整数除法</p>
+        <div class="align-note">
+          <span>小数点同时右移 <b>{{ divMove.shift }}</b> 位</span>
+          <span class="eq-sym">=</span>
+          <span>{{ divSel.i1 }} ÷ {{ divSel.i2 }} = {{ divSel.q }}</span>
+        </div>
+        <p class="note">把除数变成整数：被除数和除数的小数点<b>同时</b>向右移动相同位数，商不变</p>
       </div>
     </template>
 
     <!-- 商的近似值 -->
     <template v-else-if="kind === 'div-approx'">
       <div class="approx-card">
-        <p class="div-title">海狮游速 {{ divSpeed }} 千米/时</p>
-        <p class="big-expr">{{ divSpeed }} × 1000 ÷ 60 ≈ {{ ((divSpeed * 1000) / 60).toFixed(2) }} 米/分</p>
-        <p class="note">得数保留两位小数：先除到小数点后第三位，再四舍五入</p>
+        <p class="div-title">海狮游速 {{ divSpeed }} 千米/时 = {{ divSpeed * 1000 }} 米/时</p>
+        <p class="long-div">{{ divSpeed * 1000 }} ÷ 60</p>
+        <div class="long-box">
+          <span class="lb-quot">{{ Math.floor((divSpeed * 1000) / 60) }}.<span class="lb-extra">{{ String(((divSpeed * 1000) / 60)).split('.')[1]?.slice(0, 2) ?? '00' }}</span><span class="lb-cut">{{ String(((divSpeed * 1000) / 60)).split('.')[1]?.slice(2, 3) ?? '' }}</span></span>
+          <span class="lb-note">先除到小数点后第三位（<span class="lb-cut">淡色</span>），再四舍五入</span>
+        </div>
+        <p class="approx-result">保留两位小数 → <b>{{ ((divSpeed * 1000) / 60).toFixed(2) }}</b> 米/分</p>
+        <p class="note">看小数点后第三位：≥5 进 1，&lt;5 舍去</p>
       </div>
     </template>
 
@@ -244,6 +287,112 @@ const roundResult = computed(() =>
   flex-wrap: wrap;
   justify-content: center;
   font-size: 0.85rem;
+  color: var(--ui-text-muted);
+}
+/* 除以小数：小数点同步移动 */
+.dp-track {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+.dp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.dp-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ui-text-muted);
+  min-width: 2.5rem;
+  text-align: right;
+}
+.dp-chips {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+.dp-chip {
+  font-family: ui-monospace, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  border: 1px solid var(--ui-border-accented);
+  border-radius: 0.3rem;
+  min-width: 1.4rem;
+  text-align: center;
+  padding: 0.1rem 0.15rem;
+  color: var(--ui-text-highlighted);
+}
+.dp-chip.dot {
+  background: transparent;
+  border: none;
+  color: var(--ui-primary);
+  font-size: 1.3rem;
+  min-width: 0.5rem;
+}
+.dp-chip.int {
+  color: var(--ui-primary);
+  border-color: var(--ui-primary);
+}
+.dp-arrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ui-warning, #f59e0b);
+}
+.align-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+}
+.align-note b {
+  color: var(--ui-primary);
+}
+.eq-sym {
+  color: var(--ui-text-muted);
+}
+/* 商的近似值：竖式多算一位 */
+.long-div {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ui-text-highlighted);
+}
+.long-box {
+  border: 1px dashed var(--ui-border-accented);
+  border-radius: var(--ui-radius-lg);
+  padding: 0.4rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: var(--ui-bg);
+}
+.lb-quot {
+  font-family: ui-monospace, monospace;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--ui-primary);
+}
+.lb-extra {
+  color: var(--ui-primary);
+}
+.lb-cut {
+  color: var(--ui-text-muted);
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 22%, transparent);
+  border-radius: 0.2rem;
+  padding: 0 0.1rem;
+}
+.lb-note {
+  font-size: 0.8rem;
   color: var(--ui-text-muted);
 }
 </style>

@@ -53,12 +53,58 @@ const base = computed(() => props.values.base ?? 0.001)
 const divide = computed(() => (props.values.divide ?? 0) === 1)
 const factor = computed(() => 10 ** power.value)
 const pointResult = computed(() => (divide.value ? base.value / factor.value : base.value * factor.value))
-const digitChars = computed(() => {
-  const s = base.value.toFixed(Math.max(0, power.value))
-  return s.split('')
+
+/** 数位表列：index = 位权（个位=0，十分位=-1…） */
+const PLACE_LABELS: Record<number, string> = {
+  3: '千',
+  2: '百',
+  1: '十',
+  0: '个',
+  [-1]: '十分位',
+  [-2]: '百分位',
+  [-3]: '千分位',
+  [-4]: '万分位',
+}
+const MIN_POS = -4
+const MAX_POS = 3
+
+/** 把数值按位拆成 { 位权: 数字 }（给定小数位精度） */
+function decompose(v: number, fracDigits: number): Map<number, number> {
+  const map = new Map<number, number>()
+  const int = Math.floor(Math.abs(v))
+  const frac = Number((Math.abs(v) - int).toFixed(fracDigits))
+  let i = 0
+  let t = int
+  if (t === 0) map.set(0, 0)
+  while (t > 0) {
+    map.set(i, t % 10)
+    t = Math.floor(t / 10)
+    i++
+  }
+  for (let k = 1; k <= fracDigits; k++) {
+    const d = Math.floor((frac * 10 ** k) % 10)
+    if (d !== 0 || k <= 3) map.set(-k, d)
+  }
+  return map
+}
+
+const fracPrec = computed(() => Math.max(3, power.value + 2))
+const origMap = computed(() => decompose(base.value, Math.max(3, -Math.floor(Math.log10(Math.abs(base.value))) + 1)))
+const resultMap = computed(() => decompose(pointResult.value, fracPrec.value))
+const positions = computed(() => {
+  const arr: number[] = []
+  for (let p = MAX_POS; p >= MIN_POS; p--) arr.push(p)
+  return arr
 })
-const pointPos = computed(() => digitChars.value.indexOf('.'))
-const resultChars = computed(() => toFixed2(pointResult.value).split(''))
+const resultStr = computed(() => toFixed2(pointResult.value))
+
+/** 轨道：把所有位权转成对应列（索引 0 = 最左 = 千位） */
+const colIndex = (pos: number) => MAX_POS - pos
+
+/** 某位权在原数中是否有非 0 数字（供“移动前”标注） */
+function hasDigit(v: number, pos: number): boolean {
+  return decompose(v, 6).get(pos) !== undefined
+}
 </script>
 
 <template>
@@ -116,25 +162,36 @@ const resultChars = computed(() => toFixed2(pointResult.value).split(''))
 
     <!-- 小数点移动 -->
     <template v-else>
-      <p class="lead">{{ base }} {{ divide ? '÷' : '×' }} {{ factor }} = ?</p>
-      <div class="digits">
-        <span
-          v-for="(ch, i) in digitChars"
-          :key="i"
-          class="digit-chip"
-          :class="{ dot: ch === '.' }"
-        >
-          {{ ch }}
-        </span>
-        <span class="arrow">→ {{ divide ? '左' : '右' }}移 {{ power }} 位</span>
+      <p class="lead">
+        {{ base }} {{ divide ? '÷' : '×' }} {{ factor }} = {{ pointResult }}
+      </p>
+      <div class="place-table" role="table" aria-label="数位表">
+        <div class="pt-head">
+          <span v-for="p in positions" :key="'h' + p" class="pt-cell" :class="{ frac: p < 0, dotcol: p === -1 }">
+            {{ PLACE_LABELS[p] }}
+          </span>
+        </div>
+        <!-- 原数行 -->
+        <div class="pt-row">
+          <span v-for="p in positions" :key="'o' + p" class="pt-cell" :class="{ frac: p < 0, dotcol: p === -1 }">
+            <b :class="{ filled: origMap.has(p) }">{{ origMap.get(p) ?? '' }}</b>
+          </span>
+        </div>
+        <!-- 结果行（高亮移动的位数） -->
+        <div class="pt-row result-row">
+          <span v-for="p in positions" :key="'r' + p" class="pt-cell" :class="{ frac: p < 0, dotcol: p === -1 }">
+            <b :class="{ filled: resultMap.has(p), moved: hasDigit(base, p) && resultMap.has(p) }">
+              {{ resultMap.get(p) ?? '' }}
+            </b>
+          </span>
+        </div>
       </div>
-      <div class="digits result-row">
-        <span v-for="(ch, i) in resultChars" :key="i" class="digit-chip" :class="{ dot: ch === '.' }">
-          {{ ch }}
-        </span>
+      <div class="move-bar">
+        <span class="arrow-chip">{{ divide ? '←' : '→' }} {{ power }} 位</span>
+        <span class="move-note">小数点向{{ divide ? '左' : '右' }}移动 {{ power }} 位；位数不够用 0 补足</span>
       </div>
       <p class="col-note">
-        小数{{ divide ? '除以' : '乘' }} 10、100、1000…，小数点就{{ divide ? '向左' : '向右' }}移动一位、两位、三位……位数不够用 0 补足
+        小数{{ divide ? '除以' : '乘' }} 10、100、1000…，小数点就{{ divide ? '向左' : '向右' }}移动一位、两位、三位……
       </p>
     </template>
   </div>
@@ -308,5 +365,68 @@ const resultChars = computed(() => toFixed2(pointResult.value).split(''))
 }
 .result-row .digit-chip {
   color: var(--ui-primary);
+}
+/* 数位表 */
+.place-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+  max-width: 644px;
+}
+.pt-head,
+.pt-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+}
+.pt-cell {
+  text-align: center;
+  padding: 0.2rem 0;
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  border-bottom: 1px solid var(--ui-border);
+}
+.pt-cell.frac {
+  background: color-mix(in srgb, var(--ui-info, #38bdf8) 6%, transparent);
+}
+.pt-cell.dotcol {
+  border-left: 2px solid var(--ui-primary);
+}
+.pt-head .pt-cell {
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.pt-row b {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ui-text-muted);
+  font-family: ui-monospace, monospace;
+}
+.pt-row b.filled {
+  color: var(--ui-text-highlighted);
+}
+.result-row b.filled {
+  color: var(--ui-primary);
+}
+.result-row b.moved {
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 22%, transparent);
+  border-radius: 0.3rem;
+  padding: 0 0.2rem;
+}
+.move-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.arrow-chip {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ui-warning, #f59e0b);
+}
+.move-note {
+  font-size: 0.85rem;
+  color: var(--ui-text-toned);
 }
 </style>

@@ -20,7 +20,13 @@ export const c6Examples: GameQuestion[] = [
     title: '数手指',
     prompt: '1双手有10根手指。数一数，这是几根手指？',
     type: 'count',
-    config: { type: 'count', emoji: '✋✋✋✋✋✋✋✋✋✋', answer: 10, options: [8, 9, 10, 11] },
+    config: {
+      type: 'count',
+      emoji: '✋✋✋✋✋✋✋✋✋✋',
+      answer: 10,
+      options: [8, 9, 10, 11],
+      visual: { variant: 'two-hands', scene: 'hands', unitLabel: '根' },
+    },
   },
   {
     id: 'c6-write-01',

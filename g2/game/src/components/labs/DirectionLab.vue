@@ -22,6 +22,19 @@ const POS: Record<Dir, { x: number; y: number }> = {
   南: { x: 100, y: 174 },
   西: { x: 26, y: 100 },
 }
+
+/** 面向箭头头部（在朝向方向的圆点边缘） */
+function arrowHead(d: Dir): string {
+  const p = POS[d]
+  const len = 10
+  const dx = (p.x - 100) / 74
+  const dy = (p.y - 100) / 74
+  const bx = p.x - 20 * dx
+  const by = p.y - 20 * dy
+  const px = -dy
+  const py = dx
+  return `${bx + px * len},${by + py * len} ${p.x + px * 8},${p.y + py * 8} ${p.x + dx * 22},${p.y + dy * 22} ${p.x - px * 8},${p.y - py * 8} ${bx - px * len},${by - py * len}`
+}
 </script>
 
 <template>
@@ -41,10 +54,14 @@ const POS: Record<Dir, { x: number; y: number }> = {
       <text v-for="d in DIRECTIONS" :key="`t-${d}`" :x="POS[d].x" :y="POS[d].y + 5" class="dir-label">
         {{ d }}
       </text>
-      <text :x="POS[front].x" :y="POS[front].y - 14" class="dir-mark">前</text>
-      <text :x="POS[back].x" :y="POS[back].y - 14" class="dir-mark muted">后</text>
-      <text :x="POS[left].x" :y="POS[back].y + 40" class="dir-mark">左</text>
-      <text :x="POS[right].x" :y="POS[back].y + 40" class="dir-mark">右</text>
+      <!-- 面向箭头：从中心指向面向方向 -->
+      <line :x1="100" :y1="100" :x2="POS[front].x" :y2="POS[front].y" class="dir-face" />
+      <polygon :points="arrowHead(front)" class="dir-face-head" />
+      <!-- 前后左右标注 -->
+      <text :x="POS[front].x" :y="POS[front].y - 16" class="dir-mark">前</text>
+      <text :x="POS[back].x" :y="POS[back].y - 16" class="dir-mark muted">后</text>
+      <text :x="POS[left].x" :y="POS[left].y + 34" class="dir-mark">左</text>
+      <text :x="POS[right].x" :y="POS[right].y + 34" class="dir-mark">右</text>
     </svg>
     <p class="dir-line-text">面向{{ front }} → 后{{ back }} · 左{{ left }} · 右{{ right }}</p>
   </div>
@@ -86,6 +103,14 @@ const POS: Record<Dir, { x: number; y: number }> = {
 }
 .dir-dot.muted {
   opacity: 0.35;
+}
+.dir-face {
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 3;
+  stroke-dasharray: 5 3;
+}
+.dir-face-head {
+  fill: var(--ui-warning, #f59e0b);
 }
 .dir-label {
   font-size: 13px;

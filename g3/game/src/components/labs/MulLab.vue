@@ -2,7 +2,7 @@
 /**
  * 乘法 Lab：口算乘法（整十整百）、笔算乘法（竖式）、中间有 0 的乘法
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
@@ -51,19 +51,43 @@ const rows = computed(() => {
 })
 
 /** 竖式每一行需要显示的进位提示 */
-const carryNotes = computed(() => {
-  const notes: string[] = []
+const isZero = computed(() => props.values.mid !== undefined)
+
+/* ---------- 竖式逐步演示 ---------- */
+/** 列（从右往左）：每列 { digit, carryIn, carryOut, src, prod } */
+const cols = computed(() => {
+  const arr: { digit: number; carryIn: number; carryOut: number; src: number | null; prod: number }[] = []
   let carry = 0
   for (let i = digits.value.length - 1; i >= 0; i--) {
-    const prod = digits.value[i]! * multi.value + carry
-    if (carry > 0) notes.push(`${digits.value[i]} × ${multi.value} + 进${carry} = ${prod}`)
-    else notes.push(`${digits.value[i]} × ${multi.value} = ${prod}`)
+    const src = digits.value[i]!
+    const prod = src * multi.value + carry
+    arr.unshift({ digit: prod % 10, carryIn: carry, carryOut: Math.floor(prod / 10), src, prod })
     carry = Math.floor(prod / 10)
   }
-  return notes.reverse()
+  if (carry > 0) arr.unshift({ digit: carry, carryIn: carry, carryOut: 0, src: null, prod: carry })
+  return arr
 })
-
-const isZero = computed(() => props.values.mid !== undefined)
+/** 当前演示步骤（0 = 最左列，默认到最后一步） */
+const cur = ref(Math.max(cols.value.length - 1, 0))
+const setStep = (i: number) => {
+  cur.value = Math.min(Math.max(i, 0), cols.value.length - 1)
+}
+const stepNotes = computed(() => {
+  return cols.value.map((c, idx) => {
+    if (c.src === null) return { idx, text: `最左边写进位 ${c.carryIn}` }
+    const withCarry = c.carryIn > 0 ? ` + 进${c.carryIn}` : ''
+    const tail = c.carryOut > 0 ? `，向高一位进 ${c.carryOut}` : c.digit === 0 ? '，该位写 0' : ''
+    return { idx, text: `${c.src} × ${multi.value}${withCarry} = ${c.prod}，该位写 ${c.digit}${tail}` }
+  })
+})
+const activeNote = computed(() => stepNotes.value[cur.value])
+/** 某一列是否为当前演示列 */
+const isCur = (idx: number) => idx === cur.value
+/** 进位气泡是否显示在第 idx 列上方（上一步产生的进位） */
+const carryBubble = (idx: number) => {
+  if (idx === 0) return 0
+  return cols.value[idx - 1]?.carryOut ?? 0
+}
 </script>
 
 <template>
@@ -105,28 +129,48 @@ const isZero = computed(() => props.values.mid !== undefined)
     <template v-else>
       <div class="pen-grid">
         <div class="vertical">
-          <div class="v-num">
-            <span v-for="(d, i) in digits" :key="'n' + i" class="v-digit">{{ d }}</span>
+          <!-- 进位气泡行 -->
+          <div class="v-bubble-row">
+            <span
+              v-for="(c, i) in cols"
+              :key="'b' + i"
+              class="bubble-slot"
+              :class="{ show: carryBubble(i) > 0 && i - 1 <= cur, at: i - 1 === cur }"
+            >
+              <span v-if="carryBubble(i) > 0 && i - 1 <= cur" class="carry-bubble">{{ carryBubble(i) }}</span>
+            </span>
           </div>
-          <div class="v-times">
+          <!-- 数位列 -->
+          <div class="v-cols">
+            <span v-for="(c, i) in cols" :key="'c' + i" class="col" :class="{ active: isCur(i), done: i < cur, pending: i > cur }">
+              <span class="col-digit">{{ c.digit }}</span>
+            </span>
+          </div>
+          <div class="v-op-row">
             <span class="v-op">×</span>
             <span class="v-digit">{{ multi }}</span>
           </div>
           <div class="v-line" />
           <div class="v-result">
-            <span v-for="(d, i) in String(product).split('')" :key="'p' + i" class="v-digit result-digit">
-              {{ d }}
-            </span>
-          </div>
-          <!-- 进位小字 -->
-          <div class="v-carry">
-            <template v-if="isZero && String(product).includes('0')">
-              <span class="carry-note">十位写 0</span>
-            </template>
+            <span v-for="(d, i) in String(product).split('')" :key="'p' + i" class="v-digit result-digit">{{ d }}</span>
           </div>
         </div>
         <div class="pen-notes">
-          <p v-for="(n, i) in carryNotes" :key="i" class="note-line">{{ i + 1 }}. {{ n }}</p>
+          <div class="step-bar">
+            <button
+              v-for="(n, i) in stepNotes"
+              :key="i"
+              type="button"
+              class="step-chip"
+              :class="{ on: i === cur }"
+              @click="setStep(i)"
+            >
+              {{ i + 1 }}
+            </button>
+          </div>
+          <p class="note-line">
+            第 {{ cur + 1 }} 步：{{ activeNote?.text }}
+          </p>
           <p class="note-result">= {{ num }} × {{ multi }} = <b>{{ product }}</b></p>
         </div>
       </div>
@@ -254,17 +298,83 @@ const isZero = computed(() => props.values.mid !== undefined)
   align-items: flex-end;
   font-family: ui-monospace, monospace;
 }
-.v-num,
-.v-times,
-.v-result {
+.v-bubble-row,
+.v-cols {
   display: flex;
-  gap: 0.1rem;
+  gap: 0.2rem;
+}
+.bubble-slot {
+  width: 1.9rem;
+  height: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+.carry-bubble {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 9999px;
+  background: var(--ui-warning, #f59e0b);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.bubble-slot.at .carry-bubble {
+  animation: bubblePop 0.4s ease;
+}
+@keyframes bubblePop {
+  0% {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.col {
+  width: 1.9rem;
+  text-align: center;
+  padding: 0.15rem 0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.col-digit {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--ui-text-highlighted);
+  font-family: ui-monospace, monospace;
+}
+.col.active {
+  background: color-mix(in srgb, var(--ui-primary) 18%, transparent);
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 1px;
+}
+.col.active .col-digit {
+  color: var(--ui-primary);
+}
+.col.done .col-digit {
+  color: var(--ui-text-highlighted);
+}
+.col.pending .col-digit {
+  color: var(--ui-text-muted);
+  opacity: 0.45;
+}
+.v-op-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
 }
 .v-op {
   font-size: 1.3rem;
   font-weight: 800;
   color: var(--ui-text-highlighted);
-  margin-right: 0.4rem;
 }
 .v-digit {
   font-size: 1.6rem;
@@ -279,8 +389,35 @@ const isZero = computed(() => props.values.mid !== undefined)
   border-top: 2px solid var(--ui-text-highlighted);
   margin: 0.3rem 0;
 }
-.v-carry {
-  height: 1.2rem;
+.v-result {
+  display: flex;
+  gap: 0.1rem;
+}
+.step-bar {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.3rem;
+}
+.step-chip {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 9999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-muted);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.step-chip:hover {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+.step-chip.on {
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+  color: white;
 }
 .carry-note {
   font-size: 0.8rem;
@@ -294,6 +431,11 @@ const isZero = computed(() => props.values.mid !== undefined)
   font-size: 0.9rem;
   color: var(--ui-text-toned);
   max-width: 25rem;
+}
+.note-line {
+  font-weight: 700;
+  color: var(--ui-primary);
+  min-height: 1.4rem;
 }
 .note-result {
   margin-top: 0.4rem;

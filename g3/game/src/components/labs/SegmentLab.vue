@@ -36,9 +36,10 @@ const less = computed(() => Math.round(props.values.less ?? 13))
 const grade4 = computed(() => base3.value * times.value)
 const grade5 = computed(() => grade4.value - less.value)
 
-/** 把数量映射为条长 */
+/** 把数量映射为条长（同一比例尺：260px 对应最大值） */
+const BAR_W = 260
 function barLen(v: number, max: number): number {
-  return Math.round((v / max) * 260)
+  return Math.round((v / max) * BAR_W)
 }
 const isTotal = computed(() => id.value === 'g3-c10-segment-total')
 const isMore = computed(() => id.value === 'g3-c10-segment-more')
@@ -52,6 +53,38 @@ const segTotal = computed(() => [
 ])
 
 const moreMax = computed(() => Math.max(football.value, 40))
+const moreScale = computed(() => Math.round(BAR_W / moreMax.value))
+const moreBars = computed(() => {
+  const b = barLen(base.value, moreMax.value)
+  const v = barLen(volleyball.value, moreMax.value)
+  const f = barLen(football.value, moreMax.value)
+  return [
+    { name: '篮球', val: `${base.value} 个`, len: b, ghostLen: 0, diffLen: 0, color: 'primary', diffLabel: '' },
+    { name: '排球', val: `${volleyball.value} 个`, len: v, ghostLen: b, diffLen: v - b, color: 'secondary', diffLabel: `多 ${more1.value} 个` },
+    { name: '足球', val: `${football.value} 个`, len: f, ghostLen: v, diffLen: f - v, color: 'success', diffLabel: `多 ${more2.value} 个` },
+  ]
+})
+
+const timesMax = computed(() => Math.max(grade4.value, 40))
+const timesScale = computed(() => Math.round(BAR_W / timesMax.value))
+const timesBars = computed(() => {
+  const b1 = barLen(base3.value, timesMax.value)
+  const b2 = barLen(grade4.value, timesMax.value)
+  const b3 = barLen(grade5.value, timesMax.value)
+  return [
+    { name: '三年级', val: `${base3.value} 幅`, len: b1, ghostLen: 0, diffFrom: 0, diffTo: 0, diffLabel: '', color: 'primary' },
+    { name: '四年级', val: `${grade4.value} 幅`, len: b2, ghostLen: b1, diffFrom: 0, diffTo: 0, diffLabel: '', color: 'secondary' },
+    { name: '五年级', val: `${grade5.value} 幅`, len: b3, ghostLen: 0, diffFrom: b3, diffTo: b2, diffLabel: `少 ${less.value} 幅`, color: 'success' },
+  ]
+})
+
+/** 差量括号路径：两端竖线 + 中间上拱弧线 */
+function bracketPath(x1: number, x2: number, y0: number): string {
+  const mid = (x1 + x2) / 2
+  const dip = Math.min(5, (x2 - x1) / 4)
+  const arc = `C ${mid} ${y0 - dip * 2.2} ${mid} ${y0 - dip * 2.2} ${x2} ${y0}`
+  return `M ${x1} ${y0 - 3} L ${x1} ${y0} ${arc} L ${x2} ${y0 - 3}`
+}
 </script>
 
 <template>
@@ -85,19 +118,22 @@ const moreMax = computed(() => Math.max(football.value, 40))
 
     <!-- 多几少几 -->
     <template v-else-if="isMore">
-      <svg viewBox="0 0 340 190" class="seg-svg">
-        <g v-for="(bar, bi) in [
-          { name: '篮球', len: barLen(base, moreMax), val: `${base} 个` },
-          { name: '排球', len: barLen(volleyball, moreMax), val: `${volleyball} 个` },
-          { name: '足球', len: barLen(football, moreMax), val: `${football} 个` },
-        ]" :key="bi">
-          <text x="30" :y="28 + bi * 56" class="bar-name">{{ bar.name }}</text>
-          <rect x="30" y="36 + bi * 56" width="30" height="14" rx="3" class="bar ghost" />
-          <rect x="30" y="36 + bi * 56" :width="bar.len" height="14" rx="3" class="bar" :class="bi % 2 === 0 ? 'primary' : 'secondary'" />
-          <text :x="34 + bar.len" :y="48 + bi * 56" text-anchor="middle" class="bar-val">{{ bar.val }}</text>
-          <line v-if="bi > 0" :x1="30 + barLen(base, moreMax)" :y1="50 + bi * 56" :x2="30 + bar.len" :y2="50 + bi * 56" class="diff-line" />
-          <text :x="30 + (barLen(base, moreMax) + bar.len) / 2" :y="68 + bi * 56" text-anchor="middle" class="diff-tag">{{ bi === 1 ? `多 ${more1}` : `多 ${more2}` }}</text>
+      <svg viewBox="0 0 340 200" class="seg-svg">
+        <g v-for="(bar, bi) in moreBars" :key="bi">
+          <text x="40" :y="44 + bi * 62" text-anchor="end" class="bar-name">{{ bar.name }}</text>
+          <rect :x="45" :y="36 + bi * 62" :width="bar.len" height="14" rx="3" class="bar" :class="bar.color" />
+          <rect v-if="bar.ghostLen > 0" :x="45" :y="36 + bi * 62" :width="bar.ghostLen" height="14" rx="3" class="bar ghost" />
+          <text :x="49 + bar.len" :y="44 + bi * 62" class="bar-val">{{ bar.val }}</text>
+          <template v-if="bar.diffLen > 0">
+            <path
+              :d="bracketPath(45 + bar.ghostLen, 45 + bar.len, 30 + bi * 62)"
+              fill="none"
+              class="diff-line"
+            />
+            <text :x="45 + bar.ghostLen + bar.diffLen / 2" :y="16 + bi * 62" text-anchor="middle" class="diff-tag">{{ bar.diffLabel }}</text>
+          </template>
         </g>
+        <text x="170" y="192" text-anchor="middle" class="scale-note">同一比例尺：每 1 个 = {{ moreScale }} px</text>
       </svg>
       <p class="tip">
         排球 = {{ base }} + {{ more1 }} = <b>{{ volleyball }}</b>；足球 = {{ volleyball }} + {{ more2 }} = <b>{{ football }}</b>
@@ -125,24 +161,46 @@ const moreMax = computed(() => Math.max(football.value, 40))
     </template>
 
     <!-- 倍 + 少 -->
-    <template v-else>
-      <svg viewBox="0 0 340 190" class="seg-svg">
-        <g v-for="(bar, bi) in [
-          { name: '三年级', len: barLen(base3, grade4), val: `${base3} 幅` },
-          { name: '四年级', len: barLen(grade4, grade4), val: `${grade4} 幅` },
-          { name: '五年级', len: barLen(grade5, grade4), val: `${grade5} 幅` },
-        ]" :key="bi">
-          <text x="30" :y="28 + bi * 56" class="bar-name">{{ bar.name }}</text>
-          <rect x="30" y="36 + bi * 56" width="30" height="14" rx="3" class="bar ghost" />
-          <rect x="30" y="36 + bi * 56" :width="bar.len" height="14" rx="3" class="bar" :class="bi % 2 === 0 ? 'primary' : 'secondary'" />
-          <text :x="34 + bar.len" :y="48 + bi * 56" text-anchor="middle" class="bar-val">{{ bar.val }}</text>
-          <line v-if="bi === 2" :x1="30 + bar.len" :y1="50 + bi * 56" :x2="30 + grade4 / 3" :y2="50 + bi * 56" class="diff-line" />
-          <text v-if="bi === 2" x="145" y="68 + bi * 56" text-anchor="middle" class="diff-tag">少 {{ less }}</text>
+    <template v-else-if="isTimes">
+      <svg viewBox="0 0 340 200" class="seg-svg">
+        <g v-for="(bar, bi) in timesBars" :key="bi">
+          <text :x="40" :y="44 + bi * 62" text-anchor="end" class="bar-name">{{ bar.name }}</text>
+          <rect :x="45" :y="36 + bi * 62" :width="bar.len" height="14" rx="3" class="bar" :class="bar.color" />
+          <rect v-if="bar.ghostLen > 0" :x="45" :y="36 + bi * 62" :width="bar.ghostLen" height="14" rx="3" class="bar ghost" />
+          <text :x="49 + bar.len" :y="44 + bi * 62" class="bar-val">{{ bar.val }}</text>
+          <line
+            v-if="bi === 1"
+            :x1="45 + bar.ghostLen"
+            :y1="36 + bi * 62"
+            :x2="45 + bar.ghostLen"
+            :y2="50 + bi * 62"
+            class="diff-line"
+          />
+          <text v-if="bi === 1" :x="45 + bar.ghostLen" :y="30 + bi * 62" text-anchor="middle" class="diff-tag">1 倍</text>
+          <path
+            v-if="bar.diffTo > bar.diffFrom"
+            :d="bracketPath(45 + bar.diffFrom, 45 + bar.diffTo, 30 + bi * 62)"
+            fill="none"
+            class="diff-line"
+          />
+          <text
+            v-if="bar.diffTo > bar.diffFrom"
+            :x="45 + (bar.diffFrom + bar.diffTo) / 2"
+            :y="16 + bi * 62"
+            text-anchor="middle"
+            class="diff-tag"
+          >{{ bar.diffLabel }}</text>
         </g>
+        <text x="170" y="192" text-anchor="middle" class="scale-note">同一比例尺：每 1 幅 = {{ timesScale }} px</text>
       </svg>
       <p class="tip">
         四年级 = {{ base3 }} × {{ times }} = <b>{{ grade4 }}</b>；五年级 = {{ grade4 }} − {{ less }} = <b>{{ grade5 }}</b>
       </p>
+    </template>
+
+    <!-- 兜底 -->
+    <template v-else>
+      <p class="tip">线段图：{{ id }}</p>
     </template>
   </div>
 </template>
@@ -199,11 +257,16 @@ const moreMax = computed(() => Math.max(football.value, 40))
 .diff-line {
   stroke: var(--ui-warning, #f59e0b);
   stroke-width: 1.5;
+  fill: none;
 }
 .diff-tag {
   fill: var(--ui-warning, #f59e0b);
   font-size: 10px;
   font-weight: 700;
+}
+.scale-note {
+  fill: var(--ui-text-muted);
+  font-size: 10px;
 }
 .people {
   fill: color-mix(in srgb, var(--ui-primary) 60%, white);

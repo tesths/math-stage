@@ -12,9 +12,9 @@ function q(over: object): GameQuestion {
 }
 
 describe('CompareGame', () => {
-  it('渲染两组与三个符号', () => {
+  it('渲染配对列与三个符号', () => {
     const w = mount(CompareGame, { props: { question: q({}) } })
-    expect(w.findAll('.side-item').length).toBe(6)
+    expect(w.findAll('.pair-col').length).toBe(3)
     const symbols = w.findAll('.sym-btn').map((b) => b.text())
     expect(symbols).toEqual(['>', '<', '='])
   })
@@ -43,8 +43,22 @@ describe('CompareGame', () => {
         }),
       },
     })
-    expect(w.findAll('.side-item').length).toBe(4)
-    expect(w.findAll('.side-item')[0]!.text()).toBe('●')
+    const objs = w.findAll('.pair-obj')
+    expect(objs.length).toBe(4)
+    expect(objs[0]!.text()).toBe('●')
+  })
+
+  it('数量不等时多出的列标记差量', () => {
+    const w = mount(CompareGame, {
+      props: {
+        question: q({
+          type: 'compare',
+          config: { type: 'compare', a: 5, b: 3, answer: '>' },
+        }),
+      },
+    })
+    expect(w.findAll('.pair-col.extra').length).toBe(2)
+    expect(w.findAll('.extra-badge').length).toBe(2)
   })
 
   it('答错后可再选，答对后符号禁用', async () => {
@@ -62,6 +76,20 @@ describe('CompareGame', () => {
     expect(w.emitted('answered')![1][0]).toMatchObject({ correct: true, attempts: 2 })
     const btns = w.findAll('.sym-btn')
     for (const b of btns) expect(b.attributes('disabled')).toBeDefined()
+  })
+
+  it('数量超过 10 时仍用紧凑配对列', () => {
+    const w = mount(CompareGame, {
+      props: {
+        question: q({
+          type: 'compare',
+          config: { type: 'compare', a: 13, b: 16, answer: '<', emoji: '🔢' },
+        }),
+      },
+    })
+    expect(w.findAll('.pair-col').length).toBe(16)
+    expect(w.findAll('.pair-col.compact').length).toBe(16)
+    expect(w.findAll('.extra-badge').length).toBe(3)
   })
 
   it('答对后再点符号不产生新事件', async () => {

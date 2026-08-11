@@ -22,12 +22,19 @@ const [sn, sd] = computed(() => simplifyRatio(w.value, h.value)).value
 
 /* ---------- 化简比 ---------- */
 const SIMPLIFY_EXAMPLES = [
-  { label: '12 : 18', expr: '同时除以 6（12 和 18 的最大公因数）', ans: '2 : 3' },
+  { label: '12 : 18', expr: '同时除以 6（12 和 18 的最大公因数）', ans: '2 : 3', a: 12, b: 18, group: 6 },
   { label: '5/6 : 3/4', expr: '同时乘 12（6 和 4 的公分母）', ans: '10 : 9' },
   { label: '1.8 : 0.09', expr: '同时乘 100 化成整数比，再化简', ans: '20 : 1' },
   { label: '0.32 : 0.8', expr: '同时乘 100 得 32 : 80，再除以 16', ans: '2 : 5' },
 ]
 const sim = computed(() => SIMPLIFY_EXAMPLES[Math.round(props.values.sel ?? 0) % SIMPLIFY_EXAMPLES.length]!)
+/** 整数示例：可展示按公因数分组的量条 */
+const simBars = computed(() => {
+  const s = sim.value
+  if (typeof s.a !== 'number' || typeof s.group !== 'number') return null
+  const total = s.a + s.b
+  return { cellsA: s.a / s.group, cellsB: s.b / s.group, group: s.group, total }
+})
 
 /* ---------- 按比例分配 · 青团皮 ---------- */
 const da = computed(() => Math.round(props.values.a ?? 3))
@@ -101,6 +108,22 @@ const RATIO = 0.618
     <template v-else-if="kind === 'ratio-simplify'">
       <div class="cmp-card">
         <p class="ratio-big">{{ sim.label }}</p>
+        <!-- 整数比：按公因数分组量条 -->
+        <div v-if="simBars" class="group-bars">
+          <div class="gb-row">
+            <span class="gb-name">前项 {{ sim.a }}</span>
+            <div class="gb-track">
+              <span v-for="i in simBars.cellsA" :key="'a' + i" class="gb-cell a">{{ simBars.group }}</span>
+            </div>
+          </div>
+          <div class="gb-row">
+            <span class="gb-name">后项 {{ sim.b }}</span>
+            <div class="gb-track">
+              <span v-for="i in simBars.cellsB" :key="'b' + i" class="gb-cell b">{{ simBars.group }}</span>
+            </div>
+          </div>
+          <p class="gb-note">每 {{ simBars.group }} 个一组：{{ sim.a }} → {{ simBars.cellsA }} 组，{{ sim.b }} → {{ simBars.cellsB }} 组</p>
+        </div>
         <p class="sim-step">{{ sim.expr }}</p>
         <p class="sim-ans">
           = <b>{{ sim.ans }}</b>
@@ -114,10 +137,10 @@ const RATIO = 0.618
       <div class="card-block">
         <div class="dist-track">
           <div class="dist-part a" :style="{ width: `${(da / (da + db)) * 100}%` }">
-            糯米粉 {{ da }} 份
+            <span v-for="i in da" :key="'a' + i" class="dist-cell">{{ i === 1 ? '1 份' : '' }}</span>
           </div>
           <div class="dist-part b" :style="{ width: `${(db / (da + db)) * 100}%` }">
-            草浆 {{ db }} 份
+            <span v-for="i in db" :key="'b' + i" class="dist-cell">{{ i === 1 ? '1 份' : '' }}</span>
           </div>
         </div>
         <p class="sim-step">总份数 = {{ da }} + {{ db }} = {{ da + db }}，每份 = {{ total }} ÷ {{ da + db }} = {{ toFixed2(per) }} 克</p>
@@ -135,13 +158,19 @@ const RATIO = 0.618
         <p class="ratio-big">
           {{ pa }} : {{ pb }} = {{ pc }} : {{ pd }}
         </p>
-        <div class="cross-diagram">
-          <div class="cross-num outer">{{ pa }}</div>
-          <div class="cross-mid">外项</div>
-          <div class="cross-num inner">{{ pb }}</div>
-          <div class="cross-num inner">{{ pc }}</div>
-          <div class="cross-mid">内项</div>
-          <div class="cross-num outer">{{ pd }}</div>
+        <div class="cross-wrap">
+          <div class="cross-diagram">
+            <div class="cross-num outer">{{ pa }}</div>
+            <div class="cross-mid">外项</div>
+            <div class="cross-num inner">{{ pb }}</div>
+            <div class="cross-num inner">{{ pc }}</div>
+            <div class="cross-mid">内项</div>
+            <div class="cross-num outer">{{ pd }}</div>
+          </div>
+          <svg viewBox="0 0 220 90" class="cross-lines">
+            <line x1="22" y1="20" x2="198" y2="72" class="xl outer" />
+            <line x1="198" y1="20" x2="22" y2="72" class="xl inner" />
+          </svg>
         </div>
         <p class="sim-step">
           外项积：{{ pa }} × {{ pd }} = {{ outerProd }}
@@ -317,26 +346,103 @@ const RATIO = 0.618
 }
 .dist-track {
   display: flex;
-  height: 2.4rem;
+  height: 2.6rem;
   border-radius: 0.6rem;
   overflow: hidden;
   width: 100%;
 }
 .dist-part {
   display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  transition: width 0.3s;
+}
+.dist-cell {
+  flex: 1 1 0;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.55);
+  font-size: 0.72rem;
   color: white;
   font-weight: 700;
-  transition: width 0.3s;
+  min-width: 1.1rem;
 }
 .dist-part.a {
   background: var(--ui-primary);
 }
 .dist-part.b {
   background: color-mix(in srgb, var(--ui-primary) 40%, white);
+}
+.dist-part.b .dist-cell {
   color: var(--ui-text-highlighted);
+}
+.group-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+.gb-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.gb-name {
+  min-width: 3.2rem;
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  text-align: right;
+}
+.gb-track {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+.gb-cell {
+  flex: 1;
+  height: 1.4rem;
+  border-radius: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+}
+.gb-cell.a {
+  background: var(--ui-primary);
+}
+.gb-cell.b {
+  background: #f59e0b;
+}
+.gb-note {
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+  text-align: center;
+}
+.cross-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 240px;
+}
+.cross-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.xl {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+}
+.xl.outer {
+  stroke: #f59e0b;
+}
+.xl.inner {
+  stroke: var(--ui-primary);
 }
 .cross-diagram {
   display: grid;

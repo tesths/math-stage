@@ -1,26 +1,62 @@
 <template>
   <div class="compare-game">
     <div class="cmp-stage">
-      <div class="cmp-side">
-        <div class="side-items">
-          <span v-for="(c, i) in leftItems" :key="i" class="side-item">{{ c }}</span>
+      <div v-if="pairCols.length > 0" class="pair-grid" :style="{ gridTemplateColumns: `repeat(${pairCols.length}, ${pairColW})` }">
+        <div v-for="(col, i) in pairCols" :key="i" class="pair-col" :class="{ extra: col.extra, compact: isCompact }">
+          <div v-if="col.top" class="pair-cell" :class="['top', { 'cell-empty': !col.paired }]">
+            <span class="pair-obj">{{ col.top }}</span>
+            <span v-if="col.extraTop" class="extra-badge">多</span>
+          </div>
+          <div v-else class="pair-cell cell-placeholder"></div>
+          <div class="pair-line" :class="{ on: col.paired }"></div>
+          <div v-if="col.bottom" class="pair-cell" :class="['bottom', { 'cell-empty': !col.paired }]">
+            <span class="pair-obj">{{ col.bottom }}</span>
+            <span v-if="col.extraBottom" class="extra-badge">多</span>
+          </div>
+          <div v-else class="pair-cell cell-placeholder"></div>
         </div>
       </div>
-      <div class="cmp-symbols">
+
+      <div v-else class="cmp-sides">
+        <div class="cmp-side">
+          <div class="side-items">
+            <span v-for="(c, i) in leftItems" :key="i" class="side-item">{{ c }}</span>
+          </div>
+        </div>
+        <div class="cmp-symbols">
+          <button
+            v-for="sym in symbols"
+            :key="sym"
+            class="sym-btn"
+            :class="{ selected: selected === sym }"
+            :data-sym="sym"
+            :disabled="done"
+            @click="onSelect(sym)"
+          >{{ sym }}</button>
+        </div>
+        <div class="cmp-side">
+          <div class="side-items">
+            <span v-for="(c, i) in rightItems" :key="i" class="side-item">{{ c }}</span>
+          </div>
+        </div>
+      </div>
+
+      <p v-if="pairCols.length > 0" class="pair-note">
+        <template v-if="done">一一配对后：{{ a }} {{ answer }} {{ b }}</template>
+        <template v-else-if="extraCount > 0">一一配对，红点表示多出的部分</template>
+        <template v-else>一一配对，两组同样多</template>
+      </p>
+
+      <div v-if="pairCols.length > 0" class="cmp-symbols row">
         <button
           v-for="sym in symbols"
           :key="sym"
           class="sym-btn"
-          :class="{ selected: selected === sym }"
+          :class="{ selected: selected === sym, correct: done && sym === answer }"
           :data-sym="sym"
           :disabled="done"
           @click="onSelect(sym)"
         >{{ sym }}</button>
-      </div>
-      <div class="cmp-side">
-        <div class="side-items">
-          <span v-for="(c, i) in rightItems" :key="i" class="side-item">{{ c }}</span>
-        </div>
       </div>
     </div>
     <FeedbackOverlay :state="feedback" :correct-answer="answer" />
@@ -38,9 +74,36 @@ const props = defineProps<{ question: GameQuestion }>()
 const emit = defineEmits<{ answered: [result: { correct: boolean; attempts: number }] }>()
 
 const cfg = computed(() => props.question.config as { a: number; b: number; emoji?: string; answer: '>' | '<' | '=' })
+const a = computed(() => cfg.value.a)
+const b = computed(() => cfg.value.b)
 const answer = computed(() => cfg.value.answer as string)
 const leftItems = computed(() => visibleUnits((cfg.value.emoji ?? '●').repeat(cfg.value.a)))
 const rightItems = computed(() => visibleUnits((cfg.value.emoji ?? '●').repeat(cfg.value.b)))
+
+/** 配对列：上下两行逐列对齐，一对对象画连接线；多出的列标红。上限 16，超过 12 用小格 */
+const pairCols = computed(() => {
+  const max = Math.max(a.value, b.value)
+  if (max > 16) return []
+  const cols: { top: string | null; bottom: string | null; paired: boolean; extra: boolean; extraTop: boolean; extraBottom: boolean }[] = []
+  for (let i = 0; i < max; i++) {
+    const hasTop = i < a.value
+    const hasBottom = i < b.value
+    cols.push({
+      top: hasTop ? leftItems.value[i] ?? null : null,
+      bottom: hasBottom ? rightItems.value[i] ?? null : null,
+      paired: hasTop && hasBottom,
+      extra: hasTop !== hasBottom,
+      extraTop: hasTop && !hasBottom,
+      extraBottom: hasBottom && !hasTop,
+    })
+  }
+  return cols
+})
+
+const pairColW = computed(() => (Math.max(a.value, b.value) > 12 ? '1.9rem' : '2.7rem'))
+const isCompact = computed(() => Math.max(a.value, b.value) > 12)
+
+const extraCount = computed(() => Math.abs(a.value - b.value))
 const symbols: ('>' | '<' | '=')[] = ['>', '<', '=']
 
 const attempts = ref(1)
@@ -72,28 +135,98 @@ function onSelect(sym: '>' | '<' | '=') {
 }
 .cmp-stage {
   display: flex;
-  align-items: flex-start;
-  gap: 2rem;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
-.side-items {
+.pair-grid {
+  display: grid;
+  gap: 0.45rem;
+  justify-content: center;
   background: var(--ui-bg-muted);
-  border: 1px solid var(--ui-border);
+  border: 2px solid var(--ui-border);
   border-radius: var(--ui-radius-xl);
-  padding: 0.8rem 1.2rem;
-  min-height: 4rem;
-  max-width: 18rem;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  padding: 1rem 1.2rem;
 }
-.side-item {
-  font-size: 2.4rem;
+.pair-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  position: relative;
+}
+.pair-col.compact .pair-cell {
+  width: 1.9rem;
+  height: 1.9rem;
+  font-size: 1rem;
+}
+.pair-col.compact .extra-badge {
+  min-width: 0.95rem;
+  height: 0.95rem;
+  font-size: 0.6rem;
+  top: -0.28rem;
+  right: -0.28rem;
+}
+.pair-cell {
+  width: 2.7rem;
+  height: 2.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.7rem;
+  font-size: 1.6rem;
+  background: var(--ui-bg);
+  border: 1.5px solid var(--ui-border-accented);
+  position: relative;
+}
+.pair-cell.top {
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
+}
+.pair-cell.bottom {
+  background: color-mix(in srgb, var(--ui-secondary, var(--ui-info)) 10%, var(--ui-bg));
+}
+.pair-cell.cell-placeholder {
+  background: transparent;
+  border-color: transparent;
+}
+.pair-cell.cell-empty {
+  border-style: dashed;
+  border-color: var(--ui-warning, #f59e0b);
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 14%, var(--ui-bg));
+}
+.pair-line {
+  width: 0.75rem;
+  height: 0.14rem;
+  border-radius: 9999px;
+  background: var(--ui-border-accented);
+  opacity: 0;
+}
+.pair-line.on {
+  opacity: 1;
+}
+.extra-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 9999px;
+  background: var(--ui-warning, #f59e0b);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.2rem;
+}
+.pair-note {
+  font-size: 0.95rem;
+  color: var(--ui-text-toned);
+  margin: 0;
 }
 .cmp-symbols {
   display: flex;
-  flex-direction: column;
   gap: 0.8rem;
 }
 .sym-btn {
@@ -117,7 +250,33 @@ function onSelect(sym: '>' | '<' | '=') {
   color: var(--ui-primary);
   font-weight: bold;
 }
+.sym-btn.correct {
+  border-color: var(--ui-color-success-500);
+  background: var(--ui-color-success-100);
+  color: var(--ui-color-success-600);
+}
 .sym-btn:disabled {
   cursor: default;
+}
+.cmp-sides {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.side-items {
+  background: var(--ui-bg-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-xl);
+  padding: 0.8rem 1.2rem;
+  min-height: 4rem;
+  max-width: 18rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.side-item {
+  font-size: 2.4rem;
 }
 </style>

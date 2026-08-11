@@ -2,7 +2,7 @@
 /**
  * 除法 Lab：口算除法（整十整百）、笔算除法（竖式）、首位不够除、有余数、商中间/末尾有0
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
@@ -62,6 +62,22 @@ const steps = computed(() => {
 
 const isOral = computed(() => kind.value === 'div-oral')
 const isRemainder = computed(() => kind.value === 'remainder')
+
+/* ---------- 竖式逐步演示 ---------- */
+const started = computed(() => steps.value.filter((s) => s.started))
+/** 当前演示轮次（0 起，默认最后一轮） */
+const cur = ref(Math.max(started.value.length - 1, 0))
+const setCur = (i: number) => {
+  cur.value = Math.min(Math.max(i, 0), started.value.length - 1)
+}
+const roundNotes = computed(() => {
+  return started.value.map((s, i) => {
+    const prev = i === 0 ? 0 : started.value[i - 1]!.rem
+    const curVal = prev * 10 + Number(String(value.value).split('')[s.col])
+    return { idx: i, col: s.col, qd: s.qd, sub: s.sub, rem: s.rem, curVal }
+  })
+})
+const activeRound = computed(() => roundNotes.value[cur.value])
 </script>
 
 <template>
@@ -88,15 +104,26 @@ const isRemainder = computed(() => kind.value === 'remainder')
 
     <!-- 竖式：笔算 / 首位不够除 / 商有0 / 有余数 -->
     <template v-else>
-      <svg viewBox="0 0 340 200" class="div-svg">
-        <text
-          v-for="(s, si) in steps"
-          :key="'q' + si"
-          :x="28 + s.col * 30"
-          :y="26 + si * 0"
-          text-anchor="middle"
-          class="qd-digit"
-        >{{ s.started ? s.qd : '' }}</text>
+      <svg viewBox="0 0 340 220" class="div-svg">
+        <!-- 商位 -->
+        <template v-for="(s, si) in steps" :key="'q' + si">
+          <text
+            :x="28 + s.col * 30"
+            :y="26"
+            text-anchor="middle"
+            class="qd-digit"
+            :class="{ active: s.started && started.findIndex((x) => x === s) === cur, zero: !s.started }"
+          >{{ s.started ? s.qd : '' }}</text>
+          <rect
+            v-if="!s.started"
+            :x="28 + s.col * 30 - 10"
+            :y="12"
+            width="20"
+            height="26"
+            rx="3"
+            class="zero-box"
+          />
+        </template>
 
         <text x="28" y="30" class="divisor">{{ divisor }}</text>
         <text x="52" y="30" class="div-sym">)⎯</text>
@@ -107,34 +134,59 @@ const isRemainder = computed(() => kind.value === 'remainder')
           :y="30"
           text-anchor="middle"
           class="dd-digit"
+          :class="{ colactive: roundNotes[cur] && roundNotes[cur]!.col === i }"
         >{{ d }}</text>
 
-        <template v-for="(s, si) in steps.filter((s) => s.started)" :key="'r' + si">
-          <text
-            v-for="(d, di) in String(s.sub).padStart(s.col + 1, '0').split('')"
-            :key="'s' + di"
-            :x="72 + (s.col - String(s.sub).length + 1 + di) * 30"
-            :y="58 + si * 38"
-            text-anchor="middle"
-            class="sub-digit"
-          >{{ d === '0' ? '' : d }}</text>
-          <line
-            :x1="72 + (s.col - String(s.sub).length + 1) * 30 - 6"
-            :y1="66 + si * 38"
-            :x2="72 + s.col * 30 + 10"
-            :y2="66 + si * 38"
-            class="sub-line"
-          />
-          <text
-            v-for="(d, di) in String(s.rem).split('')"
-            :key="'rm' + di"
-            :x="72 + (s.col - String(s.rem).length + 1 + di) * 30"
-            :y="82 + si * 38"
-            text-anchor="middle"
-            class="rem-digit"
-          >{{ d }}</text>
+        <!-- 逐轮：当前轮高亮，连接线 -->
+        <template v-for="(s, si) in started" :key="'r' + si">
+          <g :class="si === cur ? 'round-active' : 'round-dim'">
+            <text
+              v-for="(d, di) in String(s.sub).padStart(s.col + 1, '0').split('')"
+              :key="'s' + di"
+              :x="72 + (s.col - String(s.sub).length + 1 + di) * 30"
+              :y="58 + si * 38"
+              text-anchor="middle"
+              class="sub-digit"
+            >{{ d === '0' ? '' : d }}</text>
+            <line
+              :x1="72 + (s.col - String(s.sub).length + 1) * 30 - 6"
+              :y1="66 + si * 38"
+              :x2="72 + s.col * 30 + 10"
+              :y2="66 + si * 38"
+              class="sub-line"
+            />
+            <text
+              v-for="(d, di) in String(s.rem).split('')"
+              :key="'rm' + di"
+              :x="72 + (s.col - String(s.rem).length + 1 + di) * 30"
+              :y="82 + si * 38"
+              text-anchor="middle"
+              class="rem-digit"
+            >{{ d }}</text>
+          </g>
+          <!-- 连接线：商位 → 乘积 → 余数 -->
+          <g v-if="si === cur" class="connector">
+            <line :x1="28 + s.col * 30" :y1="26" :x2="72 + s.col * 30" :y2="56" class="conn-line" />
+            <line :x1="72 + s.col * 30" :y1="66" :x2="72 + s.col * 30" :y2="84" class="conn-line" />
+          </g>
         </template>
       </svg>
+
+      <div class="step-bar">
+        <button
+          v-for="(n, i) in roundNotes"
+          :key="i"
+          type="button"
+          class="step-chip"
+          :class="{ on: i === cur }"
+          @click="setCur(i)"
+        >
+          {{ i + 1 }}
+        </button>
+      </div>
+      <p v-if="activeRound" class="round-note">
+        第 {{ cur + 1 }} 轮：{{ activeRound.curVal }} ÷ {{ divisor }} = {{ activeRound.qd }}……{{ activeRound.rem }}（商写 {{ activeRound.qd }}，乘积 {{ activeRound.sub }}）
+      </p>
 
       <div class="formula-row">
         <span class="chip">{{ value }} ÷ {{ divisor }} =</span>
@@ -242,6 +294,19 @@ const isRemainder = computed(() => kind.value === 'remainder')
   font-size: 17px;
   font-weight: 800;
   font-family: 'SFMono-Regular', ui-monospace, monospace;
+  transition: opacity 0.2s ease;
+}
+.qd-digit.zero {
+  fill: var(--ui-text-muted);
+}
+.qd-digit.active {
+  fill: var(--ui-primary);
+  font-size: 19px;
+}
+.zero-box {
+  fill: none;
+  stroke: var(--ui-text-muted);
+  stroke-dasharray: 3 3;
 }
 .divisor {
   fill: var(--ui-text-highlighted);
@@ -260,6 +325,10 @@ const isRemainder = computed(() => kind.value === 'remainder')
   font-weight: 700;
   font-family: 'SFMono-Regular', ui-monospace, monospace;
 }
+.dd-digit.colactive {
+  fill: var(--ui-primary);
+  font-size: 18px;
+}
 .sub-digit {
   fill: var(--ui-text-muted);
   font-size: 14px;
@@ -273,5 +342,53 @@ const isRemainder = computed(() => kind.value === 'remainder')
 .sub-line {
   stroke: var(--ui-border-accented);
   stroke-width: 1.4;
+}
+.round-active .sub-digit {
+  fill: var(--ui-primary);
+  font-weight: 800;
+}
+.round-active .rem-digit {
+  fill: var(--ui-primary);
+  font-weight: 800;
+}
+.round-dim {
+  opacity: 0.35;
+}
+.conn-line {
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.step-bar {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.step-chip {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 9999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-muted);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.step-chip:hover {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+.step-chip.on {
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+  color: white;
+}
+.round-note {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ui-primary);
+  text-align: center;
 }
 </style>

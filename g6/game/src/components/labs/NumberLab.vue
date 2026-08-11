@@ -160,6 +160,24 @@ const binarySteps = computed(() => {
           <span class="bin-digit">{{ bt.bit }}</span>
         </div>
       </div>
+      <div class="carry-demo">
+        <div class="cd-group">
+          <span class="cd-label">1 位权</span>
+          <div class="cd-beads">
+            <span class="cd-bead" />
+            <span class="cd-bead" />
+          </div>
+          <span class="cd-expr">1 + 1 = 2</span>
+        </div>
+        <span class="cd-arrow">满二进一 →</span>
+        <div class="cd-group">
+          <span class="cd-label">2 位权</span>
+          <div class="cd-beads">
+            <span class="cd-bead big" />
+          </div>
+          <span class="cd-expr">2 个 1 = 1 个 2</span>
+        </div>
+      </div>
       <div class="bin-steps">
         <p v-for="(s, i) in binarySteps" :key="i" class="bin-step">
           {{ s.expr }} → {{ s.result }}
@@ -300,6 +318,53 @@ const binarySteps = computed(() => {
   font-size: 1.2rem;
   font-weight: 800;
   color: var(--ui-text-highlighted);
+}
+.carry-demo {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  border: 1px dashed var(--ui-border-accented);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-muted);
+  padding: 0.6rem 1rem;
+}
+.cd-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+.cd-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ui-text-muted);
+}
+.cd-beads {
+  display: flex;
+  gap: 3px;
+}
+.cd-bead {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 9999px;
+  background: var(--ui-primary);
+}
+.cd-bead.big {
+  width: 1.3rem;
+  height: 1.3rem;
+  background: var(--ui-warning, #f59e0b);
+}
+.cd-expr {
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+  font-family: ui-monospace, monospace;
+}
+.cd-arrow {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--ui-primary);
 }
 .bin-steps {
   display: flex;

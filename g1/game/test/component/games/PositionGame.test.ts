@@ -13,29 +13,29 @@ function q(over: object): GameQuestion {
 }
 
 describe('PositionGame position 类型', () => {
-  it('渲染物品排布', () => {
+  it('渲染排布卡片与参照标记', () => {
     const w = mount(PositionGame, { props: { question: q({}) } })
-    expect(w.findAll('.pos-item').length).toBe(3)
-    expect(w.find('.pos-item[data-item="👦"]').exists()).toBe(true)
+    expect(w.findAll('.pos-card').length).toBe(3)
+    expect(w.find('.pos-card[data-item="👦"]').classes()).toContain('target')
   })
 
   it('点击正确物品', async () => {
     const w = mount(PositionGame, { props: { question: q({}) } })
-    await w.find('.pos-item[data-item="🌙"]').trigger('click')
+    await w.find('.pos-card[data-item="🌙"]').trigger('click')
     expect(w.emitted('answered')![0][0]).toMatchObject({ correct: true, attempts: 1 })
   })
 
   it('点击错误物品可重试', async () => {
     const w = mount(PositionGame, { props: { question: q({}) } })
-    await w.find('.pos-item[data-item="🐟"]').trigger('click')
+    await w.find('.pos-card[data-item="🐟"]').trigger('click')
     expect(w.emitted('answered')![0][0]).toMatchObject({ correct: false })
-    await w.find('.pos-item[data-item="🌙"]').trigger('click')
+    await w.find('.pos-card[data-item="🌙"]').trigger('click')
     expect(w.emitted('answered')![1][0]).toMatchObject({ correct: true, attempts: 2 })
   })
 })
 
 describe('PositionGame ordinal 类型', () => {
-  it('渲染序数数字选项并判对', async () => {
+  it('渲染序数物品与数字选项并判对', async () => {
     const w = mount(PositionGame, {
       props: {
         question: {
@@ -45,28 +45,20 @@ describe('PositionGame ordinal 类型', () => {
         },
       },
     })
-    expect(w.findAll('.pos-item').length).toBe(5)
+    expect(w.findAll('.ordinal-item').length).toBe(5)
+    expect(w.findAll('.ordinal-rank').length).toBe(5)
+    expect(w.find('.ordinal-item.target').text()).toContain('🐰')
     const buttons = w.findAll('.answer-btn')
     expect(buttons.length).toBeGreaterThanOrEqual(3)
     await buttons[2].trigger('click') // 3
     expect(w.emitted('answered')![0][0]).toMatchObject({ correct: true })
   })
 
-  it('答对后正确物品出现 picked 高亮', async () => {
-    const w = mount(PositionGame, {
-      props: {
-        question: q({}),
-      },
-    })
-    await w.find('.pos-item[data-item="🌙"]').trigger('click')
-    expect(w.find('.pos-item.picked').attributes('data-item')).toBe('👦')
-  })
-
   it('答对后再点物品不产生新事件', async () => {
     const w = mount(PositionGame, { props: { question: q({}) } })
-    await w.find('.pos-item[data-item="🌙"]').trigger('click')
+    await w.find('.pos-card[data-item="🌙"]').trigger('click')
     const n = w.emitted('answered')!.length
-    await w.find('.pos-item[data-item="🐟"]').trigger('click')
+    await w.find('.pos-card[data-item="🐟"]').trigger('click')
     expect(w.emitted('answered')!.length).toBe(n)
   })
 })

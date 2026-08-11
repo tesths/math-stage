@@ -1,7 +1,9 @@
 <script setup lang="ts">
 /**
  * 图形的运动 Lab（平移 / 旋转 / 轴对称）
- * 纯 SVG 网格 + CSS transform 过渡，参数变化时平滑移动
+ * 平移：原图淡影 + 对应点箭头 + 格数标尺
+ * 旋转：固定中心 + 弧形箭头 + 角度扇形 + 前后叠影
+ * 轴对称：对称轴 + 对应点垂线距离标记 + 对折重合动画
  */
 import { computed } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
@@ -47,23 +49,80 @@ const axisX = computed(() => 150 + sym.value * 30)
 const isRotate = computed(() => props.lab.kind === 'rotate')
 const isAxis = computed(() => props.lab.kind === 'axis')
 
-/** 平移演示：小船上的对应点（船体局部像素偏移，船体位于 (2*tCell, 180)） */
+/** 平移演示：小船上的对应点（船体局部坐标，船底位于 (2*tCell, 180)） */
 const originPts = [
   { x: 30, y: 4 }, // 船头
   { x: 0, y: 4 }, // 船尾
   { x: 15, y: -9 }, // 桅杆顶
 ]
 
-/** 旋转弧终点（模板用） */
-const arcEnd = computed(() => {
-  const a = (angle.value * Math.PI) / 180
-  return { x: 180 + 24 * Math.cos(a), y: 180 - 24 * Math.sin(a) }
+/** 旋转扇形 + 弧（从初始 +x 方向转到旋转后位置） */
+const rotSector = computed(() => {
+  const r = 78
+  const start = { x: 180 + r, y: 180 }
+  const rad = (rotateDeg.value * Math.PI) / 180
+  const end = { x: 180 + r * Math.cos(rad), y: 180 - r * Math.sin(rad) }
+  if (angle.value >= 360) {
+    return { full: true as const, d: '', start, end }
+  }
+  const large = angle.value > 180 ? 1 : 0
+  const sweep = clockwise.value ? 1 : 0
+  return {
+    full: false as const,
+    d: `M 180 180 L ${start.x} ${start.y} A ${r} ${r} 0 ${large} ${sweep} ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z`,
+    start,
+    end,
+  }
+})
+const rotArc = computed(() => {
+  const r = 52
+  const rad = (rotateDeg.value * Math.PI) / 180
+  const end = { x: 180 + r * Math.cos(rad), y: 180 - r * Math.sin(rad) }
+  if (angle.value >= 360) return `M 180 128 A 52 52 0 1 1 179.99 128`
+  const large = angle.value > 180 ? 1 : 0
+  const sweep = clockwise.value ? 1 : 0
+  return `M 232 180 A 52 52 0 ${large} ${sweep} ${end.x.toFixed(3)} ${end.y.toFixed(3)}`
+})
+/** 角度标签位置：旋转扇形中线 */
+const angleMid = computed(() => {
+  if (angle.value === 0) return { x: 232, y: 180 }
+  const rad = ((rotateDeg.value / 2) * Math.PI) / 180
+  return { x: 180 + 62 * Math.cos(rad), y: 180 - 62 * Math.sin(rad) }
+})
+
+/** 格数标尺：沿移动方向每格一条刻度线 */
+const rulerTicks = computed(() => {
+  const ticks: { x: number; y: number; major: boolean }[] = []
+  for (let k = 1; k <= grid.value; k++) {
+    const px = 2 * tCell.value + 15 + (dx.value * k) / Math.max(1, grid.value)
+    const py = 180 + (dy.value * k) / Math.max(1, grid.value)
+    ticks.push({ x: px, y: py, major: k % (Math.min(3, grid.value)) === 0 })
+  }
+  return ticks
+})
+
+const dirLabel = computed(() => {
+  const m: Record<string, string> = { right: '右', down: '下', left: '左', up: '上' }
+  return `向${m[dir.value]}平移 ${grid.value} 格`
 })
 </script>
 
 <template>
   <div class="lab-wrap">
     <svg viewBox="0 0 360 360" class="w-full">
+      <defs>
+        <marker
+          id="fmotion-arrow"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ui-warning)" />
+        </marker>
+      </defs>
       <!-- 网格 -->
       <g class="grid-lines">
         <line
@@ -99,31 +158,44 @@ const arcEnd = computed(() => {
         >
           <path :d="boatPath" :transform="`translate(${2 * tCell}, 180) scale(5)`" class="fill-target" />
         </g>
-        <!-- 对应点 -->
+        <!-- 对应点箭头 -->
         <g v-if="grid > 0" class="corr-points">
           <g v-for="(p, i) in originPts" :key="i">
             <circle :cx="2 * tCell + p.x" :cy="180 + p.y" r="5" class="fill-original" />
-            <circle
-              :cx="2 * tCell + p.x + dx"
-              :cy="180 + p.y + dy"
-              r="5"
-              class="fill-target"
-            />
+            <circle :cx="2 * tCell + p.x + dx" :cy="180 + p.y + dy" r="5" class="fill-original" />
             <line
               :x1="2 * tCell + p.x"
               :y1="180 + p.y"
               :x2="2 * tCell + p.x + dx"
               :y2="180 + p.y + dy"
               class="corr-line"
+              marker-end="url(#fmotion-arrow)"
             />
             <text
+              v-if="i === 1"
               :x="2 * tCell + p.x + dx / 2"
-              :y="180 + p.y + dy / 2 - 8"
+              :y="180 + p.y + dy / 2 - 10"
+              :class="{ 'hor-pos': dir === 'right' || dir === 'left' }"
               class="corr-label"
             >
               {{ grid }}格
             </text>
           </g>
+        </g>
+        <!-- 格数标尺 -->
+        <g v-if="grid > 1" class="ruler">
+          <line
+            v-for="(t, k) in rulerTicks"
+            :key="k"
+            :x1="t.x"
+            :y1="t.y - (dir === 'right' || dir === 'left' ? 46 : 40) - (t.major ? 4 : 0)"
+            :x2="t.x"
+            :y2="t.y - (dir === 'right' || dir === 'left' ? 46 : 40) + (t.major ? 4 : 0)"
+            class="corr-line"
+          />
+          <text :x="2 * tCell + 15 + dx / 2" :y="166" text-anchor="middle" class="corr-label">
+            {{ dirLabel }}（整体移动）
+          </text>
         </g>
       </template>
 
@@ -143,14 +215,6 @@ const arcEnd = computed(() => {
           <rect x="325" y="165" width="12" height="30" rx="4" class="fill-target" />
           <circle cx="180" cy="180" r="6" class="fill-target" />
         </g>
-        <!-- 旋转弧 -->
-        <path
-          :d="`M 180 156 A 24 24 0 0 1 ${arcEnd.x.toFixed(3)} ${arcEnd.y.toFixed(3)}`"
-          fill="none"
-          class="arc"
-          :class="{ flip: !clockwise }"
-        />
-        <text x="196" y="150" class="angle-label">{{ angle }}°</text>
         <g v-if="angle > 0" class="ghost-lever">
           <rect
             x="180"
@@ -162,6 +226,18 @@ const arcEnd = computed(() => {
             class="ghost"
           />
         </g>
+        <!-- 角度扇形 + 弧形箭头 -->
+        <template v-if="angle > 0">
+          <circle v-if="rotSector.full" cx="180" cy="180" r="78" class="sector-disc" />
+          <path v-else :d="rotSector.d" class="sector" />
+          <path :d="rotArc" class="arc" marker-end="url(#fmotion-arrow)" />
+        </template>
+        <text v-if="angle > 0" :x="angleMid.x" :y="angleMid.y + 5" text-anchor="middle" class="angle-label">
+          {{ angle }}°
+        </text>
+        <text x="180" y="350" text-anchor="middle" class="corr-label">
+          绕 O 点{{ clockwise ? '顺时针' : '逆时针' }}旋转 {{ angle }}°，形状大小不变
+        </text>
       </template>
 
       <!-- 轴对称 -->
@@ -179,6 +255,10 @@ const arcEnd = computed(() => {
           }"
         >
           <path :d="houseHalfPath" transform="translate(66, 200) scale(16)" class="fill-target" />
+        </g>
+        <!-- 对折动画：左半以对称轴为折痕翻折到右半，两边完全重合 -->
+        <g class="fold-overlay" :style="{ '--fold-x': axisX + 'px' }">
+          <path :d="houseHalfPath" transform="translate(66, 200) scale(16)" class="fill-fold" />
         </g>
         <!-- 对应点到对称轴距离 -->
         <g class="dist-marks">
@@ -232,8 +312,13 @@ svg {
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
 }
+.fill-fold {
+  fill: color-mix(in srgb, var(--ui-secondary, #38bdf8) 40%, white);
+  stroke: var(--ui-secondary, #38bdf8);
+  stroke-width: 1.5;
+}
 .corr-line {
-  stroke: var(--ui-primary);
+  stroke: var(--ui-warning, #f59e0b);
   stroke-width: 1.5;
   stroke-dasharray: 3 3;
 }
@@ -245,16 +330,26 @@ svg {
   fill: var(--ui-text-muted);
   font-weight: 600;
 }
+.corr-label.hor-pos {
+  text-anchor: middle;
+}
 .pivot {
   fill: var(--ui-primary);
 }
 .arc {
-  stroke: var(--ui-primary);
-  stroke-width: 2;
+  fill: none;
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 2.5;
 }
-.arc.flip {
-  transform: scaleY(-1);
-  transform-origin: 180px 180px;
+.angle-label {
+  fill: var(--ui-warning, #f59e0b);
+  font-weight: 700;
+}
+.sector {
+  fill: color-mix(in srgb, var(--ui-warning, #f59e0b) 20%, transparent);
+}
+.sector-disc {
+  fill: color-mix(in srgb, var(--ui-warning, #f59e0b) 20%, transparent);
 }
 .ghost {
   fill: none;
@@ -266,6 +361,28 @@ svg {
   stroke: var(--ui-primary);
   stroke-width: 2;
   stroke-dasharray: 6 4;
+}
+/* 对折动画：左半以对称轴为折痕翻折到右半 */
+.fold-overlay {
+  transform-box: fill-box;
+  transform-origin: var(--fold-x) 200px;
+  animation: foldSquash 3.6s ease-in-out infinite;
+}
+@keyframes foldSquash {
+  0%,
+  25% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+  50%,
+  85% {
+    transform: scaleX(-1);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scaleX(-1);
+    opacity: 0.85;
+  }
 }
 .lab-caption {
   font-size: 0.8rem;

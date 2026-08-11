@@ -211,6 +211,15 @@ describe('Lab 组件渲染', () => {
     expect(trap.text()).toContain('缩小')
   })
 
+  it('ScaleLab：scale-shape 放大 4 倍时画布动态扩展', () => {
+    const lab = findLabById('g6-c6-scale-shape')!
+    const wrapper = mount(ScaleLab, { props: { lab, values: { n: 4, d: 1, shape: 2 } } })
+    const views = wrapper.findAll('svg').map((s) => s.attributes('viewBox'))
+    expect(views.some((v) => (v ?? '').includes('272'))).toBe(true)
+    expect(views.some((v) => (v ?? '').includes('144'))).toBe(true)
+    expect(wrapper.text()).toContain('256')
+  })
+
   it('ScaleLab：map-scale 显示图上 1 厘米对应实际距离', () => {
     const lab = findLabById('g6-c6-map-scale')!
     const wrapper = mount(ScaleLab, { props: { lab, values: { scaleDen: 1000, cm: 5 } } })

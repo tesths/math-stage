@@ -21,13 +21,17 @@ describe('AddSubGame', () => {
     expect(w.findAll('.obj-item').length).toBe(5)
   })
 
-  it('减法渲染划掉效果', () => {
+  it('减法渲染划掉效果（走到变化阶段后）', async () => {
     const w = mount(AddSubGame, {
       props: { question: q({ config: { type: 'addsub', a: 5, b: 2, op: '-', answer: 3, emoji: '🍎', options: [2, 3, 4, 5] } }) },
     })
     expect(w.text()).toContain('−')
-    expect(w.findAll('.obj-item.removed').length).toBe(2)
     expect(w.findAll('.obj-item').length).toBe(5)
+    expect(w.findAll('.obj-item.removed').length).toBe(0)
+    await w.findAll('.as-step')[0].trigger('click') // 拿走 2 个
+    expect(w.findAll('.obj-item.removed').length).toBe(2)
+    await w.findAll('.as-step')[0].trigger('click') // 看结果
+    expect(w.text()).toContain('3')
   })
 
   it('答对/答错交互', async () => {

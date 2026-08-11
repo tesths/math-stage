@@ -10,7 +10,7 @@ export const c1Examples: GameQuestion[] = [
     title: '数一数：有几个球？',
     prompt: '幼儿园里有大小不同的球，数一数，一共有几个球？',
     type: 'count',
-    config: { type: 'count', emoji: '⚽⚽⚽🏀🏀🏀', answer: 6, options: [4, 5, 6, 7] },
+    config: { type: 'count', emoji: '⚽⚽⚽🏀🏀🏀', answer: 6, options: [4, 5, 6, 7], visual: { scene: 'balls', unitLabel: '个' } },
   },
   {
     id: 'c1-count-02',
@@ -20,7 +20,7 @@ export const c1Examples: GameQuestion[] = [
     title: '报数拿球',
     prompt: '报数拿球：老师说"4"，请你数一数，筐里有几个球？',
     type: 'count',
-    config: { type: 'count', emoji: '⚾⚾⚾⚾', answer: 4, options: [2, 3, 4, 5] },
+    config: { type: 'count', emoji: '⚾⚾⚾⚾', answer: 4, options: [2, 3, 4, 5], visual: { scene: 'balls', unitLabel: '个' } },
   },
   {
     id: 'c1-count-03',
@@ -30,7 +30,7 @@ export const c1Examples: GameQuestion[] = [
     title: '数出10个花片',
     prompt: '你会数出10个花片，摆成不同的样子吗？数一数，这里有几个花片？',
     type: 'count',
-    config: { type: 'count', emoji: '🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸', answer: 10, options: [8, 9, 10, 11] },
+    config: { type: 'count', emoji: '🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸', answer: 10, options: [8, 9, 10, 11], visual: { scene: 'paper', unitLabel: '个' } },
   },
   {
     id: 'c1-compare-01',
@@ -50,7 +50,7 @@ export const c1Examples: GameQuestion[] = [
     title: '搭积木',
     prompt: '搭搭拼拼：下面的车用了几块积木搭成？数一数。',
     type: 'count',
-    config: { type: 'count', emoji: '🧱🧱🧱🧱🧱🧱🧱🧱🧱', answer: 9, options: [7, 8, 9, 10] },
+    config: { type: 'count', emoji: '🧱🧱🧱🧱🧱🧱🧱🧱🧱', answer: 9, options: [7, 8, 9, 10], visual: { scene: 'bricks', unitLabel: '块' } },
   },
   {
     id: 'c1-count-05',
@@ -60,6 +60,6 @@ export const c1Examples: GameQuestion[] = [
     title: '彩纸拼画',
     prompt: '选择一幅图画用彩纸拼一拼。数一数，这幅拼画用了几张彩纸？',
     type: 'count',
-    config: { type: 'count', emoji: '🟥🟧🟨🟩🟦', answer: 5, options: [3, 4, 5, 6] },
+    config: { type: 'count', emoji: '🟥🟧🟨🟩🟦', answer: 5, options: [3, 4, 5, 6], visual: { scene: 'paper', unitLabel: '张' } },
   },
 ]
