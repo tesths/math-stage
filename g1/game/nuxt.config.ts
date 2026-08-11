@@ -19,7 +19,7 @@ export default defineNuxtConfig({
     app: {
       // BASE_URL 供单 Pages 项目子路径部署（如 /g1/）；本地默认 /
       baseURL: process.env.BASE_URL ?? '/',
-      head: siteHead('一年级数学例题游戏', '根据人教版一年级上册数学书例题制作的可视化小游戏'),
+      head: siteHead('一年级数学例题游戏', '根据苏教版一年级上册数学书例题制作的可视化小游戏'),
     },
   }),
   alias: {

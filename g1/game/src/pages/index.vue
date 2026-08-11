@@ -46,7 +46,7 @@ const demos = computed(() =>
 <template>
   <UContainer class="py-8 md:py-12">
     <div class="text-center">
-      <UBadge color="primary" variant="soft" class="mb-4">人教版 · 2022 版课标</UBadge>
+      <UBadge color="primary" variant="soft" class="mb-4">苏教版 · 2022 版课标</UBadge>
       <h1 class="text-3xl font-bold tracking-tight text-(--ui-text-highlighted) md:text-4xl">
         一年级数学例题游戏
       </h1>

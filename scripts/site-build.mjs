@@ -101,6 +101,14 @@ async function buildGrade(app) {
   const target = join(OUT, app.base.slice(1, -1))
   console.log(`\n> 复制 ${app.dir}/${app.dist} → deploy${app.base}`)
   cpSync(join(root, app.dir, app.dist), target, { recursive: true })
+  // 清理 Nuxt 生成的 SPA 兜底 200.html（真实页面全部预渲染）。
+  // 历史教训：Cloudflare clean URL 会把 /g1/200.html 308 到 /g1/200，
+  // 与旧 SPA 200 重写残留形成 /g1/200 404 或重定向隐患，必须移除。
+  const fallback = join(target, '200.html')
+  if (existsSync(fallback)) {
+    rmSync(fallback)
+    console.log(`> 已移除 ${app.base}200.html（SPA 兜底，预渲染站点不需要）`)
+  }
 }
 
 console.log(`\n=== 构建年级应用（并发 ${SITE_BUILD_CONCURRENCY}） ===`)
@@ -111,16 +119,27 @@ const portalDir = join(root, portalApp.dir)
 await runWorkspace(portalApp, 'generate:site', { BASE_URL: '/', NITRO_PRESET: 'static' })
 console.log('\n> 复制 portal/.output/public → deploy/')
 cpSync(join(portalDir, portalApp.dist), OUT, { recursive: true })
+// 门户同样不需要 SPA 兜底 200.html（避免根级 clean URL 重定向隐患）
+const portalFallback = join(OUT, '200.html')
+if (existsSync(portalFallback)) {
+  rmSync(portalFallback)
+  console.log('> 已移除根 200.html（门户 SPA 兜底）')
+}
 
 // 4. 根级路由文件（所有真实页面均已预渲染，无需 SPA 200 重写 ——
 //    历史教训：/g1/* → /g1/200.html 200 会抢在静态文件前命中目录请求，
 //    被 Cloudflare clean URL 解析成 /g1/200 造成 308 循环）
 console.log('\n=== 生成 _redirects / _headers ===')
+const redirectLines = gradeApps.map(
+  (app) => `${app.base.slice(0, -1)}/200  ${app.base}  308`,
+)
 writeFileSync(
   join(OUT, '_redirects'),
   [
     '# 子应用静态站：全部真实页面已预渲染，直接命中静态文件。',
     '# 未预渲染路径由各子应用自带的 404.html 兜底。',
+    '# 历史残留 SPA 兜底（/gX/200、/gX/200.html）一律重定向回各年级首页，消除旧 308 缓存隐患。',
+    ...redirectLines,
     '',
   ].join('\n'),
 )

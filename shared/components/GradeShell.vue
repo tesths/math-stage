@@ -17,7 +17,7 @@ const grade = gradeById(props.gradeId)!
 const others = otherGrades(props.gradeId)
 
 const linkClass =
-  'inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors'
+  'inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium transition-colors'
 const mobileLinkClass =
   'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors'
 </script>
@@ -30,7 +30,7 @@ const mobileLinkClass =
       class="print:hidden"
     >
       <template #right>
-        <div class="hidden items-center gap-1 lg:flex">
+        <div class="hidden min-w-0 items-center gap-1 overflow-x-auto lg:flex">
           <!-- 其他年级切换（原生 <a>，绝对路径） -->
           <a
             v-for="g in others"
