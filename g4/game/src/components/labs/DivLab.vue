@@ -19,22 +19,23 @@ const dividend = computed(() => {
   return 96
 })
 
-/** 竖式逐步：返回每步 { col, qd, sub, rem } */
+/** 竖式逐步：curVal 是本轮真正拿来除的当前部分被除数 */
 const penSteps = computed(() => {
   const digs = digitsOf(dividend.value)
   let rem = 0
   let first = false
-  const out: { col: number; qd: number; sub: number; rem: number; started: boolean }[] = []
+  const out: { col: number; qd: number; sub: number; rem: number; started: boolean; curVal: number }[] = []
   for (let i = 0; i < digs.length; i++) {
     rem = rem * 10 + digs[i]!
+    const curVal = rem
     const qd = Math.floor(rem / divisor.value)
     if (qd > 0 || first) {
       first = true
       const sub = qd * divisor.value
-      out.push({ col: i, qd, sub, rem: rem - sub, started: true })
+      out.push({ col: i, qd, sub, rem: rem - sub, started: true, curVal })
       rem = rem - sub
     } else {
-      out.push({ col: i, qd, sub: 0, rem, started: false })
+      out.push({ col: i, qd, sub: 0, rem, started: false, curVal })
     }
   }
   return out
@@ -66,18 +67,17 @@ const perFloor = computed(() => perShelf.value / floor.value)
 
 /* ---------- 竖式逐步演示 ---------- */
 const started = computed(() => penSteps.value.filter((s) => s.started))
-const cur = ref(Math.max(started.value.length - 1, 0))
+const cur = ref(0)
 const setCur = (i: number) => {
-  cur.value = Math.min(Math.max(i, 0), started.value.length - 1)
+  cur.value = Math.min(Math.max(i, 0), Math.max(started.value.length - 1, 0))
 }
 const roundNotes = computed(() => {
-  const digs = digitsOf(dividend.value)
   return started.value.map((s, i) => {
-    const prev = i === 0 ? 0 : started.value[i - 1]!.rem
-    return { idx: i, col: s.col, qd: s.qd, sub: s.sub, rem: s.rem, curVal: prev * 10 + digs[s.col]! }
+    return { idx: i, col: s.col, qd: s.qd, sub: s.sub, rem: s.rem, curVal: s.curVal }
   })
 })
 const activeRound = computed(() => roundNotes.value[cur.value])
+const digitX = (col: number) => 72 + col * 34
 
 /* ---------- 试商流程 ---------- */
 const tryFlow = computed(() => {
@@ -121,7 +121,7 @@ const tryFlow = computed(() => {
         <!-- 商位 -->
         <template v-for="(s, si) in penSteps" :key="'q' + si">
           <text
-            :x="30 + s.col * 34"
+            :x="digitX(s.col)"
             :y="30"
             text-anchor="middle"
             class="qd-digit"
@@ -129,7 +129,7 @@ const tryFlow = computed(() => {
           >{{ s.started ? s.qd : '' }}</text>
           <rect
             v-if="!s.started"
-            :x="30 + s.col * 34 - 10"
+            :x="digitX(s.col) - 10"
             :y="16"
             width="20"
             height="28"
@@ -143,7 +143,7 @@ const tryFlow = computed(() => {
         <text
           v-for="(d, i) in digitsOf(dividend)"
           :key="'d' + i"
-          :x="72 + i * 34"
+          :x="digitX(i)"
           :y="30"
           text-anchor="middle"
           class="dd-digit"
@@ -156,24 +156,24 @@ const tryFlow = computed(() => {
             <text
               v-for="(d, di) in String(s.sub).padStart(s.col + 1, '0').split('')"
               :key="'s' + di"
-              :x="72 + (s.col - String(s.sub).length + 1 + di) * 34"
+              :x="digitX(s.col - String(s.sub).length + 1 + di)"
               :y="62 + si * 40"
               text-anchor="middle"
               class="sub-digit"
             >{{ d === '0' ? '' : d }}</text>
-            <line :x1="66 + (s.col - String(s.sub).length + 1) * 34 - 6" :x2="66 + (s.col + 1) * 34 + 2" :y1="72 + si * 40" :y2="72 + si * 40" class="sub-line" />
+            <line :x1="digitX(s.col - String(s.sub).length + 1) - 12" :x2="digitX(s.col) + 12" :y1="72 + si * 40" :y2="72 + si * 40" class="sub-line" />
             <text
               v-for="(d, di) in String(s.rem).padStart(s.col + 1, '0').split('')"
               :key="'m' + di"
-              :x="72 + (s.col - String(s.rem).length + 1 + di) * 34"
+              :x="digitX(s.col - String(s.rem).length + 1 + di)"
               :y="82 + si * 40"
               text-anchor="middle"
               class="rem-digit"
             >{{ d === '0' ? '' : d }}</text>
           </g>
           <g v-if="si === cur" class="connector">
-            <line :x1="30 + s.col * 34" :y1="30" :x2="72 + s.col * 34" :y2="60" class="conn-line" />
-            <line :x1="72 + s.col * 34" :y1="72" :x2="72 + s.col * 34" :y2="84" class="conn-line" />
+            <line :x1="digitX(s.col)" :y1="34" :x2="digitX(s.col)" :y2="60" class="conn-line" />
+            <line :x1="digitX(s.col)" :y1="72" :x2="digitX(s.col)" :y2="84" class="conn-line" />
           </g>
         </template>
       </svg>

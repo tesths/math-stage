@@ -17,6 +17,10 @@ describe('Lab 组件渲染', () => {
     const wrapper = mount(MultLab, { props: { lab, values: { each: 2, groups: 4 } } })
     expect(wrapper.findAll('.group-row').length).toBe(4)
     expect(wrapper.findAll('.group-cell').length).toBe(8)
+    expect(wrapper.findAll('.row-sum').map((el) => el.text())).toEqual(['2 个', '2 个', '2 个', '2 个'])
+    expect(wrapper.find('.addition-strip').text()).toContain('2+2+2+2=8')
+    expect(wrapper.find('.factor-map').text()).toContain('2 是每组几个')
+    expect(wrapper.find('.factor-map').text()).toContain('4 是有几组')
     expect(wrapper.text()).toContain('2 × 4 = 8')
   })
 
@@ -91,6 +95,10 @@ describe('Lab 组件渲染', () => {
     const lab = findLabById('g2-c5-direction')!
     const wrapper = mount(DirectionLab, { props: { lab, values: { face: 0 } } })
     expect(wrapper.find('svg').exists()).toBe(true)
+    expect(wrapper.find('.person').exists()).toBe(true)
+    expect(wrapper.findAll('.relation-card').length).toBe(4)
+    expect(wrapper.find('.relation-card.front').text()).toContain('前面东')
+    expect(wrapper.find('.relation-card.back').text()).toContain('后面西')
     expect(wrapper.text()).toContain('面向东')
     expect(wrapper.text()).toContain('后西')
     expect(wrapper.text()).toContain('左北')
@@ -108,6 +116,17 @@ describe('Lab 组件渲染', () => {
     const lab = findLabById('g2-c6-compare')!
     const wrapper = mount(NumberLab, { props: { lab, values: { a: 402, b: 385 } } })
     expect(wrapper.find('.cmp-sym').text()).toBe('>')
+    expect(wrapper.findAll('.scan-row').length).toBe(3)
+    expect(wrapper.find('.scan-row.hit').text()).toContain('百位 4 > 3')
+    expect(wrapper.findAll('.scan-row.dim').length).toBe(2)
+  })
+
+  it('NumberLab：compare 百位相同则继续比较十位', () => {
+    const lab = findLabById('g2-c6-compare')!
+    const wrapper = mount(NumberLab, { props: { lab, values: { a: 760, b: 720 } } })
+    expect(wrapper.find('.cmp-sym').text()).toBe('>')
+    expect(wrapper.findAll('.scan-row')[0]!.text()).toContain('百位相同，继续比下一位')
+    expect(wrapper.find('.scan-row.hit').text()).toContain('十位 6 > 2')
   })
 
   it('NumberLab：abacus 渲染算盘与上珠', () => {
@@ -131,6 +150,15 @@ describe('Lab 组件渲染', () => {
     expect(wrapper.text()).toContain('54')
     expect(wrapper.text()).toContain('18')
     expect(wrapper.text()).toContain('退 1')
+  })
+
+  it('TwodigitLab：退位说明随参数变化', () => {
+    const lab = findLabById('g2-c7-twodigit-sub')!
+    const wrapper = mount(TwodigitLab, { props: { lab, values: { ta: 7, oa: 4, tb: 3, ob: 6 } } })
+    expect(wrapper.text()).toContain('74')
+    expect(wrapper.text()).toContain('38')
+    expect(wrapper.text()).toContain('十位 7 退 1')
+    expect(wrapper.text()).toContain('个位变 14')
   })
 
   it('MoneyLab：money 渲染面额按钮与换算', () => {

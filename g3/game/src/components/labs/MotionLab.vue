@@ -61,6 +61,15 @@ const triPts = [
   { x: 124, y: 128 },
   { x: 102, y: 88 },
 ]
+const translateViewBox = computed(() => {
+  const xs = triPts.flatMap((p) => [p.x, p.x + tx.value])
+  const ys = triPts.flatMap((p) => [p.y, p.y + ty.value])
+  const minX = Math.min(...xs) - 46
+  const maxX = Math.max(...xs) + 46
+  const minY = Math.min(...ys, 70 + ty.value / 2) - 42
+  const maxY = Math.max(...ys) + 54
+  return `${minX} ${minY} ${maxX - minX} ${maxY - minY}`
+})
 
 /* ---------- 旋转 ---------- */
 const rotDeg = computed(() => (clockwise.value ? -angle.value : angle.value))
@@ -111,7 +120,7 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
 <template>
   <div class="motion-wrap">
     <!-- 平移 -->
-    <svg v-if="kind === 'translate'" viewBox="0 0 340 200" class="motion-svg">
+    <svg v-if="kind === 'translate'" :viewBox="translateViewBox" class="motion-svg">
       <defs>
         <marker
           id="mtri-arrow"
@@ -142,6 +151,19 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
 
     <!-- 旋转 -->
     <svg v-else-if="kind === 'rotate'" viewBox="0 0 340 200" class="motion-svg">
+      <defs>
+        <marker
+          id="mtri-arrow"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ui-warning)" />
+        </marker>
+      </defs>
       <circle cx="170" cy="110" r="80" class="orbit" />
       <circle v-if="sector.full" cx="170" cy="110" r="58" class="sector" />
       <path v-else :d="sector.d" class="sector" />

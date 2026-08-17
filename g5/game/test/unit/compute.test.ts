@@ -71,6 +71,9 @@ describe('computeLab 各 kind', () => {
   it('decimal-point 除法：135 ÷ 10³ = 0.135', () => {
     const r = computeLab('decimal-point', { power: 3, base: 135, divide: 1 })
     expect(r.value).toBeCloseTo(0.135, 5)
+    expect(r.text).toBe('0.135')
+    expect(r.conclusion).toContain('结果是 0.135')
+    expect(r.conclusion).not.toContain('0.14')
   })
 
   it('spinner：最大区域', () => {

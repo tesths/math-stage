@@ -67,26 +67,47 @@ const cols = computed(() => {
   if (carry > 0) arr.unshift({ digit: carry, carryIn: carry, carryOut: 0, src: null, prod: carry })
   return arr
 })
-/** 当前演示步骤（0 = 最左列，默认到最后一步） */
-const cur = ref(Math.max(cols.value.length - 1, 0))
+/** 步骤顺序：从个位到高位，最后再写最左侧纯进位 */
+const stepOrder = computed(() => {
+  const order: number[] = []
+  for (let i = cols.value.length - 1; i >= 0; i--) {
+    if (cols.value[i]?.src !== null) order.push(i)
+  }
+  if (cols.value[0]?.src === null) order.push(0)
+  return order
+})
+/** 当前演示步骤（0 = 个位开始） */
+const cur = ref(0)
 const setStep = (i: number) => {
-  cur.value = Math.min(Math.max(i, 0), cols.value.length - 1)
+  cur.value = Math.min(Math.max(i, 0), Math.max(stepOrder.value.length - 1, 0))
 }
 const stepNotes = computed(() => {
-  return cols.value.map((c, idx) => {
+  return stepOrder.value.map((colIdx, idx) => {
+    const c = cols.value[colIdx]!
     if (c.src === null) return { idx, text: `最左边写进位 ${c.carryIn}` }
     const withCarry = c.carryIn > 0 ? ` + 进${c.carryIn}` : ''
     const tail = c.carryOut > 0 ? `，向高一位进 ${c.carryOut}` : c.digit === 0 ? '，该位写 0' : ''
     return { idx, text: `${c.src} × ${multi.value}${withCarry} = ${c.prod}，该位写 ${c.digit}${tail}` }
   })
 })
-const activeNote = computed(() => stepNotes.value[cur.value])
+const currentStep = computed(() => Math.min(cur.value, Math.max(stepOrder.value.length - 1, 0)))
+const activeNote = computed(() => stepNotes.value[currentStep.value])
+const activeCol = computed(() => stepOrder.value[currentStep.value] ?? cols.value.length - 1)
 /** 某一列是否为当前演示列 */
-const isCur = (idx: number) => idx === cur.value
-/** 进位气泡是否显示在第 idx 列上方（上一步产生的进位） */
+const isCur = (idx: number) => idx === activeCol.value
+const colStepPos = (idx: number) => stepOrder.value.indexOf(idx)
+const isDone = (idx: number) => {
+  const pos = colStepPos(idx)
+  return pos >= 0 && pos < currentStep.value
+}
+const isPending = (idx: number) => {
+  const pos = colStepPos(idx)
+  return pos > currentStep.value
+}
+/** 进位气泡显示在下一步要计算的高位上方 */
 const carryBubble = (idx: number) => {
-  if (idx === 0) return 0
-  return cols.value[idx - 1]?.carryOut ?? 0
+  const c = cols.value[idx]
+  return c && c.src !== null ? c.carryIn : 0
 }
 </script>
 
@@ -135,15 +156,15 @@ const carryBubble = (idx: number) => {
               v-for="(c, i) in cols"
               :key="'b' + i"
               class="bubble-slot"
-              :class="{ show: carryBubble(i) > 0 && i - 1 <= cur, at: i - 1 === cur }"
+              :class="{ show: carryBubble(i) > 0 && colStepPos(i) <= currentStep, at: i === activeCol }"
             >
-              <span v-if="carryBubble(i) > 0 && i - 1 <= cur" class="carry-bubble">{{ carryBubble(i) }}</span>
+              <span v-if="carryBubble(i) > 0 && colStepPos(i) <= currentStep" class="carry-bubble">{{ carryBubble(i) }}</span>
             </span>
           </div>
-          <!-- 数位列 -->
+          <!-- 被乘数数位列 -->
           <div class="v-cols">
-            <span v-for="(c, i) in cols" :key="'c' + i" class="col" :class="{ active: isCur(i), done: i < cur, pending: i > cur }">
-              <span class="col-digit">{{ c.digit }}</span>
+            <span v-for="(c, i) in cols" :key="'c' + i" class="col" :class="{ active: isCur(i), done: isDone(i), pending: isPending(i), blank: c.src === null }">
+              <span class="col-digit">{{ c.src ?? '' }}</span>
             </span>
           </div>
           <div class="v-op-row">
@@ -152,7 +173,12 @@ const carryBubble = (idx: number) => {
           </div>
           <div class="v-line" />
           <div class="v-result">
-            <span v-for="(d, i) in String(product).split('')" :key="'p' + i" class="v-digit result-digit">{{ d }}</span>
+            <span
+              v-for="(d, i) in String(product).split('')"
+              :key="'p' + i"
+              class="v-digit result-digit"
+              :class="{ active: i === activeCol, pending: colStepPos(i) > currentStep }"
+            >{{ d }}</span>
           </div>
         </div>
         <div class="pen-notes">
@@ -365,6 +391,9 @@ const carryBubble = (idx: number) => {
   color: var(--ui-text-muted);
   opacity: 0.45;
 }
+.col.blank {
+  opacity: 0.5;
+}
 .v-op-row {
   display: flex;
   align-items: center;
@@ -383,6 +412,16 @@ const carryBubble = (idx: number) => {
 }
 .result-digit {
   color: var(--ui-primary);
+}
+.result-digit.active {
+  background: color-mix(in srgb, var(--ui-primary) 16%, transparent);
+  border-radius: 6px;
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 1px;
+}
+.result-digit.pending {
+  color: var(--ui-text-muted);
+  opacity: 0.38;
 }
 .v-line {
   width: 7rem;

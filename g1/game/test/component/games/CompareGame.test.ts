@@ -61,6 +61,34 @@ describe('CompareGame', () => {
     expect(w.findAll('.extra-badge').length).toBe(2)
   })
 
+  it('支持上下两组使用不同对象和标签', () => {
+    const w = mount(CompareGame, {
+      props: {
+        question: q({
+          type: 'compare',
+          config: { type: 'compare', a: 5, b: 4, answer: '>', leftEmoji: '🟢', rightEmoji: '🔴', leftLabel: '绿花', rightLabel: '红花' },
+        }),
+      },
+    })
+    expect(w.text()).toContain('上排：绿花 5 个')
+    expect(w.text()).toContain('下排：红花 4 个')
+    expect(w.findAll('.pair-cell.top .pair-obj').map((x) => x.text())).toEqual(['🟢', '🟢', '🟢', '🟢', '🟢'])
+    expect(w.findAll('.pair-cell.bottom .pair-obj').map((x) => x.text())).toEqual(['🔴', '🔴', '🔴', '🔴'])
+  })
+
+  it('8 列配对图使用紧凑格以适配窄屏', () => {
+    const w = mount(CompareGame, {
+      props: {
+        question: q({
+          type: 'compare',
+          config: { type: 'compare', a: 8, b: 6, answer: '>', leftEmoji: '🍎', rightEmoji: '🍊', leftLabel: '苹果', rightLabel: '橘子' },
+        }),
+      },
+    })
+    expect(w.findAll('.pair-col').length).toBe(8)
+    expect(w.findAll('.pair-col.compact').length).toBe(8)
+  })
+
   it('答错后可再选，答对后符号禁用', async () => {
     const w = mount(CompareGame, {
       props: {

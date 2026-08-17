@@ -96,7 +96,11 @@ const positions = computed(() => {
   for (let p = MAX_POS; p >= MIN_POS; p--) arr.push(p)
   return arr
 })
-const resultStr = computed(() => toFixed2(pointResult.value))
+function decimalMoveText(v: number): string {
+  if (Number.isInteger(v)) return String(v)
+  return v.toFixed(10).replace(/0+$/, '').replace(/\.$/, '')
+}
+const resultStr = computed(() => decimalMoveText(pointResult.value))
 
 /** 轨道：把所有位权转成对应列（索引 0 = 最左 = 千位） */
 const colIndex = (pos: number) => MAX_POS - pos
@@ -163,22 +167,25 @@ function hasDigit(v: number, pos: number): boolean {
     <!-- 小数点移动 -->
     <template v-else>
       <p class="lead">
-        {{ base }} {{ divide ? '÷' : '×' }} {{ factor }} = {{ pointResult }}
+        {{ base }} {{ divide ? '÷' : '×' }} {{ factor }} = {{ resultStr }}
       </p>
       <div class="place-table" role="table" aria-label="数位表">
         <div class="pt-head">
+          <span class="pt-cell row-label">数位</span>
           <span v-for="p in positions" :key="'h' + p" class="pt-cell" :class="{ frac: p < 0, dotcol: p === -1 }">
             {{ PLACE_LABELS[p] }}
           </span>
         </div>
         <!-- 原数行 -->
         <div class="pt-row">
+          <span class="pt-cell row-label">原数</span>
           <span v-for="p in positions" :key="'o' + p" class="pt-cell" :class="{ frac: p < 0, dotcol: p === -1 }">
             <b :class="{ filled: origMap.has(p) }">{{ origMap.get(p) ?? '' }}</b>
           </span>
         </div>
         <!-- 结果行（高亮移动的位数） -->
         <div class="pt-row result-row">
+          <span class="pt-cell row-label">结果</span>
           <span v-for="p in positions" :key="'r' + p" class="pt-cell" :class="{ frac: p < 0, dotcol: p === -1 }">
             <b :class="{ filled: resultMap.has(p), moved: hasDigit(base, p) && resultMap.has(p) }">
               {{ resultMap.get(p) ?? '' }}
@@ -190,6 +197,9 @@ function hasDigit(v: number, pos: number): boolean {
         <span class="arrow-chip">{{ divide ? '←' : '→' }} {{ power }} 位</span>
         <span class="move-note">小数点向{{ divide ? '左' : '右' }}移动 {{ power }} 位；位数不够用 0 补足</span>
       </div>
+      <p class="point-bridge">
+        对齐数位表看：原数 {{ base }} 经过小数点{{ divide ? '向左' : '向右' }}移动 {{ power }} 位，落到结果 {{ resultStr }}。
+      </p>
       <p class="col-note">
         小数{{ divide ? '除以' : '乘' }} 10、100、1000…，小数点就{{ divide ? '向左' : '向右' }}移动一位、两位、三位……
       </p>
@@ -377,7 +387,7 @@ function hasDigit(v: number, pos: number): boolean {
 .pt-head,
 .pt-row {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: 4.4rem repeat(8, 1fr);
 }
 .pt-cell {
   text-align: center;
@@ -395,6 +405,12 @@ function hasDigit(v: number, pos: number): boolean {
 .pt-head .pt-cell {
   font-weight: 700;
   font-size: 0.75rem;
+}
+.pt-cell.row-label {
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-highlighted);
+  font-weight: 800;
+  border-right: 1px solid var(--ui-border);
 }
 .pt-row b {
   font-size: 1.15rem;
@@ -428,5 +444,24 @@ function hasDigit(v: number, pos: number): boolean {
 .move-note {
   font-size: 0.85rem;
   color: var(--ui-text-toned);
+}
+.point-bridge {
+  font-size: 0.82rem;
+  color: var(--ui-text-toned);
+  text-align: center;
+  max-width: 32rem;
+}
+@media (max-width: 520px) {
+  .pt-head,
+  .pt-row {
+    grid-template-columns: 3.4rem repeat(8, minmax(1.55rem, 1fr));
+  }
+  .pt-cell {
+    font-size: 0.66rem;
+    padding: 0.18rem 0;
+  }
+  .pt-row b {
+    font-size: 0.95rem;
+  }
 }
 </style>

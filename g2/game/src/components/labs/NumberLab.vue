@@ -28,6 +28,7 @@ const b = computed(() => props.values.b ?? 385)
 const sign = computed(() => (a.value > b.value ? '>' : a.value < b.value ? '<' : '='))
 const aDigits = computed(() => splitDigits(a.value))
 const bDigits = computed(() => splitDigits(b.value))
+const PLACE_NAMES = ['百位', '十位', '个位']
 
 /** 逐位比较：返回第一个不同的位下标（0=百位），全同返回 -1 */
 const diffIdx = computed(() => {
@@ -43,6 +44,26 @@ const compareSteps = computed(() => {
   return names.map((label, i) => ({ label, dim: diffIdx.value >= 0 && i > diffIdx.value, hit: i === diffIdx.value }))
 })
 const isAllSame = computed(() => diffIdx.value === -1)
+const compareRows = computed(() => PLACE_NAMES.map((place, i) => {
+  const leftDigit = aDigits.value[i]!
+  const rightDigit = bDigits.value[i]!
+  const relation = leftDigit > rightDigit ? '>' : leftDigit < rightDigit ? '<' : '='
+  const beforeDecision = diffIdx.value === -1 || i <= diffIdx.value
+  const hit = i === diffIdx.value
+  return {
+    place,
+    leftDigit,
+    rightDigit,
+    relation,
+    hit,
+    dim: !beforeDecision,
+    note: hit
+      ? `${place} ${leftDigit} ${relation} ${rightDigit}，高位已经分出大小`
+      : relation === '='
+        ? `${place}相同，继续比下一位`
+        : '不用再比这一位',
+  }
+}))
 
 /* ---------- 算盘 ---------- */
 const ABACUS_NUMS = [
@@ -160,6 +181,18 @@ const hundredCells = computed(() => list(h.value))
         <span class="step-chip final" :class="{ hit: !isAllSame }">
           {{ isAllSame ? '每一位都相同' : `结论：${a} ${sign} ${b}` }}
         </span>
+      </div>
+      <div class="cmp-scan" aria-label="逐位比较过程">
+        <div
+          v-for="row in compareRows"
+          :key="row.place"
+          class="scan-row"
+          :class="{ hit: row.hit, dim: row.dim }"
+        >
+          <span class="scan-place">{{ row.place }}</span>
+          <span class="scan-digits">{{ row.leftDigit }} {{ row.relation }} {{ row.rightDigit }}</span>
+          <span class="scan-note">{{ row.note }}</span>
+        </div>
       </div>
     </template>
 
@@ -390,6 +423,45 @@ const hundredCells = computed(() => list(h.value))
   border-color: var(--ui-primary);
   color: var(--ui-primary);
 }
+.cmp-scan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: min(100%, 30rem);
+}
+.scan-row {
+  display: grid;
+  grid-template-columns: 4.2rem 4.2rem 1fr;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-muted);
+  padding: 0.45rem 0.65rem;
+  color: var(--ui-text-toned);
+}
+.scan-row.hit {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
+}
+.scan-row.dim {
+  opacity: 0.45;
+}
+.scan-place {
+  font-weight: 900;
+  color: var(--ui-text-highlighted);
+}
+.scan-digits {
+  justify-self: center;
+  font-family: ui-monospace, monospace;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--ui-primary);
+}
+.scan-note {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
 .abacus-svg {
   width: 280px;
   max-width: 100%;
@@ -448,5 +520,16 @@ const hundredCells = computed(() => list(h.value))
 .strong {
   color: var(--ui-primary);
   font-weight: 800;
+}
+
+@media (max-width: 480px) {
+  .scan-row {
+    grid-template-columns: 3.5rem 3.6rem 1fr;
+    gap: 0.35rem;
+    padding: 0.4rem 0.5rem;
+  }
+  .scan-note {
+    font-size: 0.76rem;
+  }
 }
 </style>

@@ -9,6 +9,14 @@
       <span class="as-blank" :class="{ show: stage === 2 }">{{ stage === 2 ? answer : '?' }}</span>
     </div>
 
+    <div class="as-flow" aria-label="运算过程">
+      <span class="flow-step" :class="{ active: stage === 0, done: stage > 0 }">原来 {{ a }} 个</span>
+      <span class="flow-join">{{ isRemove ? '−' : '+' }}</span>
+      <span class="flow-step" :class="{ active: stage === 1, done: stage > 1 }">{{ actionLabel }} {{ b }} 个</span>
+      <span class="flow-join">=</span>
+      <span class="flow-step result" :class="{ active: stage === 2 }">{{ stage === 2 ? `${answer} 个` : '先不露答案' }}</span>
+    </div>
+
     <!-- 三段式对象区 -->
     <div class="as-stage">
       <template v-if="isRemove">
@@ -26,6 +34,9 @@
               }"
             >{{ c }}</span>
           </div>
+          <p class="as-result-note">
+            {{ stage < 2 ? `先看 ${a} 个，再把 ${b} 个变淡表示拿走` : `${a} − ${b} = ${answer}，亮着的是剩下的 ${answer} 个` }}
+          </p>
         </div>
       </template>
       <template v-else>
@@ -46,6 +57,9 @@
               :class="{ visible: stage >= 1, result: stage === 2 }"
             >{{ c }}</span>
           </div>
+          <p class="as-result-note">
+            {{ stage < 2 ? `先看原有 ${a} 个，再让 ${b} 个加入` : `${a} + ${b} = ${answer}，两部分合起来是 ${answer} 个` }}
+          </p>
         </div>
       </template>
     </div>
@@ -96,6 +110,7 @@ const isRemove = computed(() => cfg.value.op === '-')
 const answer = computed(() => cfg.value.answer)
 const options = computed(() => cfg.value.options)
 const opText = computed(() => (isRemove.value ? '−' : '+'))
+const actionLabel = computed(() => (isRemove.value ? '拿走' : '加入'))
 
 /** 减法基础对象 = 原有 a 个；加法基础对象 = 原有 a 个，另加 b 个 */
 const baseObjects = computed(() => visibleUnits(cfg.value.emoji.repeat(isRemove.value ? a.value : a.value)))
@@ -171,6 +186,44 @@ function onSelect(value: number | string) {
 .as-blank.show {
   background: var(--ui-color-success-500, #16a34a);
 }
+.as-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.flow-step {
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  padding: 0.25rem 0.7rem;
+  color: var(--ui-text-toned);
+  background: var(--ui-bg);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+.flow-step.active {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
+}
+.flow-step.done {
+  border-color: var(--ui-color-success-500);
+  color: var(--ui-color-success-700, #15803d);
+  background: var(--ui-color-success-100);
+}
+.flow-step.result.active {
+  color: white;
+  background: var(--ui-color-success-500, #16a34a);
+}
+.flow-join {
+  font-weight: 900;
+  color: var(--ui-primary);
+}
 .as-stage {
   background: var(--ui-bg-muted);
   border: 2px dashed var(--ui-border-accented);
@@ -191,6 +244,12 @@ function onSelect(value: number | string) {
   gap: 0.2rem;
   justify-content: center;
   max-width: 38rem;
+}
+.as-result-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ui-text-toned);
 }
 .obj-item {
   font-size: 2.4rem;
@@ -244,5 +303,23 @@ function onSelect(value: number | string) {
 .as-step:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+@media (max-width: 480px) {
+  .as-expression {
+    font-size: 2.35rem;
+    gap: 0.42rem;
+  }
+  .as-flow {
+    max-width: 20rem;
+  }
+  .as-stage {
+    min-width: 0;
+    width: 100%;
+    padding: 1rem;
+  }
+  .obj-item {
+    font-size: 2.05rem;
+  }
 }
 </style>

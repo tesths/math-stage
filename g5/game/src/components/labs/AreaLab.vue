@@ -131,6 +131,20 @@ const trapPts2 = computed(() => {
 })
 
 const area = computed(() => areaOf(activeShape.value, { a: a.value, b: b.value, h: h.value }))
+const doubledArea = computed(() => {
+  if (activeShape.value === 'triangle') return a.value * h.value
+  if (activeShape.value === 'trapezoid') return (a.value + b.value) * h.value
+  return area.value
+})
+const derivation = computed(() => {
+  if (activeShape.value === 'parallelogram') {
+    return [`剪拼成长方形`, `S = ${a.value} × ${h.value} = ${area.value}`]
+  }
+  if (activeShape.value === 'triangle') {
+    return [`两个完全一样的三角形：${a.value} × ${h.value} = ${doubledArea.value}`, `一个三角形：${doubledArea.value} ÷ 2 = ${area.value}`]
+  }
+  return [`两个完全一样的梯形：(${a.value} + ${b.value}) × ${h.value} = ${doubledArea.value}`, `一个梯形：${doubledArea.value} ÷ 2 = ${area.value}`]
+})
 
 /** 网格范围：上下都留一格余量，覆盖图形实际范围 */
 const gridTop = computed(() => Y0 - H.value - cellEff.value)
@@ -192,7 +206,7 @@ const gridRows = computed(() => Math.ceil((gridBottom.value - gridTop.value) / c
           底 a = {{ a }} {{ unit }}
         </text>
         <text :x="X0 + W + 8" :y="Y0 - H / 2" class="dim-label">高 h = {{ h }} {{ unit }}</text>
-        <text v-if="placed" :x="X0 + W / 2" :y="Y0 + 24" text-anchor="middle" class="ok-label">
+        <text v-if="placed" :x="X0 + W / 2" :y="Y0 - H - 10" text-anchor="middle" class="ok-label">
           ✓ 两个完全一样的三角形拼成长方形
         </text>
       </template>
@@ -233,6 +247,11 @@ const gridRows = computed(() => Math.ceil((gridBottom.value - gridTop.value) / c
       </UButton>
       <span class="area-value">
         S = <strong>{{ area }}</strong>（{{ unit }}²）
+      </span>
+    </div>
+    <div class="derive-row" aria-label="面积推导">
+      <span v-for="(item, i) in derivation" :key="item" class="derive-chip" :class="{ result: i === derivation.length - 1 }">
+        {{ item }}
       </span>
     </div>
   </div>
@@ -298,5 +317,26 @@ svg {
 .area-value strong {
   color: var(--ui-primary);
   font-size: 1.15rem;
+}
+.derive-row {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 42rem;
+}
+.derive-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.28rem 0.7rem;
+}
+.derive-chip.result {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, var(--ui-bg));
+  color: var(--ui-primary);
 }
 </style>

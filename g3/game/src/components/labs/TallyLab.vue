@@ -30,6 +30,7 @@ const data = computed(() =>
 const total = computed(() => data.value.reduce((acc, d) => acc + d.count, 0))
 const maxCount = computed(() => Math.max(1, ...data.value.map((d) => d.count)))
 const max = computed(() => data.value.reduce((best, d) => (d.count > best.count ? d : best)))
+const chartScale = computed(() => Math.max(5, Math.ceil(maxCount.value / 5) * 5))
 
 /** 生成"正"字与剩余笔画 */
 function zheng(count: number): { full: string; left: number } {
@@ -38,7 +39,7 @@ function zheng(count: number): { full: string; left: number } {
 
 /** 条形图高度（px） */
 function barHeight(count: number): number {
-  return Math.round((count / maxCount.value) * 120)
+  return Math.round((count / chartScale.value) * 120)
 }
 </script>
 
@@ -64,13 +65,20 @@ function barHeight(count: number): number {
 
     <!-- 统计表 + 条形图 -->
     <template v-else>
-      <div class="chart">
-        <div class="bar" v-for="d in data" :key="d.name">
-          <span class="bar-value">{{ d.count }}</span>
-          <div class="bar-track">
-            <div class="bar-fill" :style="{ height: barHeight(d.count) + 'px' }" />
-          </div>
-          <span class="bar-label">{{ d.name }}</span>
+      <div class="stat-flow" aria-label="统计过程">
+        <span class="flow-step active">1 调查记录</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step active">2 统计表</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step active">3 条形图</span>
+      </div>
+      <div class="record-panel">
+        <div v-for="d in data" :key="'record-' + d.name" class="record-row">
+          <span class="record-name">{{ d.emoji }} {{ d.name }}</span>
+          <span class="record-dots" :aria-label="`${d.name} ${d.count} 人的调查记录`">
+            <span v-for="n in d.count" :key="n" class="record-dot" />
+          </span>
+          <span class="record-count">{{ d.count }} 人</span>
         </div>
       </div>
       <table class="stat-table">
@@ -89,7 +97,20 @@ function barHeight(count: number): number {
           </tr>
         </tbody>
       </table>
-      <p class="total-line">条形统计图的高矮能直观看出：<b>{{ max.name }}</b>的人数最多（{{ max.count }} 人）</p>
+      <div class="chart">
+        <div class="chart-axis">
+          <span>{{ chartScale }}</span>
+          <span>0</span>
+        </div>
+        <div class="bar" v-for="d in data" :key="d.name">
+          <span class="bar-value">{{ d.count }}</span>
+          <div class="bar-track">
+            <div class="bar-fill" :style="{ height: barHeight(d.count) + 'px' }" />
+          </div>
+          <span class="bar-label">{{ d.name }}</span>
+        </div>
+      </div>
+      <p class="total-line">每个小圆点表示 1 人，统计表中的人数直接决定条形高度：<b>{{ max.name }}</b>的人数最多（{{ max.count }} 人）</p>
     </template>
   </div>
 </template>
@@ -164,6 +185,17 @@ function barHeight(count: number): number {
   width: 100%;
   max-width: 39rem;
 }
+.chart-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-self: stretch;
+  height: 130px;
+  padding-top: 1.1rem;
+  color: var(--ui-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
 .bar {
   display: flex;
   flex-direction: column;
@@ -215,5 +247,85 @@ function barHeight(count: number): number {
 .total-cell {
   color: var(--ui-primary);
   font-weight: 800;
+}
+.stat-flow {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.flow-step {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.28rem 0.72rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--ui-text-toned);
+}
+.flow-step.active {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  color: var(--ui-primary);
+}
+.flow-arrow {
+  color: var(--ui-text-muted);
+  font-weight: 800;
+}
+.record-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: min(100%, 39rem);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: color-mix(in srgb, var(--ui-bg-muted) 70%, transparent);
+  padding: 0.65rem;
+}
+.record-row {
+  display: grid;
+  grid-template-columns: 6.2rem 1fr 3.5rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+.record-name,
+.record-count {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--ui-text-toned);
+}
+.record-count {
+  text-align: right;
+  color: var(--ui-primary);
+}
+.record-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.18rem;
+  min-height: 1.2rem;
+  align-items: center;
+}
+.record-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ui-primary) 70%, white);
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 60%, var(--ui-border));
+}
+@media (max-width: 520px) {
+  .record-row {
+    grid-template-columns: 1fr auto;
+  }
+  .record-dots {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+  .chart {
+    gap: 0.5rem;
+  }
+  .bar-track {
+    width: 1.55rem;
+  }
 }
 </style>

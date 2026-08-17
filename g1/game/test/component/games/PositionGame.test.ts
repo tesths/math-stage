@@ -16,7 +16,34 @@ describe('PositionGame position 类型', () => {
   it('渲染排布卡片与参照标记', () => {
     const w = mount(PositionGame, { props: { question: q({}) } })
     expect(w.findAll('.pos-card').length).toBe(3)
+    expect(w.findAll('button.pos-card').length).toBe(3)
     expect(w.find('.pos-card[data-item="👦"]').classes()).toContain('target')
+    expect(w.find('.reference-chip').text()).toContain('👦')
+    expect(w.find('.axis-guide').text()).toContain('左')
+    expect(w.find('.axis-guide').text()).toContain('右')
+  })
+
+  it('答对后高亮方位答案而不是参照物', async () => {
+    const w = mount(PositionGame, { props: { question: q({}) } })
+    await w.find('.pos-card[data-item="🌙"]').trigger('click')
+    expect(w.find('.pos-card[data-item="🌙"]').classes()).toContain('picked')
+    expect(w.find('.pos-card[data-item="👦"]').classes()).not.toContain('picked')
+    expect(w.find('.answer-badge').text()).toBe('左边')
+  })
+
+  it('上下题使用竖向参照轴', () => {
+    const w = mount(PositionGame, {
+      props: {
+        question: q({
+          prompt: '小猫在鸟的下面。小猫在鸟的哪一边？',
+          config: { type: 'position', items: ['鸟', '猫'], target: '鸟', position: '下', answer: '猫' },
+        }),
+      },
+    })
+    expect(w.find('.pos-scene').classes()).toContain('axis-vertical')
+    expect(w.find('.axis-guide').text()).toContain('上')
+    expect(w.find('.axis-guide').text()).toContain('下')
+    expect(w.find('.axis-arrow').classes()).toContain('down')
   })
 
   it('点击正确物品', async () => {
@@ -48,6 +75,9 @@ describe('PositionGame ordinal 类型', () => {
     expect(w.findAll('.ordinal-item').length).toBe(5)
     expect(w.findAll('.ordinal-rank').length).toBe(5)
     expect(w.find('.ordinal-item.target').text()).toContain('🐰')
+    expect(w.find('.ordinal-target-label').text()).toBe('目标')
+    expect(w.find('.ordinal-guide').text()).toContain('起点')
+    expect(w.find('.ordinal-guide').text()).toContain('方向')
     const buttons = w.findAll('.answer-btn')
     expect(buttons.length).toBeGreaterThanOrEqual(3)
     await buttons[2].trigger('click') // 3

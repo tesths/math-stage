@@ -2,15 +2,15 @@
   <div class="split-game">
     <div class="split-stage">
       <!-- 左盘：已分 -->
-      <div class="split-tray left" :class="{ dim: movingRight }">
-        <p class="split-cap">{{ given }} 个（已分）</p>
+      <div class="split-tray left" :class="{ dim: movingToRight }">
+        <p class="split-cap">左边 {{ leftTokens.length }} 个</p>
         <div class="split-items">
           <span
             v-for="(c, i) in leftTokens"
             :key="'l' + i"
             class="split-item"
-            :class="{ clickable: canMoveLeft }"
-            @click="canMoveLeft && moveFromLeft(i)"
+            :class="{ clickable: canMoveToRight }"
+            @click="canMoveToRight && moveFromLeft(i)"
           >{{ c }}</span>
         </div>
       </div>
@@ -20,18 +20,18 @@
           <span class="split-q">?</span>
           <span class="eq">=</span> {{ total }}
         </p>
-        <p class="split-desc">{{ total }} 个分成两部分，还差几个？</p>
+        <p class="split-desc">题目已给 {{ given }} 个，要补到 {{ total }} 个。数一数右边是几个。</p>
       </div>
       <!-- 右盘：待分 -->
-      <div class="split-tray right" :class="{ dim: movingLeft }">
-        <p class="split-cap">再放 {{ rightTokens.length }} 个</p>
+      <div class="split-tray right" :class="{ dim: movingToLeft }">
+        <p class="split-cap">右边自己数一数</p>
         <div class="split-items">
           <span
             v-for="(c, i) in rightTokens"
             :key="'r' + i"
             class="split-item"
-            :class="{ clickable: canMoveRight }"
-            @click="canMoveRight && moveFromRight(i)"
+            :class="{ clickable: canMoveToLeft }"
+            @click="canMoveToLeft && moveFromRight(i)"
           >{{ c }}</span>
         </div>
       </div>
@@ -40,15 +40,15 @@
       <button
         type="button"
         class="split-move"
-        :disabled="!canMoveRight || done"
+        :disabled="!canMoveToRight || done"
         @click="moveOneToRight"
       >把 1 个移到右边 ▶</button>
       <button
         type="button"
         class="split-move"
-        :disabled="!canMoveLeft || done"
+        :disabled="!canMoveToLeft || done"
         @click="moveOneToLeft"
-      >◀ 把 1 个移回左边</button>
+      >◀ 从右边移回 1 个</button>
     </div>
     <AnswerPad
       :options="options"
@@ -88,22 +88,22 @@ const rightCount = computed(() => total.value - leftCount.value)
 const leftTokens = computed(() => tokenList.value.slice(0, leftCount.value))
 const rightTokens = computed(() => tokenList.value.slice(leftCount.value))
 
-const canMoveLeft = computed(() => leftCount.value > 0 && !done.value)
-const canMoveRight = computed(() => rightCount.value > 0 && !done.value)
-const movingLeft = ref(false)
-const movingRight = ref(false)
+const canMoveToRight = computed(() => leftCount.value > 0 && !done.value)
+const canMoveToLeft = computed(() => rightCount.value > 0 && !done.value)
+const movingToLeft = ref(false)
+const movingToRight = ref(false)
 
 function moveOneToRight() {
-  if (!canMoveRight.value) return
-  movingRight.value = true
-  leftCount.value += 1
-  setTimeout(() => (movingRight.value = false), 250)
+  if (!canMoveToRight.value) return
+  movingToRight.value = true
+  leftCount.value -= 1
+  setTimeout(() => (movingToRight.value = false), 250)
 }
 function moveOneToLeft() {
-  if (!canMoveLeft.value) return
-  movingLeft.value = true
-  leftCount.value -= 1
-  setTimeout(() => (movingLeft.value = false), 250)
+  if (!canMoveToLeft.value) return
+  movingToLeft.value = true
+  leftCount.value += 1
+  setTimeout(() => (movingToLeft.value = false), 250)
 }
 function moveFromLeft(_i: number) {
   moveOneToRight()

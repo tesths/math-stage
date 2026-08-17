@@ -4,6 +4,7 @@ import {
   sharedCss,
   gradePrerenderIgnore,
   sharedIcon,
+  sharedLinkDefaults,
   sharedNuxtConfig,
   sharedPrerender,
   sharedUi,
@@ -35,6 +36,12 @@ describe('共享 Nuxt 配置片段 nuxt-config', () => {
 
   it('预渲染策略：crawlLinks 全量 + 容忍跨年级 404', () => {
     expect(sharedPrerender).toEqual({ crawlLinks: true, failOnError: false })
+  })
+
+  it('NuxtLink 默认追加尾斜杠，匹配静态预渲染路径', () => {
+    expect(sharedLinkDefaults).toEqual({
+      experimental: { defaults: { nuxtLink: { trailingSlash: 'append' } } },
+    })
   })
 
   it('按当前年级生成跨年级 prerender ignore 列表', () => {
@@ -83,6 +90,7 @@ describe('共享 Nuxt 配置片段 nuxt-config', () => {
       icon: sharedIcon,
       appConfig: sharedAppConfig,
       vite: sharedVite,
+      experimental: sharedLinkDefaults.experimental,
       nitro: { prerender: sharedPrerender },
     })
   })

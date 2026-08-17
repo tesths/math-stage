@@ -31,6 +31,11 @@ function fmt(v: number): string {
   return toFixed2(Math.round(v * 100000) / 100000)
 }
 
+function fmtDecimalPoint(v: number): string {
+  if (Number.isInteger(v)) return String(v)
+  return v.toFixed(10).replace(/0+$/, '').replace(/\.$/, '')
+}
+
 /** 把小数按位拆分展示（如 6.25 → 整数6 + 十分位2 + 百分位5） */
 function mulSteps(price: number, count: number): LabStep[] {
   const total = price * count
@@ -209,14 +214,16 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const factor = 10 ** power
       const result = divide ? base / factor : base * factor
       const dirWord = divide ? '向左' : '向右'
+      const baseText = fmtDecimalPoint(base)
+      const resultText = fmtDecimalPoint(result)
       return {
         value: result,
-        text: fmt(result),
+        text: resultText,
         steps: [
-          { expr: `${fmt(base)} ${divide ? '÷' : '×'} ${factor}`, result: `小数点${dirWord}移动 ${power} 位` },
-          { expr: `= ${fmt(result)}`, result: `（位数不够用 0 补足）` },
+          { expr: `${baseText} ${divide ? '÷' : '×'} ${factor}`, result: `小数点${dirWord}移动 ${power} 位` },
+          { expr: `= ${resultText}`, result: `（位数不够用 0 补足）` },
         ],
-        conclusion: `${fmt(base)} ${divide ? '除以' : '乘'} ${factor}，小数点${dirWord}移动 ${power} 位，结果是 ${fmt(result)}。`,
+        conclusion: `${baseText} ${divide ? '除以' : '乘'} ${factor}，小数点${dirWord}移动 ${power} 位，结果是 ${resultText}。`,
       }
     }
     case 'spinner': {

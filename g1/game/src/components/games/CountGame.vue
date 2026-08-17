@@ -25,6 +25,21 @@
 
       <!-- count：十框 + 计数轨迹 -->
       <div v-else-if="isCount" class="tf-stage">
+        <p v-if="count > 0" class="model-caption">先点实物，再看它们放进十框</p>
+        <div v-if="count > 0 && count <= 10" class="count-source" :aria-label="`课本物品，共 ${count} ${unitLabel}`">
+          <button
+            v-for="(c, i) in units"
+            :key="`${c}-${i}`"
+            type="button"
+            class="source-item"
+            :class="{ lit: i < litCount || done }"
+            :disabled="done"
+            @click="onCell(i + 1)"
+          >
+            <span class="source-obj">{{ c }}</span>
+            <span class="source-badge">{{ i + 1 }}</span>
+          </button>
+        </div>
         <p v-if="count > 0" class="count-read" :class="{ done }">{{ countRead }}</p>
         <TenFrame
           v-if="count <= 10"
@@ -50,6 +65,7 @@
           </button>
         </div>
         <p v-if="count === 0" class="empty-note">一个也没有，用0表示</p>
+        <p v-if="wrongHint" class="wrong-count-note">{{ wrongHint }}</p>
       </div>
 
       <!-- write：十框 + 计数器 + 数字 -->
@@ -142,6 +158,13 @@ const feedback = ref<'idle' | 'correct' | 'wrong'>('idle')
 const litCount = ref(0)
 
 const answerText = computed(() => (count.value === 0 ? '0' : undefined))
+const wrongHint = computed(() => {
+  if (feedback.value !== 'wrong' || !isCount.value || typeof selected.value !== 'number') return ''
+  const delta = selected.value - count.value
+  if (delta === 0) return ''
+  if (delta > 0) return `你选了 ${selected.value}，比图上多数了 ${delta} ${unitLabel.value}`
+  return `你选了 ${selected.value}，还少数 ${Math.abs(delta)} ${unitLabel.value}`
+})
 
 const countRead = computed(() => {
   if (done.value) return `一共有 ${count.value} ${unitLabel.value}`
@@ -188,8 +211,69 @@ function onSelect(value: number | string) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.75rem;
   width: 100%;
+}
+.model-caption {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--ui-text-toned);
+}
+.count-source {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(2.4rem, 1fr));
+  gap: 0.5rem;
+  width: min(100%, 22rem);
+  padding: 0.65rem;
+  border-radius: var(--ui-radius-xl);
+  border: 1.5px dashed var(--ui-border-accented);
+  background: color-mix(in srgb, var(--ui-primary) 4%, var(--ui-bg));
+}
+.source-item {
+  position: relative;
+  min-height: 2.6rem;
+  border: 1.5px solid var(--ui-border);
+  border-radius: 0.8rem;
+  background: var(--ui-bg);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.72;
+  transition: transform 0.15s, opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+.source-item:not(:disabled):hover {
+  transform: translateY(-2px);
+  border-color: var(--ui-primary);
+}
+.source-item.lit {
+  opacity: 1;
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
+}
+.source-obj {
+  font-size: 1.65rem;
+  line-height: 1;
+}
+.source-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 9999px;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border-accented);
+  color: var(--ui-text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.source-item.lit .source-badge {
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
+  color: white;
 }
 .hands-stage {
   display: flex;
@@ -305,6 +389,12 @@ function onSelect(value: number | string) {
 .empty-note {
   font-size: 1.6rem;
   color: var(--ui-text-muted);
+}
+.wrong-count-note {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ui-color-error-600, #dc2626);
 }
 .write-hint {
   font-size: 1.25rem;
@@ -422,5 +512,49 @@ function onSelect(value: number | string) {
   font-size: 1rem;
   color: var(--ui-text-muted);
   font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .hands-stage {
+    width: 100%;
+  }
+  .hand-row {
+    width: 100%;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .hand-card {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.65rem 0.45rem;
+  }
+  .hand-icon {
+    font-size: 2.7rem;
+  }
+  .finger-row {
+    gap: 0.25rem;
+  }
+  .finger-dot {
+    width: 1.45rem;
+    height: 1.45rem;
+    font-size: 0.68rem;
+  }
+  .stage-note {
+    max-width: 18rem;
+    text-align: center;
+  }
+  .count-source {
+    grid-template-columns: repeat(5, minmax(2.1rem, 1fr));
+    gap: 0.4rem;
+  }
+  .source-item {
+    min-height: 2.35rem;
+  }
+  .source-obj {
+    font-size: 1.4rem;
+  }
+  .write-triple {
+    gap: 0.8rem;
+  }
 }
 </style>

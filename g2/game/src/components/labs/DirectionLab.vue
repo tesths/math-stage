@@ -13,6 +13,12 @@ const front = computed(() => DIRECTIONS[face.value]!)
 const back = computed(() => DIRECTIONS[oppositeOf(face.value)]!)
 const left = computed(() => DIRECTIONS[leftOf(face.value)]!)
 const right = computed(() => DIRECTIONS[rightOf(face.value)]!)
+const relationCards = computed(() => [
+  { key: 'front', label: '前面', value: front.value },
+  { key: 'back', label: '后面', value: back.value },
+  { key: 'left', label: '左边', value: left.value },
+  { key: 'right', label: '右边', value: right.value },
+])
 
 /** 方向 → 罗盘坐标（北在上） */
 type Dir = (typeof DIRECTIONS)[number]
@@ -62,7 +68,19 @@ function arrowHead(d: Dir): string {
       <text :x="POS[back].x" :y="POS[back].y - 16" class="dir-mark muted">后</text>
       <text :x="POS[left].x" :y="POS[left].y + 34" class="dir-mark">左</text>
       <text :x="POS[right].x" :y="POS[right].y + 34" class="dir-mark">右</text>
+      <text x="100" y="104" class="person">人</text>
     </svg>
+    <div class="relation-grid" aria-label="前后左右对应方向">
+      <span
+        v-for="card in relationCards"
+        :key="card.key"
+        class="relation-card"
+        :class="card.key"
+      >
+        <b>{{ card.label }}</b>
+        <strong>{{ card.value }}</strong>
+      </span>
+    </div>
     <p class="dir-line-text">面向{{ front }} → 后{{ back }} · 左{{ left }} · 右{{ right }}</p>
   </div>
 </template>
@@ -81,6 +99,13 @@ function arrowHead(d: Dir): string {
   width: 240px;
   height: 240px;
   max-width: 100%;
+}
+.person {
+  fill: var(--ui-text-highlighted);
+  font-size: 13px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
 }
 .dir-circle {
   fill: var(--ui-bg-muted);
@@ -132,5 +157,53 @@ function arrowHead(d: Dir): string {
   font-size: 1rem;
   font-weight: 700;
   color: var(--ui-text-highlighted);
+  margin: 0;
+}
+.relation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(4.5rem, 1fr));
+  grid-template-areas:
+    '. front .'
+    'left back right';
+  gap: 0.45rem;
+  width: min(100%, 18rem);
+}
+.relation-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.relation-card.front {
+  grid-area: front;
+  border-color: var(--ui-primary);
+}
+.relation-card.back {
+  grid-area: back;
+  opacity: 0.75;
+}
+.relation-card.left {
+  grid-area: left;
+}
+.relation-card.right {
+  grid-area: right;
+}
+.relation-card strong {
+  color: var(--ui-primary);
+  font-size: 1.15rem;
+}
+
+@media (max-width: 480px) {
+  .dir-svg {
+    width: 220px;
+    height: 220px;
+  }
 }
 </style>

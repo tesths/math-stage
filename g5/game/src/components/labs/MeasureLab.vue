@@ -17,6 +17,8 @@ const ha = computed(() => m2.value / 10000)
 const km2 = computed(() => m2.value / 1_000_000)
 /** 缩放：边长 px（log-ish 映射，保证直观） */
 const sidePx = computed(() => Math.min(200, 60 + side.value * 0.14))
+const haTiles = computed(() => Math.min(100, Math.round(ha.value)))
+const sideInKmPct = computed(() => Math.min(100, (side.value / 1000) * 100))
 
 /* ---------- 组合图形 ---------- */
 const w = computed(() => props.values.w ?? 100)
@@ -73,6 +75,19 @@ const pondPts = computed(() => {
         <div class="ref-item">
           <span class="ref-square" style="width: 84px; height: 84px" />
           <p>边长 1000 米 = 1 平方千米<br />= 100 公顷</p>
+        </div>
+      </div>
+      <div class="km-reference">
+        <div class="km-grid" aria-label="1 平方千米由 100 个 1 公顷组成">
+          <span v-for="i in 100" :key="i" class="km-cell" :class="{ active: i <= haTiles }" />
+        </div>
+        <div class="km-caption">
+          <p><b>1 平方千米</b> = 10 × 10 个 1 公顷 = <b>100 公顷</b></p>
+          <p>每格 1 公顷；当前正方形约占 <b>{{ toFixed2(ha) }}</b> 格。</p>
+        </div>
+        <div class="km-frame" aria-label="当前边长占 1 千米边长的比例">
+          <span class="km-current" :style="{ width: sideInKmPct + '%', height: sideInKmPct + '%' }" />
+          <span class="km-frame-label">1 km × 1 km</span>
         </div>
       </div>
       <p class="note">1 公顷 = 10000 平方米；1 平方千米 = 1000000 平方米 = 100 公顷</p>
@@ -176,10 +191,83 @@ const pondPts = computed(() => {
   color: var(--ui-text-muted);
   text-align: center;
 }
+.km-reference {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.km-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 0.55rem);
+  gap: 1px;
+  padding: 2px;
+  border: 1px solid var(--ui-border);
+  border-radius: 5px;
+  background: var(--ui-bg-muted);
+}
+.km-cell {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 1px;
+  background: white;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 72%, transparent);
+}
+.km-cell.active {
+  background: color-mix(in srgb, var(--ui-primary) 60%, white);
+  border-color: var(--ui-primary);
+}
+.km-caption {
+  max-width: 17rem;
+  font-size: 0.78rem;
+  color: var(--ui-text-toned);
+}
+.km-caption b {
+  color: var(--ui-primary);
+}
+.km-frame {
+  position: relative;
+  width: 5.6rem;
+  height: 5.6rem;
+  border: 2px solid var(--ui-primary);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ui-primary) 8%, transparent);
+}
+.km-current {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  min-width: 2px;
+  min-height: 2px;
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 45%, transparent);
+  border-top: 2px solid var(--ui-warning, #f59e0b);
+  border-right: 2px solid var(--ui-warning, #f59e0b);
+}
+.km-frame-label {
+  position: absolute;
+  right: 0.25rem;
+  top: 0.2rem;
+  font-size: 0.62rem;
+  color: var(--ui-text-muted);
+  font-weight: 800;
+}
 .note {
   font-size: 0.85rem;
   color: var(--ui-text-muted);
   text-align: center;
+}
+@media (max-width: 520px) {
+  .ref-squares {
+    gap: 1rem;
+  }
+  .km-reference {
+    gap: 0.75rem;
+  }
+  .km-caption {
+    text-align: center;
+  }
 }
 .pond-fill {
   fill: color-mix(in srgb, var(--ui-primary) 45%, white);

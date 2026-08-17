@@ -140,6 +140,6 @@ export const c4Examples: GameQuestion[] = [
     title: '比大小',
     prompt: '8个苹果和6个橘子比一比，填符号：8○6',
     type: 'compare',
-    config: { type: 'compare', a: 8, b: 6, answer: '>', emoji: '🍎' },
+    config: { type: 'compare', a: 8, b: 6, answer: '>', leftEmoji: '🍎', rightEmoji: '🍊', leftLabel: '苹果', rightLabel: '橘子' },
   },
 ]

@@ -38,7 +38,7 @@ const divMove = computed(() => {
   const d = divSel.value
   // 除数的小数位数即需要右移的位数
   const shift = String(d.v).includes('.') ? String(d.v).split('.')[1]!.length : 0
-  return { shift, d1: d.i1, d2: d.i2, q: d.q }
+  return { shift, scale: 10 ** shift, d1: d.i1, d2: d.i2, q: d.q }
 })
 
 /* ---------- 积的近似值 ---------- */
@@ -48,6 +48,11 @@ const approxDigits = computed(() => Math.round(props.values.digits ?? 1))
 
 /* ---------- 商的近似值 ---------- */
 const divSpeed = computed(() => props.values.speed ?? 30)
+const divApproxRaw = computed(() => (divSpeed.value * 1000) / 60)
+const divApproxDecimals = computed(() => (String(divApproxRaw.value).split('.')[1] ?? '').padEnd(3, '0'))
+const divApproxKeep = computed(() => divApproxDecimals.value.slice(0, 2))
+const divApproxJudge = computed(() => divApproxDecimals.value.slice(2, 3))
+const divApproxDecision = computed(() => (Number(divApproxJudge.value) >= 5 ? '第三位 ≥ 5，第二位进 1' : '第三位 < 5，直接舍去'))
 
 /* ---------- 进一去尾 ---------- */
 const roundMethod = computed(() => Math.round(props.values.method ?? 0))
@@ -112,6 +117,10 @@ const roundResult = computed(() =>
       <div class="div-card">
         <p class="div-title">{{ divSel.name }}</p>
         <p class="big-expr">{{ toFixed2(divSel.d) }} ÷ {{ toFixed2(divSel.v) }} = {{ divSel.q }}</p>
+        <div class="decimal-rule" aria-label="除以小数转化目标">
+          <span>目标：把除数 {{ toFixed2(divSel.v) }} 变成整数 {{ divSel.i2 }}</span>
+          <span>两数同乘 {{ divMove.scale }}，商不变</span>
+        </div>
         <div class="dp-track">
           <div class="dp-row">
             <span class="dp-tag">被除数</span>
@@ -158,11 +167,17 @@ const roundResult = computed(() =>
       <div class="approx-card">
         <p class="div-title">海狮游速 {{ divSpeed }} 千米/时 = {{ divSpeed * 1000 }} 米/时</p>
         <p class="long-div">{{ divSpeed * 1000 }} ÷ 60</p>
+        <div class="round-flow" aria-label="商的近似值判定流程">
+          <span>精确商 {{ Math.floor(divApproxRaw) }}.{{ divApproxKeep }}{{ divApproxJudge }}</span>
+          <span>保留两位</span>
+          <span>判定位 {{ divApproxJudge }}</span>
+          <span>{{ divApproxDecision }}</span>
+        </div>
         <div class="long-box">
-          <span class="lb-quot">{{ Math.floor((divSpeed * 1000) / 60) }}.<span class="lb-extra">{{ String(((divSpeed * 1000) / 60)).split('.')[1]?.slice(0, 2) ?? '00' }}</span><span class="lb-cut">{{ String(((divSpeed * 1000) / 60)).split('.')[1]?.slice(2, 3) ?? '' }}</span></span>
+          <span class="lb-quot">{{ Math.floor(divApproxRaw) }}.<span class="lb-extra">{{ divApproxKeep }}</span><span class="lb-cut">{{ divApproxJudge }}</span></span>
           <span class="lb-note">先除到小数点后第三位（<span class="lb-cut">淡色</span>），再四舍五入</span>
         </div>
-        <p class="approx-result">保留两位小数 → <b>{{ ((divSpeed * 1000) / 60).toFixed(2) }}</b> 米/分</p>
+        <p class="approx-result">保留两位小数 → <b>{{ divApproxRaw.toFixed(2) }}</b> 米/分</p>
         <p class="note">看小数点后第三位：≥5 进 1，&lt;5 舍去</p>
       </div>
     </template>
@@ -289,6 +304,29 @@ const roundResult = computed(() =>
   font-size: 0.85rem;
   color: var(--ui-text-muted);
 }
+.decimal-rule,
+.round-flow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+.decimal-rule span,
+.round-flow span {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.decimal-rule span:first-child,
+.round-flow span:last-child {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
 /* 除以小数：小数点同步移动 */
 .dp-track {
   display: flex;
@@ -394,5 +432,15 @@ const roundResult = computed(() =>
 .lb-note {
   font-size: 0.8rem;
   color: var(--ui-text-muted);
+}
+@media (max-width: 520px) {
+  .compare-card,
+  .approx-card,
+  .div-card {
+    padding: 0.85rem 0.75rem;
+  }
+  .big-expr {
+    font-size: 1.15rem;
+  }
 }
 </style>

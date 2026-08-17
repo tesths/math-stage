@@ -172,8 +172,11 @@ describe('BoardRaceGame', () => {
 
 describe('FrogJumpGame', () => {
   it('渲染荷叶与 4 个选项', () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0)
     const w = mount(FrogJumpGame)
-    expect(w.findAll('.lily').length).toBeGreaterThan(3)
+    random.mockRestore()
+
+    expect(w.findAll('.lily')).toHaveLength(3)
     expect(w.findAll('.answer-btn')).toHaveLength(4)
   })
 

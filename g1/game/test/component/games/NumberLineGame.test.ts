@@ -14,8 +14,21 @@ function q(over: object): GameQuestion {
 describe('NumberLineGame numberline 类型', () => {
   it('渲染数轴与选项', () => {
     const w = mount(NumberLineGame, { props: { question: q({}) } })
+    expect(w.find('.place-model').text()).toContain('1个十')
+    expect(w.find('.place-model').text()).toContain('1个一')
+    expect(w.find('.numline-note').text()).toContain('从 10 再往后数 1 步')
     expect(w.findAll('.num-line-tick').length).toBeGreaterThanOrEqual(20)
+    expect(w.findAll('.num-line-tick.between').length).toBe(0)
     expect(w.findAll('.answer-btn').length).toBe(4)
+  })
+
+  it('数轴高亮 10 到目标数之间的路径', () => {
+    const w = mount(NumberLineGame, {
+      props: { question: q({ config: { type: 'numberline', value: 14, answer: 14, options: [13, 14, 15, 16] } }) },
+    })
+    expect(w.find('.place-model').text()).toContain('4个一')
+    expect(w.findAll('.num-line-tick.between').map((t) => t.text())).toEqual(['11', '12', '13'])
+    expect(w.find('.num-line-tick.active').text()).toBe('14')
   })
 
   it('答对', async () => {
@@ -44,7 +57,9 @@ describe('NumberLineGame sequence 类型', () => {
       },
     })
     expect(seqBtns(w).length).toBe(3)
+    expect(w.findAll('.seq-slot').length).toBe(3)
     await byValue(w, 10)!.trigger('click')
+    expect(w.findAll('.seq-slot.filled').length).toBe(1)
     await byValue(w, 11)!.trigger('click')
     await byValue(w, 12)!.trigger('click')
     expect(w.emitted('answered')![0][0]).toMatchObject({ correct: true, attempts: 1 })

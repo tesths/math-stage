@@ -33,11 +33,12 @@ const MODELS: Record<string, [number, number, number][]> = {
 const cubes = computed(() => MODELS[props.lab.id] ?? MODELS['g5-c8-views3d-blocks']!)
 
 const views = [
-  { key: 0, name: '前面', dir: 'front' },
-  { key: 1, name: '右面', dir: 'right' },
-  { key: 2, name: '上面', dir: 'top' },
+  { key: 0, name: '前面', dir: 'front', rule: '看宽和高', axis: '宽 x 高' },
+  { key: 1, name: '右面', dir: 'right', rule: '看深和高', axis: '深 x 高' },
+  { key: 2, name: '上面', dir: 'top', rule: '看宽和深', axis: '宽 x 深' },
 ] as const
 const view = computed(() => Math.round(props.values.view ?? 0))
+const currentView = computed(() => views.find((v) => v.key === view.value) ?? views[0]!)
 
 /** 三个方向的投影（2D 网格点集） */
 const projections = computed(() => {
@@ -53,19 +54,24 @@ const projections = computed(() => {
   return { front, right, top }
 })
 
-function renderProjection(set: Set<string>): { filled: boolean[][] } {
-  const filled: boolean[][] = []
+function renderProjection(set: Set<string>): { filled: boolean; c: number; r: number }[] {
+  const cells: { filled: boolean; c: number; r: number }[] = []
   for (let row = 0; row < 4; row++) {
-    const r: boolean[] = []
-    for (let col = 0; col < 4; col++) r.push(set.has(`${col},${3 - row}`))
-    filled.push(r)
+    for (let col = 0; col < 4; col++) {
+      cells.push({ filled: set.has(`${col},${3 - row}`), c: col, r: row })
+    }
   }
-  return { filled }
+  return cells
 }
 
 const projFront = computed(() => renderProjection(projections.value.front))
 const projRight = computed(() => renderProjection(projections.value.right))
 const projTop = computed(() => renderProjection(projections.value.top))
+const projectionCards = computed(() => [
+  { ...views[0]!, cells: projFront.value },
+  { ...views[1]!, cells: projRight.value },
+  { ...views[2]!, cells: projTop.value },
+])
 
 /* ---------- three.js 场景 ---------- */
 const mountRef = ref<HTMLDivElement | null>(null)
@@ -221,36 +227,32 @@ onBeforeUnmount(() => {
       </UButton>
     </div>
 
+    <div class="view-guide">
+      <span class="guide-label">当前观察方向：{{ currentView.name }}</span>
+      <span>{{ currentView.rule }}，下方三视图固定，不随拖拽旋转</span>
+    </div>
+
     <div class="proj-row">
-      <div class="proj-box" :class="{ active: view === 0 }">
-        <p class="proj-name">前面</p>
+      <div
+        v-for="card in projectionCards"
+        :key="card.key"
+        class="proj-box"
+        :class="{ active: view === card.key }"
+      >
+        <p class="proj-name">{{ card.name }}</p>
         <svg viewBox="0 0 110 110" class="proj-svg">
-          <rect v-for="(row, r) in projFront.filled" :key="r">
-            <template v-for="(on, c) in row" :key="c">
-              <rect v-if="on" :x="c * 26 + 7" :y="r * 26 + 7" width="24" height="24" class="proj-cell" />
-            </template>
-          </rect>
+          <rect
+            v-for="cell in card.cells"
+            :key="`${card.dir}-${cell.c}-${cell.r}`"
+            :x="cell.c * 26 + 7"
+            :y="cell.r * 26 + 7"
+            width="24"
+            height="24"
+            class="proj-cell"
+            :class="{ filled: cell.filled }"
+          />
         </svg>
-      </div>
-      <div class="proj-box" :class="{ active: view === 1 }">
-        <p class="proj-name">右面</p>
-        <svg viewBox="0 0 110 110" class="proj-svg">
-          <rect v-for="(row, r) in projRight.filled" :key="r">
-            <template v-for="(on, c) in row" :key="c">
-              <rect v-if="on" :x="c * 26 + 7" :y="r * 26 + 7" width="24" height="24" class="proj-cell" />
-            </template>
-          </rect>
-        </svg>
-      </div>
-      <div class="proj-box" :class="{ active: view === 2 }">
-        <p class="proj-name">上面</p>
-        <svg viewBox="0 0 110 110" class="proj-svg">
-          <rect v-for="(row, r) in projTop.filled" :key="r">
-            <template v-for="(on, c) in row" :key="c">
-              <rect v-if="on" :x="c * 26 + 7" :y="r * 26 + 7" width="24" height="24" class="proj-cell" />
-            </template>
-          </rect>
-        </svg>
+        <p class="proj-rule">{{ card.axis }} · {{ card.rule }}</p>
       </div>
     </div>
     <p class="note">🖱️ 拖拽旋转 3D 场景 · 点击按钮切换观察方向 · 从不同方向看，看到的图形可能不同</p>
@@ -275,6 +277,26 @@ onBeforeUnmount(() => {
 .view-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.view-guide {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.6rem;
+  max-width: 36rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-muted);
+  padding: 0.45rem 0.7rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+}
+.guide-label {
+  color: var(--ui-primary);
+  font-weight: 800;
 }
 .proj-row {
   display: flex;
@@ -298,11 +320,22 @@ onBeforeUnmount(() => {
   color: var(--ui-text-muted);
   font-weight: 700;
 }
+.proj-rule {
+  margin-top: 0.1rem;
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--ui-text-muted);
+}
 .proj-svg {
   width: 92px;
   height: 92px;
 }
 .proj-cell {
+  fill: var(--ui-bg);
+  stroke: var(--ui-border);
+  stroke-width: 1;
+}
+.proj-cell.filled {
   fill: color-mix(in srgb, var(--ui-primary) 60%, white);
   stroke: var(--ui-primary);
   stroke-width: 1.5;

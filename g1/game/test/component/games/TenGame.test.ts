@@ -15,7 +15,18 @@ describe('TenGame', () => {
   it('渲染卡片与和提示', () => {
     const w = mount(TenGame, { props: { question: q({}) } })
     expect(w.findAll('.card').length).toBe(5)
+    expect(w.findAll('.tf-cell').length).toBe(10)
     expect(w.text()).toContain('10')
+  })
+
+  it('选择卡片后十框和差量提示同步更新', async () => {
+    const w = mount(TenGame, { props: { question: q({}) } })
+    await w.find('.card[data-card="3"]').trigger('click')
+    expect(w.findAll('.tf-cell.lit').length).toBe(3)
+    expect(w.text()).toContain('还差 7')
+    await w.find('.card[data-card="7"]').trigger('click')
+    expect(w.findAll('.tf-cell.lit').length).toBe(10)
+    expect(w.text()).toContain('十框正好填满')
   })
 
   it('点选两张恰好等于10 → 正确', async () => {

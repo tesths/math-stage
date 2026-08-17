@@ -35,6 +35,39 @@ const toIdx = computed(() => Math.round(props.values.to ?? 1))
 const fromUnit = computed(() => LENGTH_UNITS[fromIdx.value]!)
 const toUnit = computed(() => LENGTH_UNITS[toIdx.value]!)
 const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / LENGTH_MM[toUnit.value])
+const formatLen = (value: number) => Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+const unitLadder = computed(() => {
+  const low = Math.min(fromIdx.value, toIdx.value)
+  const high = Math.max(fromIdx.value, toIdx.value)
+  return LENGTH_UNITS.map((unit, index) => ({
+    unit,
+    index,
+    active: index >= low && index <= high,
+    endpoint: index === fromIdx.value || index === toIdx.value,
+  }))
+})
+const conversionSteps = computed(() => {
+  if (fromIdx.value === toIdx.value) return []
+  const dir = fromIdx.value < toIdx.value ? 1 : -1
+  const steps: Array<{ from: string; to: string; op: '×' | '÷'; factor: number }> = []
+  for (let i = fromIdx.value; i !== toIdx.value; i += dir) {
+    const from = LENGTH_UNITS[i]!
+    const to = LENGTH_UNITS[i + dir]!
+    const factor = dir > 0 ? LENGTH_MM[to] / LENGTH_MM[from] : LENGTH_MM[from] / LENGTH_MM[to]
+    steps.push({ from, to, op: dir > 0 ? '÷' : '×', factor })
+  }
+  return steps
+})
+const mixPathText = computed(() => [fromUnit.value, ...conversionSteps.value.map((step) => step.to)].join(' → '))
+const mixOperationText = computed(() => conversionSteps.value.map((step) => `${step.op}${step.factor}`).join('，'))
+const mixDecomposition = computed(() => {
+  if (toIdx.value - fromIdx.value !== 1) return ''
+  const factor = LENGTH_MM[toUnit.value] / LENGTH_MM[fromUnit.value]
+  const whole = Math.floor(mixValue.value / factor)
+  const rest = mixValue.value % factor
+  if (!rest) return ''
+  return `${mixValue.value} ${fromUnit.value} = ${whole} ${toUnit.value} ${rest} ${fromUnit.value}`
+})
 </script>
 
 <template>
@@ -114,6 +147,15 @@ const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / 
 
     <!-- 综合换算 -->
     <template v-else>
+      <div class="unit-ladder" aria-label="长度单位换算路径">
+        <template v-for="(item, index) in unitLadder" :key="item.unit">
+          <div class="unit-step" :class="{ active: item.active, endpoint: item.endpoint }">
+            <span class="unit-dot" />
+            <span>{{ item.unit }}</span>
+          </div>
+          <span v-if="index < unitLadder.length - 1" class="unit-rate">×10</span>
+        </template>
+      </div>
       <div class="mix-visual">
         <div class="mix-cell">
           <p class="mix-big">{{ mixValue }}</p>
@@ -125,13 +167,25 @@ const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / 
           <p class="mix-unit">{{ toUnit }}</p>
         </div>
       </div>
+      <div class="path-card">
+        <p class="path-title">换算路径：{{ mixPathText }}</p>
+        <p class="path-detail">
+          <template v-if="conversionSteps.length">
+            从小单位到大单位用除法，从大单位到小单位用乘法：{{ mixOperationText }}。
+          </template>
+          <template v-else>
+            原单位和目标单位相同，数值保持不变。
+          </template>
+        </p>
+        <p v-if="mixDecomposition" class="path-detail strong">{{ mixDecomposition }}</p>
+      </div>
       <div class="rate-chips">
         <span class="rate-chip">1 千米 = 1000 米</span>
         <span class="rate-chip">1 米 = 10 分米</span>
         <span class="rate-chip">1 分米 = 10 厘米</span>
         <span class="rate-chip">1 厘米 = 10 毫米</span>
       </div>
-      <p class="tip">{{ mixValue }} {{ fromUnit }} = {{ mixResult }} {{ toUnit }}</p>
+      <p class="tip">{{ mixValue }} {{ fromUnit }} = {{ formatLen(mixResult) }} {{ toUnit }}</p>
     </template>
   </div>
 </template>
@@ -256,6 +310,46 @@ const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / 
   gap: 1.2rem;
   align-items: center;
 }
+.unit-ladder {
+  display: grid;
+  grid-template-columns: repeat(9, auto);
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+.unit-step {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.32rem 0.7rem;
+  font-size: 0.82rem;
+  color: var(--ui-text-muted);
+}
+.unit-step.active {
+  border-color: color-mix(in srgb, var(--ui-primary) 45%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-primary) 10%, transparent);
+  color: var(--ui-text-toned);
+}
+.unit-step.endpoint {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  font-weight: 800;
+}
+.unit-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: currentColor;
+}
+.unit-rate {
+  color: var(--ui-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
 .mix-cell {
   border: 1px solid var(--ui-border-accented);
   border-radius: var(--ui-radius-lg);
@@ -283,6 +377,28 @@ const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / 
   flex-wrap: wrap;
   justify-content: center;
 }
+.path-card {
+  width: min(100%, 34rem);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: color-mix(in srgb, var(--ui-bg-muted) 75%, transparent);
+  padding: 0.65rem 0.9rem;
+  text-align: center;
+}
+.path-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--ui-text-highlighted);
+}
+.path-detail {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  color: var(--ui-text-toned);
+}
+.path-detail.strong {
+  color: var(--ui-primary);
+  font-weight: 800;
+}
 .rate-chip {
   border-radius: 9999px;
   background: var(--ui-bg-muted);
@@ -290,5 +406,24 @@ const mixResult = computed(() => (mixValue.value * LENGTH_MM[fromUnit.value]) / 
   padding: 0.25rem 0.6rem;
   font-size: 0.78rem;
   color: var(--ui-text-toned);
+}
+@media (max-width: 520px) {
+  .unit-ladder {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+  .unit-step {
+    justify-content: center;
+  }
+  .unit-rate {
+    display: none;
+  }
+  .mix-visual {
+    gap: 0.6rem;
+  }
+  .mix-cell {
+    min-width: 5rem;
+    padding: 0.55rem 0.8rem;
+  }
 }
 </style>

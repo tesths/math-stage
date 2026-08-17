@@ -24,6 +24,12 @@ const mfd = computed(() => Math.round(props.values.fd ?? 7))
 const mode = computed(() => Math.round(props.values.mode ?? 0))
 const delta = computed(() => (base.value * mfn.value) / mfd.value)
 const resultVal = computed(() => (mode.value === 0 ? base.value + delta.value : base.value - delta.value))
+const moreMax = computed(() => Math.max(base.value, resultVal.value, 1))
+const basePct = computed(() => (base.value / moreMax.value) * 100)
+const resultPct = computed(() => (resultVal.value / moreMax.value) * 100)
+const deltaPct = computed(() => (delta.value / moreMax.value) * 100)
+const deltaLeftPct = computed(() => (mode.value === 0 ? basePct.value : resultPct.value))
+const deltaSign = computed(() => (mode.value === 0 ? '+' : '-'))
 
 /* ---------- 工程问题 ---------- */
 const a = computed(() => Math.round(props.values.a ?? 6))
@@ -66,27 +72,28 @@ const hours = computed(() => 1 / rateSum.value)
           <div class="bar-row">
             <span class="bar-label">原来</span>
             <div class="bar-track">
-              <div class="bar-base" :style="{ width: `${base}%` }">{{ base }} 天</div>
+              <div class="bar-base" :style="{ width: `${basePct}%` }">{{ base }} 天</div>
             </div>
           </div>
           <div class="bar-row">
             <span class="bar-label">现在</span>
             <div class="bar-track">
-              <div class="bar-base result" :style="{ width: `${resultVal}%` }">
+              <div class="bar-base result" :style="{ width: `${resultPct}%` }">
                 {{ toFixed2(resultVal) }} 天
               </div>
               <div
                 class="bar-delta"
                 :style="{
-                  width: `${delta}%`,
-                  left: `${mode === 0 ? base : resultVal}%`,
+                  width: `${deltaPct}%`,
+                  left: `${deltaLeftPct}%`,
                 }"
               >
-                ±{{ toFixed2(delta) }}
+                {{ deltaSign }}{{ toFixed2(delta) }}
               </div>
             </div>
           </div>
         </div>
+        <p class="scale-note">同一比例尺：整条线 = {{ toFixed2(moreMax) }} 天，彩色差量表示 {{ mfn }}/{{ mfd }} 个原来天数</p>
         <p class="seg-result">
           {{ mode === 0 ? '增加' : '减少' }}的部分 = {{ base }} × {{ mfn }}/{{ mfd }} = {{ toFixed2(delta) }} 天
           <br />
@@ -188,6 +195,12 @@ const hours = computed(() => 1 / rateSum.value)
 }
 .seg-result b {
   color: var(--ui-primary);
+}
+.scale-note {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  text-align: center;
+  margin: -0.2rem 0 0;
 }
 .two-bars {
   display: flex;

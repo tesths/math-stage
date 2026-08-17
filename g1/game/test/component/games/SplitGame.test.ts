@@ -21,12 +21,15 @@ describe('SplitGame', () => {
     expect(w.findAll('.split-tray').length).toBe(2)
   })
 
-  it('点移动按钮把圆片移到右边（双盘联动）', async () => {
+  it('点移动按钮把圆片在左右盘之间移动（双盘联动）', async () => {
     const w = mount(SplitGame, { props: { question: q({}) } })
     expect(w.findAll('.split-tray.right .split-item').length).toBe(4)
-    await w.findAll('.split-move')[0].trigger('click') // 移 1 个到右边
-    expect(w.findAll('.split-tray.left .split-item').length).toBe(3)
-    expect(w.findAll('.split-tray.right .split-item').length).toBe(3)
+    await w.findAll('.split-move')[0].trigger('click')
+    expect(w.findAll('.split-tray.left .split-item').length).toBe(1)
+    expect(w.findAll('.split-tray.right .split-item').length).toBe(5)
+    await w.findAll('.split-move')[1].trigger('click')
+    expect(w.findAll('.split-tray.left .split-item').length).toBe(2)
+    expect(w.findAll('.split-tray.right .split-item').length).toBe(4)
   })
 
   it('答对发出 answered', async () => {

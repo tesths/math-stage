@@ -40,7 +40,7 @@ export const c1Examples: GameQuestion[] = [
     title: '绿花比红花多',
     prompt: '画绿花，要比红花多。红花有4朵，绿花有5朵。绿花和红花比一比。',
     type: 'compare',
-    config: { type: 'compare', a: 5, b: 4, answer: '>', emoji: '🌺' },
+    config: { type: 'compare', a: 5, b: 4, answer: '>', leftEmoji: '🟢', rightEmoji: '🔴', leftLabel: '绿花', rightLabel: '红花' },
   },
   {
     id: 'c1-count-04',

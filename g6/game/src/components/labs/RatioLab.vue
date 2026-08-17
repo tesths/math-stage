@@ -28,6 +28,7 @@ const SIMPLIFY_EXAMPLES = [
   { label: '0.32 : 0.8', expr: '同时乘 100 得 32 : 80，再除以 16', ans: '2 : 5' },
 ]
 const sim = computed(() => SIMPLIFY_EXAMPLES[Math.round(props.values.sel ?? 0) % SIMPLIFY_EXAMPLES.length]!)
+const simFlow = computed(() => [sim.value.label, sim.value.expr, sim.value.ans])
 /** 整数示例：可展示按公因数分组的量条 */
 const simBars = computed(() => {
   const s = sim.value
@@ -40,9 +41,15 @@ const simBars = computed(() => {
 const da = computed(() => Math.round(props.values.a ?? 3))
 const db = computed(() => Math.round(props.values.b ?? 2))
 const total = computed(() => props.values.total ?? 500)
+const totalParts = computed(() => da.value + db.value)
 const per = computed(() => total.value / (da.value + db.value))
 const partA = computed(() => per.value * da.value)
 const partB = computed(() => per.value * db.value)
+const distributeLedger = computed(() => [
+  { label: '先求 1 份', value: `${toFixed2(per.value)} 克` },
+  { label: `糯米粉 ${da.value} 份`, value: `${toFixed2(partA.value)} 克` },
+  { label: `鼠曲草浆 ${db.value} 份`, value: `${toFixed2(partB.value)} 克` },
+])
 
 /* ---------- 比例的基本性质 ---------- */
 const pa = computed(() => Math.round(props.values.a ?? 4))
@@ -62,6 +69,7 @@ const sx = computed(() => (sa.value * sc.value) / sb.value)
 /* ---------- 黄金比 ---------- */
 const gw = computed(() => props.values.w ?? 200)
 const gl = computed(() => gw.value / 0.618)
+const gtotal = computed(() => gw.value + gl.value)
 const H = 60
 const RATIO = 0.618
 </script>
@@ -108,6 +116,11 @@ const RATIO = 0.618
     <template v-else-if="kind === 'ratio-simplify'">
       <div class="cmp-card">
         <p class="ratio-big">{{ sim.label }}</p>
+        <div class="sim-flow" aria-label="化简比同步处理流程">
+          <span v-for="(step, i) in simFlow" :key="step" class="flow-chip" :class="{ ans: i === simFlow.length - 1 }">
+            {{ i === 1 ? '两边同做：' : '' }}{{ step }}
+          </span>
+        </div>
         <!-- 整数比：按公因数分组量条 -->
         <div v-if="simBars" class="group-bars">
           <div class="gb-row">
@@ -122,7 +135,7 @@ const RATIO = 0.618
               <span v-for="i in simBars.cellsB" :key="'b' + i" class="gb-cell b">{{ simBars.group }}</span>
             </div>
           </div>
-          <p class="gb-note">每 {{ simBars.group }} 个一组：{{ sim.a }} → {{ simBars.cellsA }} 组，{{ sim.b }} → {{ simBars.cellsB }} 组</p>
+        <p class="gb-note">每 {{ simBars.group }} 个一组：{{ sim.a }} → {{ simBars.cellsA }} 组，{{ sim.b }} → {{ simBars.cellsB }} 组</p>
         </div>
         <p class="sim-step">{{ sim.expr }}</p>
         <p class="sim-ans">
@@ -136,14 +149,20 @@ const RATIO = 0.618
     <template v-else-if="kind === 'ratio-distribute'">
       <div class="card-block">
         <div class="dist-track">
-          <div class="dist-part a" :style="{ width: `${(da / (da + db)) * 100}%` }">
+          <div class="dist-part a" :style="{ width: `${(da / totalParts) * 100}%` }">
             <span v-for="i in da" :key="'a' + i" class="dist-cell">{{ i === 1 ? '1 份' : '' }}</span>
           </div>
-          <div class="dist-part b" :style="{ width: `${(db / (da + db)) * 100}%` }">
+          <div class="dist-part b" :style="{ width: `${(db / totalParts) * 100}%` }">
             <span v-for="i in db" :key="'b' + i" class="dist-cell">{{ i === 1 ? '1 份' : '' }}</span>
           </div>
         </div>
-        <p class="sim-step">总份数 = {{ da }} + {{ db }} = {{ da + db }}，每份 = {{ total }} ÷ {{ da + db }} = {{ toFixed2(per) }} 克</p>
+        <div class="ledger-row" aria-label="按比例分配步骤">
+          <span v-for="item in distributeLedger" :key="item.label" class="ledger-chip">
+            <small>{{ item.label }}</small>
+            <b>{{ item.value }}</b>
+          </span>
+        </div>
+        <p class="sim-step">总份数 = {{ da }} + {{ db }} = {{ totalParts }}，每份 = {{ total }} ÷ {{ totalParts }} = {{ toFixed2(per) }} 克</p>
         <p class="sim-ans">
           糯米粉 = {{ toFixed2(per) }} × {{ da }} = <b>{{ toFixed2(partA) }} 克</b>
           <br />
@@ -189,6 +208,11 @@ const RATIO = 0.618
         <p class="ratio-big">
           {{ sa }} : {{ sb }} = x : {{ sc }}
         </p>
+        <div class="solve-flow" aria-label="解比例步骤">
+          <span>列比例</span>
+          <span>外项积 = 内项积</span>
+          <span>解出 x</span>
+        </div>
         <p class="sim-step">
           {{ sb }}x = {{ sa }} × {{ sc }} = {{ sa * sc }}
         </p>
@@ -206,10 +230,15 @@ const RATIO = 0.618
           <div class="gold-line" :style="{ left: `${RATIO * 100}%` }" />
           <span class="gold-leb">{{ toFixed2(gl) }}</span>
         </div>
+        <div class="gold-segment" aria-label="黄金比分割线段">
+          <span class="gold-part long" :style="{ flexGrow: gl }">较长 {{ toFixed2(gl) }}</span>
+          <span class="gold-part short" :style="{ flexGrow: gw }">较短 {{ toFixed2(gw) }}</span>
+        </div>
         <p class="ratio-big">
           {{ toFixed2(gw) }} : {{ toFixed2(gl) }} ≈ <b>{{ toFixed2(gw / gl) }}</b>
         </p>
         <p class="sim-step">长 = 宽 ÷ 0.618 = {{ toFixed2(gw) }} ÷ 0.618 = {{ toFixed2(gl) }}</p>
+        <p class="sim-step">较短 : 较长 ≈ 较长 : 全长，即 {{ toFixed2(gw) }} : {{ toFixed2(gl) }} ≈ {{ toFixed2(gl) }} : {{ toFixed2(gtotal) }}</p>
         <p class="note">宽与长的比越接近 0.618，看起来越协调、越美</p>
       </div>
     </template>
@@ -344,6 +373,30 @@ const RATIO = 0.618
 .sim-ans b {
   color: var(--ui-primary);
 }
+.sim-flow,
+.solve-flow,
+.ledger-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+.flow-chip,
+.solve-flow span,
+.ledger-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg);
+  padding: 0.28rem 0.62rem;
+  font-size: 0.76rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.flow-chip.ans {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
 .dist-track {
   display: flex;
   height: 2.6rem;
@@ -376,6 +429,21 @@ const RATIO = 0.618
 }
 .dist-part.b .dist-cell {
   color: var(--ui-text-highlighted);
+}
+.ledger-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--ui-radius-lg);
+  min-width: 7rem;
+}
+.ledger-chip small {
+  color: var(--ui-text-muted);
+  font-size: 0.68rem;
+}
+.ledger-chip b {
+  color: var(--ui-primary);
+  font-size: 0.9rem;
 }
 .group-bars {
   display: flex;
@@ -493,5 +561,42 @@ const RATIO = 0.618
   transform: translateX(50%);
   font-size: 0.85rem;
   color: var(--ui-text-muted);
+}
+.gold-segment {
+  display: flex;
+  width: min(100%, 26rem);
+  height: 2.4rem;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-accented);
+  border-radius: var(--ui-radius-lg);
+}
+.gold-part {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.4rem;
+  min-width: 5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.gold-part.long {
+  background: color-mix(in srgb, var(--ui-primary) 55%, white);
+  color: var(--ui-text-highlighted);
+}
+.gold-part.short {
+  background: color-mix(in srgb, #f59e0b 55%, white);
+  color: #78350f;
+}
+@media (max-width: 520px) {
+  .cup-set {
+    gap: 1.5rem;
+  }
+  .ratio-big {
+    font-size: 1.05rem;
+  }
+  .gold-part {
+    min-width: 4rem;
+    font-size: 0.68rem;
+  }
 }
 </style>

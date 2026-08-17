@@ -54,6 +54,10 @@ const angleMid = computed(() => {
   const mid = (-90 + angle.value / 2) * Math.PI / 180
   return { x: CX + 62 * Math.cos(mid), y: CY + 62 * Math.sin(mid) }
 })
+const sectorArcLabel = computed(() => {
+  const mid = (-90 + angle.value / 2) * Math.PI / 180
+  return { x: CX + (sr + 16) * Math.cos(mid), y: CY + (sr + 16) * Math.sin(mid) }
+})
 
 /* ---------- 圆的周长 ---------- */
 const cir = computed(() => Math.round(props.values.r ?? 14))
@@ -172,7 +176,10 @@ const ringPath = computed(() => {
           <line :x1="CX" :y1="CY" :x2="CX" :y2="CY - sr" stroke="#f59e0b" stroke-width="1.5" />
           <line :x1="CX" :y1="CY" :x2="arcEnd.x" :y2="arcEnd.y" stroke="#f59e0b" stroke-width="1.5" />
           <path :d="angleArc" fill="none" stroke="var(--ui-warning, #f59e0b)" stroke-width="2" marker-end="url(#arr2)" />
+          <text :x="CX" :y="CY - sr - 8" text-anchor="middle" class="t-lbl sky">A</text>
+          <text :x="arcEnd.x + 12" :y="arcEnd.y + 4" class="t-lbl sky">B</text>
           <text :x="angleMid.x" :y="angleMid.y + 4" text-anchor="middle" class="t-lbl amber">{{ angle }}°</text>
+          <text :x="sectorArcLabel.x" :y="sectorArcLabel.y" text-anchor="middle" class="t-lbl sky">弧 AB</text>
           <text :x="CX" :y="CY + 22" text-anchor="middle" class="t-lbl">圆心 O</text>
           <text :x="CX + 14" :y="CY - 8" class="t-lbl amber">r</text>
           <text :x="arcEnd.x + 14" :y="arcEnd.y - 6" class="t-lbl amber">r</text>
@@ -182,6 +189,12 @@ const ringPath = computed(() => {
             </marker>
           </defs>
         </svg>
+      </div>
+      <div class="sector-parts" aria-label="扇形组成部分">
+        <span class="part-chip">半径 OA</span>
+        <span class="part-chip">半径 OB</span>
+        <span class="part-chip">弧 AB</span>
+        <span class="part-chip primary">圆心角 ∠AOB = {{ angle }}°</span>
       </div>
       <p class="res-line">两条半径 + 一段弧围成的图形是扇形，圆心角 = {{ angle }}°，面积占全圆的 {{ toFixed2(angle / 360) }}</p>
     </template>
@@ -350,6 +363,26 @@ const ringPath = computed(() => {
 }
 .dot {
   fill: #b45309;
+}
+.sector-parts {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.part-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  color: var(--ui-text-toned);
+  font-weight: 800;
+}
+.part-chip.primary {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  color: var(--ui-primary);
 }
 .ring-stage {
   display: flex;

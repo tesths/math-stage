@@ -24,10 +24,20 @@ const allCombos = computed(() => {
   for (let r = 1; r <= total; r++) {
     if (total % r !== 0) continue
     const c = total / r
+    if (r > c) continue
     out.push({ r: Math.min(r, c), c: Math.max(r, c), peri: (r + c) * 2 })
   }
   return out.sort((x, y) => x.peri - y.peri)
 })
+const minPerimeter = computed(() => Math.min(...allCombos.value.map((c) => c.peri)))
+const maxPerimeter = computed(() => Math.max(...allCombos.value.map((c) => c.peri)))
+function miniRectStyle(c: { r: number; c: number }) {
+  const scale = 46 / Math.max(c.r, c.c)
+  return { width: `${Math.max(8, c.c * scale)}px`, height: `${Math.max(8, c.r * scale)}px` }
+}
+function perimeterWidth(p: number): number {
+  return Math.round((p / maxPerimeter.value) * 100)
+}
 </script>
 
 <template>
@@ -61,15 +71,21 @@ const allCombos = computed(() => {
         class="combo-row"
         :class="{ active: c.r === Math.min(rows, cols) }"
       >
-        <span>{{ c.c }} × {{ c.r }}</span>
-        <span>{{ c.c * c.r }} 平方厘米</span>
-        <span>{{ c.peri }} 厘米</span>
+        <span class="combo-shape">
+          <span class="mini-rect" :style="miniRectStyle(c)" />
+          {{ c.c }} × {{ c.r }}
+        </span>
+        <span class="same-area">{{ c.c * c.r }} 平方厘米</span>
+        <span class="peri-visual">
+          <span>{{ c.peri }} 厘米</span>
+          <span class="peri-bar"><span class="peri-bar-fill" :style="{ width: perimeterWidth(c.peri) + '%' }" /></span>
+        </span>
       </div>
     </div>
 
     <p class="note">
       面积都是 {{ total }} 平方厘米，周长却不同；长和宽越接近，周长越<b>短</b>，
-      拼成正方形（{{ Math.sqrt(total) }} × {{ Math.sqrt(total) }}）时周长最短（{{ Math.sqrt(total) * 4 }} 厘米）。
+      拼成正方形（{{ Math.sqrt(total) }} × {{ Math.sqrt(total) }}）时周长最短（{{ minPerimeter }} 厘米），细长拼法最长（{{ maxPerimeter }} 厘米）。
     </p>
   </div>
 </template>
@@ -145,6 +161,40 @@ const allCombos = computed(() => {
   color: var(--ui-primary);
   font-weight: 800;
 }
+.combo-shape,
+.peri-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+.mini-rect {
+  display: inline-block;
+  border: 2px solid var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 20%, transparent);
+}
+.same-area {
+  color: var(--ui-text-toned);
+}
+.peri-visual {
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.peri-bar {
+  display: block;
+  width: 4.8rem;
+  height: 0.42rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  border: 1px solid var(--ui-border);
+}
+.peri-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--ui-primary) 70%, white);
+}
 .note {
   font-size: 0.85rem;
   color: var(--ui-text-toned);
@@ -152,5 +202,17 @@ const allCombos = computed(() => {
 }
 .note b {
   color: var(--ui-primary);
+}
+@media (max-width: 520px) {
+  .combo-head,
+  .combo-row {
+    grid-template-columns: 1.1fr 0.9fr 1fr;
+    gap: 0.2rem;
+    padding: 0.32rem 0.45rem;
+    font-size: 0.75rem;
+  }
+  .peri-bar {
+    width: 3.4rem;
+  }
 }
 </style>

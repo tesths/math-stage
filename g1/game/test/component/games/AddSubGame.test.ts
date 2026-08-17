@@ -18,6 +18,9 @@ describe('AddSubGame', () => {
     expect(w.text()).toContain('3')
     expect(w.text()).toContain('+')
     expect(w.text()).toContain('2')
+    expect(w.find('.as-flow').text()).toContain('原来 3 个')
+    expect(w.find('.as-flow').text()).toContain('加入 2 个')
+    expect(w.find('.as-result-note').text()).toContain('先看原有 3 个')
     expect(w.findAll('.obj-item').length).toBe(5)
   })
 
@@ -30,8 +33,10 @@ describe('AddSubGame', () => {
     expect(w.findAll('.obj-item.removed').length).toBe(0)
     await w.findAll('.as-step')[0].trigger('click') // 拿走 2 个
     expect(w.findAll('.obj-item.removed').length).toBe(2)
+    expect(w.find('.as-flow').text()).toContain('拿走 2 个')
     await w.findAll('.as-step')[0].trigger('click') // 看结果
     expect(w.text()).toContain('3')
+    expect(w.find('.as-result-note').text()).toContain('5 − 2 = 3')
   })
 
   it('答对/答错交互', async () => {

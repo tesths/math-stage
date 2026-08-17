@@ -89,15 +89,26 @@ function renderGrid(set: Set<string>, cols: number, rows: number): { on: boolean
 }
 
 const views = computed(() => [
-  { name: '前面', cells: renderGrid(projections.value.front, projections.value.maxX, projections.value.maxY) },
-  { name: '右面', cells: renderGrid(projections.value.right, projections.value.maxZ, projections.value.maxY) },
-  { name: '上面', cells: renderGrid(projections.value.top, projections.value.maxX, projections.value.maxZ) },
+  { name: '前面', rule: '看宽和高', cells: renderGrid(projections.value.front, 2, 2) },
+  { name: '右面', rule: '看深和高', cells: renderGrid(projections.value.right, 2, 2) },
+  { name: '上面', rule: '看宽和深', cells: renderGrid(projections.value.top, 2, 2) },
 ])
 </script>
 
 <template>
   <div class="views-wrap">
     <svg viewBox="0 0 340 220" class="iso-svg">
+      <defs>
+        <marker id="view-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ui-warning, #f59e0b)" />
+        </marker>
+      </defs>
+      <text x="170" y="22" text-anchor="middle" class="view-label top-label">上面观察</text>
+      <line x1="170" y1="32" x2="170" y2="74" class="view-ray" marker-end="url(#view-arrow)" />
+      <text x="306" y="98" text-anchor="middle" class="view-label right-label">右面观察</text>
+      <line x1="294" y1="108" x2="244" y2="128" class="view-ray" marker-end="url(#view-arrow)" />
+      <text x="170" y="210" text-anchor="middle" class="view-label front-label">前面观察</text>
+      <line x1="170" y1="198" x2="170" y2="174" class="view-ray" marker-end="url(#view-arrow)" />
       <g v-for="(f, i) in facePolys" :key="i">
         <polygon :points="f.top" class="face top" />
         <polygon :points="f.right" class="face right" />
@@ -112,18 +123,19 @@ const views = computed(() => [
           <rect
             v-for="(cell, i) in v.cells"
             :key="i"
-            v-show="cell.on"
             :x="cell.c * 26 + 9"
             :y="cell.r * 26 + 9"
             width="24"
             height="24"
             class="proj-cell"
+            :class="{ on: cell.on }"
           />
         </svg>
+        <p class="proj-rule">{{ v.rule }}</p>
       </div>
     </div>
 
-    <p class="tip">从不同方向看同一个物体，看到的图形可能不同。观察时视线要与物体的面垂直。</p>
+    <p class="tip">从不同方向看<b>同一个物体</b>，投影图固定记录这个方向看到的小正方形。观察时视线要与物体的面垂直。</p>
   </div>
 </template>
 
@@ -156,6 +168,16 @@ const views = computed(() => [
 .face.left {
   fill: color-mix(in srgb, var(--ui-primary) 25%, white);
 }
+.view-ray {
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+.view-label {
+  fill: var(--ui-warning, #f59e0b);
+  font-size: 12px;
+  font-weight: 800;
+}
 .proj-row {
   display: flex;
   gap: 0.8rem;
@@ -173,11 +195,22 @@ const views = computed(() => [
   color: var(--ui-text-muted);
   font-weight: 700;
 }
+.proj-rule {
+  margin-top: 0.1rem;
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--ui-text-muted);
+}
 .proj-svg {
   width: 92px;
   height: 92px;
 }
 .proj-cell {
+  fill: var(--ui-bg-muted);
+  stroke: var(--ui-border);
+  stroke-width: 1;
+}
+.proj-cell.on {
   fill: color-mix(in srgb, var(--ui-primary) 60%, white);
   stroke: var(--ui-primary);
   stroke-width: 1.5;
@@ -187,5 +220,20 @@ const views = computed(() => [
   color: var(--ui-text-toned);
   text-align: center;
   max-width: 36rem;
+}
+.tip b {
+  color: var(--ui-primary);
+}
+@media (max-width: 520px) {
+  .proj-row {
+    gap: 0.5rem;
+  }
+  .proj-box {
+    padding: 0.25rem 0.4rem;
+  }
+  .proj-svg {
+    width: 82px;
+    height: 82px;
+  }
 }
 </style>

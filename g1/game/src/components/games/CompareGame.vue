@@ -2,6 +2,10 @@
   <div class="compare-game">
     <div class="cmp-stage">
       <div v-if="pairCols.length > 0" class="pair-grid" :style="{ gridTemplateColumns: `repeat(${pairCols.length}, ${pairColW})` }">
+        <div class="pair-legend">
+          <span class="legend-chip top">上排：{{ leftLabel }} {{ a }} 个</span>
+          <span class="legend-chip bottom">下排：{{ rightLabel }} {{ b }} 个</span>
+        </div>
         <div v-for="(col, i) in pairCols" :key="i" class="pair-col" :class="{ extra: col.extra, compact: isCompact }">
           <div v-if="col.top" class="pair-cell" :class="['top', { 'cell-empty': !col.paired }]">
             <span class="pair-obj">{{ col.top }}</span>
@@ -73,12 +77,25 @@ import FeedbackOverlay from '@/components/ui/FeedbackOverlay.vue'
 const props = defineProps<{ question: GameQuestion }>()
 const emit = defineEmits<{ answered: [result: { correct: boolean; attempts: number }] }>()
 
-const cfg = computed(() => props.question.config as { a: number; b: number; emoji?: string; answer: '>' | '<' | '=' })
+const cfg = computed(() => props.question.config as {
+  a: number
+  b: number
+  emoji?: string
+  leftEmoji?: string
+  rightEmoji?: string
+  leftLabel?: string
+  rightLabel?: string
+  answer: '>' | '<' | '='
+})
 const a = computed(() => cfg.value.a)
 const b = computed(() => cfg.value.b)
 const answer = computed(() => cfg.value.answer as string)
-const leftItems = computed(() => visibleUnits((cfg.value.emoji ?? '●').repeat(cfg.value.a)))
-const rightItems = computed(() => visibleUnits((cfg.value.emoji ?? '●').repeat(cfg.value.b)))
+const leftGlyph = computed(() => cfg.value.leftEmoji ?? cfg.value.emoji ?? '●')
+const rightGlyph = computed(() => cfg.value.rightEmoji ?? cfg.value.emoji ?? '●')
+const leftLabel = computed(() => cfg.value.leftLabel ?? '第一组')
+const rightLabel = computed(() => cfg.value.rightLabel ?? '第二组')
+const leftItems = computed(() => visibleUnits(leftGlyph.value.repeat(cfg.value.a)))
+const rightItems = computed(() => visibleUnits(rightGlyph.value.repeat(cfg.value.b)))
 
 /** 配对列：上下两行逐列对齐，一对对象画连接线；多出的列标红。上限 16，超过 12 用小格 */
 const pairCols = computed(() => {
@@ -100,8 +117,8 @@ const pairCols = computed(() => {
   return cols
 })
 
-const pairColW = computed(() => (Math.max(a.value, b.value) > 12 ? '1.9rem' : '2.7rem'))
-const isCompact = computed(() => Math.max(a.value, b.value) > 12)
+const isCompact = computed(() => Math.max(a.value, b.value) > 7)
+const pairColW = computed(() => (isCompact.value ? '1.9rem' : '2.7rem'))
 
 const extraCount = computed(() => Math.abs(a.value - b.value))
 const symbols: ('>' | '<' | '=')[] = ['>', '<', '=']
@@ -147,6 +164,31 @@ function onSelect(sym: '>' | '<' | '=') {
   border: 2px solid var(--ui-border);
   border-radius: var(--ui-radius-xl);
   padding: 1rem 1.2rem;
+}
+.pair-legend {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.legend-chip {
+  border-radius: 9999px;
+  border: 1px solid var(--ui-border-accented);
+  background: var(--ui-bg);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.35rem 0.6rem;
+}
+.legend-chip.top {
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
+}
+.legend-chip.bottom {
+  color: var(--ui-color-warning-700, var(--ui-text-highlighted));
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 12%, var(--ui-bg));
 }
 .pair-col {
   display: flex;

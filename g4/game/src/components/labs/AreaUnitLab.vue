@@ -10,43 +10,49 @@ const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 const v = computed(() => Math.round(props.values.v ?? 300))
 const dir = computed(() => Math.round(props.values.dir ?? 0))
 
-const isBigToSmall = computed(() => dir.value === 0)
-const big = computed(() => (isBigToSmall.value ? v.value / 100 : v.value))
-const small = computed(() => (isBigToSmall.value ? v.value : v.value * 100))
+const isSmallToBig = computed(() => dir.value === 0)
+const fromUnit = computed(() => (isSmallToBig.value ? '平方厘米' : '平方分米'))
+const toUnit = computed(() => (isSmallToBig.value ? '平方分米' : '平方厘米'))
+const result = computed(() => (isSmallToBig.value ? v.value / 100 : v.value * 100))
+const actionText = computed(() =>
+  isSmallToBig.value
+    ? '每 100 个 1 平方厘米合成 1 平方分米，所以除以 100'
+    : '1 平方分米拆成 10 × 10 个 1 平方厘米，所以乘 100',
+)
 </script>
 
 <template>
   <div class="unit-wrap">
     <!-- 进率示意图：1 平方分米 = 100 平方厘米 -->
     <div class="ratio-diagram">
-      <div class="big-square" :style="{ width: '80px', height: '80px' }">
-        <span class="big-label">1 {{ isBigToSmall ? '平方分米' : '平方米' }}</span>
-      </div>
-      <div class="arrow">
-        <span class="arrow-text">×100</span>
-        <span class="arrow-sym">→</span>
-      </div>
       <div
         class="small-grid"
         :style="{ gridTemplateColumns: 'repeat(10, 6px)' }"
       >
         <span v-for="i in 100" :key="i" class="mini-cell" />
       </div>
+      <div class="arrow">
+        <span class="arrow-text">10 × 10 = 100</span>
+        <span class="arrow-sym">{{ isSmallToBig ? '→ 合成' : '← 拆开' }}</span>
+      </div>
+      <div class="big-square" :style="{ width: '80px', height: '80px' }">
+        <span class="big-label">1 平方分米</span>
+      </div>
     </div>
 
     <div class="formula-row">
-      <span class="chip">{{ isBigToSmall ? v + ' 平方厘米' : v + ' 平方分米' }}</span>
-      <span class="chip op">= {{ isBigToSmall ? small : big }} {{ isBigToSmall ? '平方分米' : '平方米' }}</span>
+      <span class="chip">{{ v }} {{ fromUnit }}</span>
+      <span class="chip op">= {{ result }} {{ toUnit }}</span>
     </div>
 
     <div class="steps-inline">
       <div class="step-pair">
-        <span class="big-box">{{ isBigToSmall ? v / 100 : v }}</span>
-        <span class="op-sym">× 100</span>
-        <span class="small-box">{{ isBigToSmall ? v : v * 100 }}</span>
+        <span class="big-box">{{ v }} {{ fromUnit }}</span>
+        <span class="op-sym">{{ isSmallToBig ? '÷ 100' : '× 100' }}</span>
+        <span class="small-box">{{ result }} {{ toUnit }}</span>
       </div>
       <p class="note">
-        相邻面积单位之间的进率是 <b>100</b>：{{ isBigToSmall ? '小单位化大单位 ÷ 100' : '大单位化小单位 × 100' }}
+        {{ actionText }}。相邻面积单位之间的进率是 <b>100</b>，因为面积是二维铺满，不是只看一条边。
       </p>
     </div>
   </div>

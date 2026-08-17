@@ -1,6 +1,10 @@
 <template>
   <div class="ten-game">
     <p class="ten-target">选出的卡片相加 = {{ target }}</p>
+    <div class="ten-model">
+      <TenFrame :lit-count="frameLitCount" obj="●" />
+      <p class="ten-sum">{{ sumNote }}</p>
+    </div>
     <div class="cards">
       <button
         v-for="(card, i) in cards"
@@ -23,6 +27,7 @@ import { computed, ref } from 'vue'
 import type { GameQuestion } from '@data/schema/example'
 import { isAnswerCorrect } from '@/lib/engine/checker'
 import FeedbackOverlay from '@/components/ui/FeedbackOverlay.vue'
+import TenFrame from '@/components/ui/TenFrame.vue'
 
 const props = defineProps<{ question: GameQuestion }>()
 const emit = defineEmits<{ answered: [result: { correct: boolean; attempts: number }] }>()
@@ -36,6 +41,15 @@ const chosen = ref<number[]>([])
 const attempts = ref(1)
 const done = ref(false)
 const feedback = ref<'idle' | 'correct' | 'wrong'>('idle')
+
+const chosenSum = computed(() => chosen.value.reduce((sum, card) => sum + card, 0))
+const frameLitCount = computed(() => Math.min(chosenSum.value, 10))
+const sumNote = computed(() => {
+  if (chosenSum.value === 0) return `先选卡片，把十框填满到 ${target.value}`
+  if (chosenSum.value < target.value) return `已选 ${chosen.value.join(' + ')} = ${chosenSum.value}，还差 ${target.value - chosenSum.value}`
+  if (chosenSum.value === target.value) return `已选 ${chosen.value.join(' + ')} = ${target.value}，十框正好填满`
+  return `已选 ${chosen.value.join(' + ')} = ${chosenSum.value}，多了 ${chosenSum.value - target.value}`
+})
 
 function toggle(card: number) {
   if (done.value) return
@@ -69,6 +83,21 @@ function confirm() {
   font-size: 1.4rem;
   font-weight: bold;
   color: var(--ui-text-highlighted);
+}
+.ten-model {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: min(100%, 24rem);
+}
+.ten-sum {
+  min-height: 1.4rem;
+  color: var(--ui-text-toned);
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
 }
 .cards {
   display: flex;

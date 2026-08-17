@@ -1,16 +1,39 @@
 <template>
   <div class="numberline-game">
     <template v-if="isNumberline">
+      <div class="place-model" aria-label="十几的组成">
+        <div class="ten-bundle">
+          <span v-for="i in 10" :key="i" class="ten-unit"></span>
+          <b>1个十</b>
+        </div>
+        <span class="model-op">+</span>
+        <div class="ones-bundle">
+          <span v-for="i in onesValue" :key="i" class="one-unit"></span>
+          <b>{{ onesValue }}个一</b>
+        </div>
+        <span class="model-op">=</span>
+        <span class="model-value">{{ value }}</span>
+      </div>
       <div class="num-line" data-test="numline">
         <span
-          v-for="t in 20"
+          v-for="t in lineTicks"
           :key="t"
           class="num-line-tick"
-          :class="{ active: t - 1 === value }"
-        >{{ t - 1 }}</span>
+          :class="tickClass(t)"
+        >{{ t }}</span>
       </div>
+      <p class="numline-note">从 10 再往后数 {{ onesValue }} 步，停在 <b>{{ value }}</b></p>
     </template>
     <template v-else>
+      <div class="seq-track" aria-label="已排好的顺序">
+        <template v-for="(_, i) in seqNumbers" :key="i">
+          <span
+            class="seq-slot"
+            :class="{ filled: picked[i] !== undefined }"
+          >{{ picked[i] ?? '？' }}</span>
+          <span v-if="i < seqNumbers.length - 1" class="seq-arrow" aria-hidden="true">→</span>
+        </template>
+      </div>
       <div class="seq-stage">
         <button
           v-for="v in seqButtons"
@@ -21,7 +44,7 @@
           @click="onSeq(v)"
         >{{ v }}</button>
       </div>
-      <p class="seq-tip">按从小到大的顺序点一点</p>
+      <p class="seq-tip">沿箭头从小到大数：{{ seqNumbers[0] }} → {{ seqNumbers[seqNumbers.length - 1] }}</p>
     </template>
     <AnswerPad
       v-if="isNumberline"
@@ -50,6 +73,8 @@ const emit = defineEmits<{ answered: [result: { correct: boolean; attempts: numb
 const isNumberline = computed(() => props.question.type === 'numberline')
 const cfg = computed(() => props.question.config)
 const value = computed(() => (cfg.value as { value: number }).value)
+const onesValue = computed(() => Math.max(0, value.value - 10))
+const lineTicks = computed(() => Array.from({ length: 20 }, (_, i) => i))
 const options = computed(() => (cfg.value as { options: number[] }).options)
 const seqNumbers = computed(() => (cfg.value as { answer: number[] }).answer)
 const seqButtons = ref<number[]>([])
@@ -66,6 +91,14 @@ const attempts = ref(1)
 const done = ref(false)
 const feedback = ref<'idle' | 'correct' | 'wrong'>('idle')
 const picked = ref<number[]>([])
+
+function tickClass(t: number): Record<string, boolean> {
+  return {
+    ten: t === 10,
+    between: t > 10 && t < value.value,
+    active: t === value.value,
+  }
+}
 
 function onSelect(val: number | string) {
   if (done.value) return
@@ -118,6 +151,67 @@ function finish(val: number | string) {
   gap: 1.2rem;
   align-items: center;
 }
+.place-model {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.ten-bundle,
+.ones-bundle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 3rem;
+  border: 1.5px solid var(--ui-border-accented);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-muted);
+  padding: 0.45rem 0.65rem;
+}
+.ten-bundle {
+  width: 9.4rem;
+  flex-wrap: wrap;
+}
+.ones-bundle {
+  min-width: 5.4rem;
+}
+.ten-bundle b,
+.ones-bundle b {
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+}
+.ten-unit,
+.one-unit {
+  width: 0.58rem;
+  height: 1.3rem;
+  border-radius: 9999px;
+  background: var(--ui-primary);
+}
+.one-unit {
+  width: 0.82rem;
+  height: 0.82rem;
+  background: var(--ui-color-amber-500, #f59e0b);
+}
+.model-op {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--ui-primary);
+}
+.model-value {
+  display: inline-flex;
+  min-width: 3rem;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius-xl);
+  color: white;
+  background: var(--ui-primary);
+  font-size: 1.6rem;
+  font-weight: 900;
+}
 .num-line {
   display: flex;
   gap: 0.35rem;
@@ -135,11 +229,64 @@ function finish(val: number | string) {
   font-size: 1.15rem;
   color: var(--ui-text-toned);
 }
+.num-line-tick.ten {
+  color: var(--ui-primary);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+.num-line-tick.between {
+  background: color-mix(in srgb, var(--ui-primary) 8%, var(--ui-bg));
+  border-radius: 0.5rem;
+}
 .num-line-tick.active {
   background: var(--ui-primary);
   border-radius: 0.5rem;
   color: var(--ui-bg-inverted);
   font-weight: bold;
+}
+.numline-note {
+  margin: -0.4rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ui-text-toned);
+}
+.numline-note b {
+  color: var(--ui-primary);
+}
+.seq-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--ui-bg-muted);
+  border: 2px dashed var(--ui-border-accented);
+  border-radius: var(--ui-radius-xl);
+}
+.seq-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--ui-border);
+  background: var(--ui-bg);
+  color: var(--ui-text-muted);
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+.seq-slot.filled {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
+  color: var(--ui-primary);
+}
+.seq-arrow {
+  color: var(--ui-primary);
+  font-size: 1rem;
+  font-weight: 900;
+  margin-inline: -0.15rem;
 }
 .seq-stage {
   display: flex;
@@ -171,5 +318,41 @@ function finish(val: number | string) {
 .seq-tip {
   color: var(--ui-text-muted);
   font-size: 1.1rem;
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .numberline-game {
+    gap: 0.9rem;
+  }
+  .place-model {
+    gap: 0.4rem;
+  }
+  .ten-bundle {
+    width: 7.2rem;
+  }
+  .ten-unit {
+    width: 0.48rem;
+    height: 1.05rem;
+  }
+  .num-line {
+    gap: 0.22rem;
+    padding: 0.7rem;
+  }
+  .num-line-tick {
+    width: 1.55rem;
+    font-size: 0.92rem;
+  }
+  .seq-slot,
+  .seq-btn {
+    width: 2.7rem;
+    height: 2.7rem;
+  }
+  .seq-slot {
+    font-size: 1.15rem;
+  }
+  .seq-btn {
+    font-size: 1.45rem;
+  }
 }
 </style>

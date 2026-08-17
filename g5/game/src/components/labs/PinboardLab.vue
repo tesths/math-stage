@@ -52,6 +52,7 @@ const area = computed(() => shoelace(shape.value.pts))
 const n = computed(() => boundaryPins(shape.value.pts))
 const b = computed(() => area.value - n.value / 2 + 1)
 const pickArea = computed(() => n.value / 2 + b.value - 1)
+const pickFormula = computed(() => `S = ${n.value} ÷ 2 + ${b.value} − 1 = ${pickArea.value}`)
 
 /** 渲染用：缩放后的顶点（格点 1 = 40px，翻 y） */
 const CELL = 40
@@ -118,6 +119,12 @@ const boardPins = computed(() => {
       <text x="390" y="330" text-anchor="end" class="shape-name">{{ shape.name }}</text>
     </svg>
 
+    <div class="pin-legend" aria-label="钉子分类图例">
+      <span><i class="legend-dot boundary" />边上钉子 n：在多边形边上</span>
+      <span><i class="legend-dot inside" />内部钉子 b：在多边形内部</span>
+      <span><i class="legend-dot outside" />不计入：在图形外部</span>
+    </div>
+
     <div class="pick-box">
       <div class="pick-stat">
         <span class="pick-label">边上钉子 n</span>
@@ -135,6 +142,7 @@ const boardPins = computed(() => {
         <span class="pick-label">面积 S</span>
         <strong class="pick-result">{{ pickArea }}</strong>
       </div>
+      <p class="pick-formula">{{ pickFormula }}</p>
       <p class="pick-check">✓ 与数方格面积 {{ area }} 一致</p>
     </div>
   </div>
@@ -184,6 +192,42 @@ svg {
   fill: var(--ui-text-muted);
   font-weight: 700;
 }
+.pin-legend {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  max-width: 38rem;
+}
+.pin-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.legend-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  display: inline-block;
+}
+.legend-dot.boundary {
+  background: var(--ui-primary);
+}
+.legend-dot.inside {
+  background: color-mix(in srgb, var(--ui-primary) 70%, white);
+  border: 1px solid var(--ui-primary);
+}
+.legend-dot.outside {
+  background: var(--ui-text-muted);
+  opacity: 0.35;
+}
 .pick-box {
   display: flex;
   align-items: center;
@@ -224,5 +268,22 @@ svg {
   font-size: 0.8rem;
   color: var(--ui-success, #16a34a);
   font-weight: 600;
+}
+.pick-formula {
+  width: 100%;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--ui-primary);
+  font-weight: 800;
+  margin: 0;
+}
+@media (max-width: 520px) {
+  .pin-legend {
+    gap: 0.3rem;
+  }
+  .pin-legend span {
+    width: min(100%, 18rem);
+    justify-content: center;
+  }
 }
 </style>

@@ -66,6 +66,11 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
       <p class="scale-title">
         {{ current.name }} 按 <b>{{ n }}:{{ d }}</b> 的比{{ isBigger ? '放大' : '缩小' }}（每边 ×{{ toFixed2(f) }}）
       </p>
+      <div class="ratio-strip" aria-label="对应边比例说明">
+        <span>原图 1 格</span>
+        <b>× {{ toFixed2(f) }}</b>
+        <span>后图 {{ toFixed2(f) }} 格</span>
+      </div>
       <div class="shape-row">
         <div class="shape-col">
           <span class="shape-tag">原图</span>
@@ -125,6 +130,13 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
           <span class="legend-eq">＝</span>
           <span class="legend-unit">实际 {{ perM }} 米</span>
         </div>
+        <div class="unit-flow" aria-label="比例尺单位换算流程">
+          <span>图上 {{ toFixed2(cm) }} 厘米</span>
+          <b>× {{ scaleDen }}</b>
+          <span>{{ toFixed2(cm * scaleDen) }} 厘米</span>
+          <b>÷ 100</b>
+          <span>{{ toFixed2(actualM) }} 米</span>
+        </div>
         <p class="res-line">
           实际距离 = {{ toFixed2(cm) }} × {{ scaleDen }} = {{ toFixed2(cm * scaleDen) }} 厘米 = <b>{{ toFixed2(actualM) }} 米</b>
         </p>
@@ -156,12 +168,20 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
   display: flex;
   align-items: center;
   gap: 0.8rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
 }
 .shape-col {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
+  max-width: 100%;
+}
+.shape-col svg {
+  max-width: 100%;
+  height: auto;
 }
 .shape-tag {
   font-size: 0.8rem;
@@ -216,6 +236,25 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
 }
 .legend-text {
   color: var(--ui-text-muted);
+}
+.ratio-strip,
+.unit-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-width: 100%;
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+}
+.ratio-strip b,
+.unit-flow b {
+  color: var(--ui-primary);
 }
 .note {
   font-size: 0.85rem;
@@ -275,5 +314,15 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
 .res-line b {
   color: var(--ui-primary);
   font-size: 1.05rem;
+}
+@media (max-width: 520px) {
+  .arrow {
+    width: 100%;
+    text-align: center;
+    transform: rotate(90deg);
+  }
+  .unit-flow {
+    border-radius: var(--ui-radius-lg);
+  }
 }
 </style>

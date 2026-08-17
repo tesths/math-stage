@@ -32,6 +32,9 @@ describe('Lab 组件渲染', () => {
     const wrapper = mount(DivLab, { props: { lab, values: { num: 96, div: 24 } } })
     expect(wrapper.find('svg').exists()).toBe(true)
     expect(wrapper.text()).toContain('试商')
+    const qDigit = wrapper.findAll('.qd-digit').find((x) => x.text() === '4')!
+    const lastDividendDigit = wrapper.findAll('.dd-digit').at(1)!
+    expect(qDigit.attributes('x')).toBe(lastDividendDigit.attributes('x'))
   })
 
   it('DivLab：笔算竖式（前两位不够除看三位）', () => {
@@ -39,6 +42,7 @@ describe('Lab 组件渲染', () => {
     const wrapper = mount(DivLab, { props: { lab, values: { num: 156, div: 12 } } })
     expect(wrapper.find('svg').exists()).toBe(true)
     expect(wrapper.text()).toContain('前两位')
+    expect(wrapper.text()).toContain('第 1 轮：15 ÷ 12 = 1')
   })
 
   it('DivLab：两步连除渲染书架', () => {
@@ -87,19 +91,26 @@ describe('Lab 组件渲染', () => {
   it('AreaUnitLab：换算方向切换', async () => {
     const lab = findLabById('g4-c2-area-unit')!
     const wrapper = mount(AreaUnitLab, { props: { lab, values: { v: 300, dir: 0 } } })
-    expect(wrapper.text()).toContain('3')
+    expect(wrapper.text()).toContain('300 平方厘米')
+    expect(wrapper.text()).toContain('= 3 平方分米')
+    expect(wrapper.findAll('.mini-cell')).toHaveLength(100)
+    expect(wrapper.text()).toContain('10 × 10 = 100')
     await wrapper.setProps({ values: { v: 3, dir: 1 } })
-    expect(wrapper.text()).toContain('300')
+    expect(wrapper.text()).toContain('3 平方分米')
+    expect(wrapper.text()).toContain('= 300 平方厘米')
     const w2 = mount(AreaUnitLab, { props: { lab, values: { v: 5, dir: 1 } } })
-    expect(w2.text()).toContain('500')
+    expect(w2.text()).toContain('= 500 平方厘米')
   })
 
   it('PuzzleLab：拼图形周长对比', () => {
     const lab = findLabById('g4-c3-peri-area-change')!
     const wrapper = mount(PuzzleLab, { props: { lab, values: { rows: 4 } } })
     expect(wrapper.find('.combo-table').exists()).toBe(true)
+    expect(wrapper.findAll('.mini-rect').length).toBeGreaterThan(1)
+    expect(wrapper.findAll('.peri-bar-fill').length).toBe(wrapper.findAll('.mini-rect').length)
     expect(wrapper.text()).toContain('36')
     expect(wrapper.text()).toContain('24 厘米')
+    expect(wrapper.text()).toContain('细长拼法最长')
   })
 
   it('QuantityLab：乘法意义', () => {

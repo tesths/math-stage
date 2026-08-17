@@ -14,8 +14,17 @@ function q(over: object, page = 12): GameQuestion {
 describe('CountGame count 类型', () => {
   it('按物品数量显示对象（十框淡显可数）', () => {
     const w = mount(CountGame, { props: { question: q({}) } })
+    expect(w.findAll('.source-item').length).toBe(3)
     expect(w.findAll('.tf-cell').length).toBe(10)
     expect(w.findAll('.tf-obj').length).toBe(3)
+  })
+
+  it('点击源物品同步十框计数轨迹', async () => {
+    const w = mount(CountGame, { props: { question: q({}) } })
+    await w.findAll('.source-item')[1].trigger('click')
+    expect(w.findAll('.source-item.lit').length).toBe(2)
+    expect(w.findAll('.tf-cell.lit').length).toBe(2)
+    expect(w.text()).toContain('数到 2')
   })
 
   it('点击格子逐个点亮并显示计数轨迹', async () => {
@@ -47,6 +56,7 @@ describe('CountGame count 类型', () => {
     await w.findAll('.answer-btn')[0].trigger('click')
     expect(w.emitted('answered')?.[0]).toEqual([{ correct: false, attempts: 1 }])
     expect(w.find('.feedback.wrong').exists()).toBe(true)
+    expect(w.find('.wrong-count-note').text()).toContain('还少数 1 个')
     await w.findAll('.answer-btn')[1].trigger('click')
     expect(w.emitted('answered')?.[1]).toEqual([{ correct: true, attempts: 2 }])
   })

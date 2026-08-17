@@ -4,39 +4,52 @@
       <template v-if="!isOrdinal && axis">
         <p class="axis-hint">
           以 <b>{{ target }}</b> 为参照
-          <template v-if="position">，判断它{{ position === '上' ? '上面' : position === '下' ? '下面' : position === '左' ? '左边' : position === '右' ? '右边' : position === '前' ? '前面' : '后面' }}是谁</template>
+          <template v-if="position">，判断它{{ positionLabel }}是谁</template>
         </p>
         <div
           class="pos-scene"
           :class="axisClass"
         >
-          <template v-for="(item, i) in items" :key="item">
-            <div
-              class="pos-card"
-              :class="{
-                target: item === target,
-                picked: done && item === correctItem,
-                muted: otherItems.includes(item) && !done,
-              }"
-              :data-item="item"
-              role="button"
-              tabindex="0"
-              @click="onItem(item)"
-              @keydown.enter="onItem(item)"
-            >
-              <span v-if="item === target" class="target-badge">参照</span>
-              <span class="pos-card-name">{{ item }}</span>
-            </div>
-            <div v-if="i < items.length - 1" class="axis-gap">
-              <div
-                v-if="isRelevantGap(i)"
-                class="axis-arrow"
-                :class="arrowClass"
+          <div class="axis-guide" aria-hidden="true">
+            <span class="guide-label">{{ axisStartLabel }}</span>
+            <span class="guide-line"></span>
+            <span class="guide-label strong">{{ axisEndLabel }}</span>
+          </div>
+          <div class="reference-chip">
+            参照物 <b>{{ target }}</b>
+          </div>
+          <p class="relation-note">
+            沿着<b>{{ position }}</b>方向看，答案就在箭头指向的位置
+          </p>
+          <div class="pos-line">
+            <template v-for="(item, i) in items" :key="`${item}-${i}`">
+              <button
+                class="pos-card"
+                :class="{
+                  target: item === target,
+                  picked: done && item === correctItem,
+                  muted: otherItems.includes(item) && !done,
+                }"
+                type="button"
+                :data-item="item"
+                :disabled="done"
+                @click="onItem(item)"
               >
-                <span class="axis-word">{{ position }}</span>
+                <span v-if="item === target" class="target-badge">参照</span>
+                <span v-if="done && item === correctItem && !isOrdinal" class="answer-badge">{{ positionLabel }}</span>
+                <span class="pos-card-name">{{ item }}</span>
+              </button>
+              <div v-if="i < items.length - 1" class="axis-gap">
+                <div
+                  v-if="isRelevantGap(i)"
+                  class="axis-arrow"
+                  :class="arrowClass"
+                >
+                  <span class="axis-word">{{ position }}</span>
+                </div>
               </div>
-            </div>
-          </template>
+            </template>
+          </div>
         </div>
         <p v-if="feedback === 'wrong' && selectedItem" class="wrong-note">
           你选的是「{{ selectedItem }}」，它在{{ target }}的{{ directionPhrase(selectedItem) }}
@@ -62,7 +75,13 @@
               >
                 <span class="ordinal-rank">{{ i + 1 }}</span>
                 <span class="ordinal-emoji">{{ item }}</span>
+                <span v-if="item === target" class="ordinal-target-label">目标</span>
               </div>
+            </div>
+            <div class="ordinal-guide" aria-hidden="true">
+              <span>起点</span>
+              <span class="ordinal-guide-line"></span>
+              <span>方向</span>
             </div>
           </div>
           <p class="ordinal-hint">
@@ -110,7 +129,7 @@ const items = computed(() => (cfg.value as { items: string[] }).items)
 const answer = computed(() => (cfg.value as { answer: number | string }).answer)
 const target = computed(() => (cfg.value as { target?: string }).target ?? '')
 const position = computed(() => (cfg.value as { position?: '上' | '下' | '左' | '右' | '前' | '后' }).position ?? null)
-const correctItem = computed(() => (cfg.value as { target?: string }).target ?? '')
+const correctItem = computed(() => (isOrdinal.value ? target.value : String(answer.value)))
 
 /** 方位题排布：上/下竖向、左/右横向、前/后纵深队列 */
 const axis = computed<'vertical' | 'horizontal' | 'depth' | null>(() => {
@@ -121,6 +140,16 @@ const axis = computed<'vertical' | 'horizontal' | 'depth' | null>(() => {
   return null
 })
 const axisClass = computed(() => (axis.value === 'vertical' ? 'axis-vertical' : axis.value === 'horizontal' ? 'axis-horizontal' : 'axis-depth'))
+const axisStartLabel = computed(() => {
+  if (axis.value === 'vertical') return '上'
+  if (axis.value === 'depth') return '前'
+  return '左'
+})
+const axisEndLabel = computed(() => {
+  if (axis.value === 'vertical') return '下'
+  if (axis.value === 'depth') return '后'
+  return '右'
+})
 
 const answerIdx = computed(() => items.value.indexOf(String(answer.value)))
 const targetIdx = computed(() => items.value.indexOf(target.value))
@@ -152,6 +181,17 @@ function directionPhrase(sel: string): string {
 
 const ordinalOptions = computed(() => items.value.map((_, i) => i + 1))
 const answerText = computed(() => (isOrdinal.value ? undefined : String(answer.value)))
+const positionLabel = computed(() => {
+  switch (position.value) {
+    case '上': return '上面'
+    case '下': return '下面'
+    case '左': return '左边'
+    case '右': return '右边'
+    case '前': return '前面'
+    case '后': return '后面'
+    default: return ''
+  }
+})
 
 /** 序数起点说明：默认从左往右，题面含"从前往后"时从前 */
 const ordinalFrom = computed(() =>
@@ -212,15 +252,78 @@ function onSelect(value: number | string) {
 }
 .pos-scene {
   display: flex;
+  flex-direction: column;
   align-items: center;
   background: var(--ui-bg-muted);
   border: 2px dashed var(--ui-border-accented);
   border-radius: var(--ui-radius-2xl);
   padding: 1.6rem 2.2rem;
-  gap: 1.4rem;
+  gap: 0.9rem;
 }
-.axis-vertical {
+.pos-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+}
+.axis-vertical .pos-line,
+.axis-depth .pos-line {
   flex-direction: column;
+}
+.axis-depth .pos-line {
+  gap: 0.65rem;
+  perspective: 36rem;
+}
+.axis-depth .pos-card {
+  box-shadow: 0 0.35rem 0 color-mix(in srgb, var(--ui-primary) 18%, transparent);
+}
+.axis-guide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: min(15rem, 100%);
+  color: var(--ui-text-toned);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.axis-vertical .axis-guide,
+.axis-depth .axis-guide {
+  flex-direction: column;
+  width: auto;
+}
+.guide-label {
+  min-width: 1.6rem;
+  text-align: center;
+}
+.guide-label.strong {
+  color: var(--ui-primary);
+}
+.guide-line {
+  flex: 1;
+  min-width: 4.5rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--ui-border-accented), var(--ui-primary));
+}
+.axis-vertical .guide-line,
+.axis-depth .guide-line {
+  width: 2px;
+  min-width: 0;
+  height: 3.6rem;
+  background: linear-gradient(180deg, var(--ui-border-accented), var(--ui-primary));
+}
+.reference-chip {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--ui-text-toned);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  padding: 0.25rem 0.7rem;
+}
+.reference-chip b,
+.relation-note b {
+  color: var(--ui-primary);
 }
 .pos-card {
   position: relative;
@@ -262,6 +365,17 @@ function onSelect(value: number | string) {
   font-weight: 700;
   color: white;
   background: var(--ui-primary);
+  border-radius: 9999px;
+  padding: 0.1rem 0.45rem;
+}
+.answer-badge {
+  position: absolute;
+  right: -0.55rem;
+  bottom: -0.55rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: white;
+  background: var(--ui-color-success-500);
   border-radius: 9999px;
   padding: 0.1rem 0.45rem;
 }
@@ -321,6 +435,13 @@ function onSelect(value: number | string) {
   color: var(--ui-text-toned);
   margin: 0;
 }
+.relation-note {
+  max-width: 18rem;
+  font-size: 0.9rem;
+  color: var(--ui-text-toned);
+  margin: 0;
+  text-align: center;
+}
 .pos-items {
   display: flex;
   gap: 1.2rem;
@@ -332,9 +453,10 @@ function onSelect(value: number | string) {
   padding: 1.4rem 2rem;
 }
 .ordinal-track {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.65rem 0.8rem;
   background: var(--ui-bg-muted);
   border: 2px dashed var(--ui-border-accented);
   border-radius: var(--ui-radius-2xl);
@@ -400,6 +522,27 @@ function onSelect(value: number | string) {
   font-size: 2.4rem;
   line-height: 1;
 }
+.ordinal-target-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--ui-primary);
+}
+.ordinal-guide {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ui-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding-inline: 0.45rem;
+}
+.ordinal-guide-line {
+  flex: 1;
+  height: 2px;
+  min-width: 4rem;
+  background: linear-gradient(90deg, var(--ui-warning, #f59e0b), var(--ui-primary));
+}
 .ordinal-hint {
   font-size: 0.95rem;
   color: var(--ui-text-toned);
@@ -424,5 +567,37 @@ function onSelect(value: number | string) {
 .pos-item.picked {
   background: var(--ui-color-success-100);
   color: var(--ui-color-success-700);
+}
+
+@media (max-width: 480px) {
+  .pos-scene,
+  .ordinal-track,
+  .pos-items {
+    width: 100%;
+    padding: 1rem;
+  }
+  .pos-line,
+  .ordinal-items {
+    gap: 0.45rem;
+  }
+  .pos-card {
+    min-width: 3.9rem;
+    padding: 0.75rem 0.9rem;
+    font-size: 1.12rem;
+  }
+  .axis-gap {
+    min-width: 1.4rem;
+  }
+  .ordinal-track {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .ordinal-guide {
+    grid-column: 1;
+    width: 100%;
+  }
+  .ordinal-emoji {
+    font-size: 2rem;
+  }
 }
 </style>

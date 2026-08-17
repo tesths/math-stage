@@ -139,7 +139,7 @@ const subResult = computed(() => subA.value - subB.value)
 
       <div v-if="borrow" class="borrow-zone">
         <div class="ten-group">
-          <p class="zone-label">十位 5 退 1：1 个十拆成 10 个一</p>
+          <p class="zone-label">十位 {{ sta }} 退 1：1 个十拆成 10 个一</p>
           <div class="bead-row">
             <span v-for="i in 10" :key="i" class="bead ten-bead borrow" />
           </div>
@@ -160,6 +160,7 @@ const subResult = computed(() => subA.value - subB.value)
           </div>
         </div>
         <div class="vcalc">
+          <p class="v-carry" v-if="borrow">退1，个位变 {{ subOBorrowed }}</p>
           <p class="v-line"><span class="v-a">{{ subA }}</span></p>
           <p class="v-line">- <span class="v-b">{{ subB }}</span></p>
           <p class="v-rule"></p>

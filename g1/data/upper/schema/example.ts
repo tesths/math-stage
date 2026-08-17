@@ -119,8 +119,16 @@ export interface CompareConfig {
   a: number
   b: number
   answer: '>' | '<' | '='
-  /** 显示对象（比多少用） */
+  /** 默认显示对象（比多少用） */
   emoji?: string
+  /** 上排对象；缺省时使用 emoji */
+  leftEmoji?: string
+  /** 下排对象；缺省时使用 emoji */
+  rightEmoji?: string
+  /** 上排标签，如 绿花、苹果 */
+  leftLabel?: string
+  /** 下排标签，如 红花、橘子 */
+  rightLabel?: string
 }
 
 export interface PositionConfig {

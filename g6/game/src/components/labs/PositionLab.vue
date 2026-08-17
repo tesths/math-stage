@@ -21,6 +21,8 @@ const angle = computed(() => Math.round(props.values.angle ?? 30))
 const dist = computed(() => Math.round(props.values.dist ?? 3))
 const dir = computed(() => Math.round(props.values.dir ?? 0))
 const DIRS = ['北偏东', '北偏西', '南偏东', '南偏西']
+const baseName = computed(() => (dir.value <= 1 ? '正北' : '正南'))
+const sideName = computed(() => (dir.value % 2 === 0 ? '东' : '西'))
 const CX = 170
 const CY = 230
 const S = 22
@@ -47,7 +49,8 @@ const marker = computed(() => {
   }
   return { x: CX + x * dist.value * S, y: CY + y * dist.value * S }
 })
-const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
+const baseEnd = computed(() => ({ x: CX, y: CY + (dir.value <= 1 ? -1 : 1) * dist.value * S }))
+const angleLabelY = computed(() => CY + (dir.value <= 1 ? -1 : 1) * dist.value * S / 2 + 4)
 </script>
 
 <template>
@@ -95,15 +98,16 @@ const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
           <text :x="CX" :y="CY + 200" text-anchor="middle" class="t-lbl">南</text>
           <text :x="CX + 190" :y="CY + 5" text-anchor="middle" class="t-lbl">东</text>
           <text :x="CX - 190" :y="CY + 5" text-anchor="middle" class="t-lbl">西</text>
-          <line :x1="CX" :y1="CY" :x2="northEnd.x" :y2="northEnd.y" stroke="var(--ui-border-accented)" stroke-width="1.5" stroke-dasharray="3 3" />
-          <line :x1="CX" :y1="CY" :x2="marker.x" :y2="marker.y" stroke="var(--ui-primary)" stroke-width="2.5" />
+          <line class="base-ray" :x1="CX" :y1="CY" :x2="baseEnd.x" :y2="baseEnd.y" stroke="var(--ui-border-accented)" stroke-width="1.5" stroke-dasharray="3 3" />
+          <line class="target-ray" :x1="CX" :y1="CY" :x2="marker.x" :y2="marker.y" stroke="var(--ui-primary)" stroke-width="2.5" />
           <path
-            :d="`M ${CX} ${CY} L ${northEnd.x} ${northEnd.y} A ${dist * S} ${dist * S} 0 0 ${dir % 2} ${marker.x} ${marker.y} Z`"
+            :d="`M ${CX} ${CY} L ${baseEnd.x} ${baseEnd.y} A ${dist * S} ${dist * S} 0 0 ${dir % 2} ${marker.x} ${marker.y} Z`"
             fill="color-mix(in srgb, var(--ui-primary) 20%, transparent)"
             stroke="var(--ui-primary)"
             stroke-width="1"
           />
-          <text :x="CX + 8" :y="CY - dist * S / 2 + 4" class="t-lbl">{{ DIRS[dir] }} {{ angle }}°</text>
+          <text :x="CX + 8" :y="baseEnd.y + (dir <= 1 ? 16 : -10)" class="t-lbl">{{ baseName }}基准</text>
+          <text :x="CX + 8" :y="angleLabelY" class="t-lbl">{{ DIRS[dir] }} {{ angle }}°</text>
           <polygon :points="`${CX},${CY} ${CX - 12},${CY + 14} ${CX + 12},${CY + 14}`" fill="#0369a1" />
           <text :x="CX + 18" :y="CY + 20" class="t-lbl ship">舰艇</text>
           <circle :cx="marker.x" :cy="marker.y" r="9" fill="#ef4444" stroke="white" stroke-width="2" />
@@ -112,6 +116,12 @@ const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
         <p class="res-line">
           浮雷在舰艇的<b> {{ DIRS[dir] }} {{ angle }}°</b> 方向 <b>{{ dist }} 千米</b>处
         </p>
+        <div class="direction-steps" aria-label="方向和距离定位步骤">
+          <span>1 从{{ baseName }}开始</span>
+          <span>2 向{{ sideName }}偏 {{ angle }}°</span>
+          <span>3 沿射线量 {{ dist }} 千米</span>
+        </div>
+        <p class="scale-note">比例尺：1 千米 = {{ S }} 个画布单位，{{ dist }} 千米 = {{ dist * S }} 个画布单位</p>
       </div>
     </template>
   </div>
@@ -133,6 +143,10 @@ const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
   flex-direction: column;
   gap: 0.6rem;
   align-items: center;
+}
+.map-block svg {
+  max-width: 100%;
+  height: auto;
 }
 .seat-grid {
   display: flex;
@@ -205,6 +219,28 @@ const northEnd = computed(() => ({ x: CX, y: CY - dist.value * S }))
   color: var(--ui-text-muted);
   text-align: center;
   max-width: 34rem;
+}
+.direction-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  max-width: 34rem;
+}
+.direction-steps span {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.scale-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  text-align: center;
 }
 .t-lbl {
   font-size: 12px;
