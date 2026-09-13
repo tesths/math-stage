@@ -195,7 +195,7 @@ cd g2/game && npm run test          # 二年级单元 + 组件用例全绿
 cd g2/game && npm run test:coverage # 二年级四指标均 ≥95%
 cd g3/game && npm run test          # 三年级 112 用例全绿
 cd g3/game && npm run test:e2e      # 三年级 Playwright 6 用例
-cd g4/game && npm run test          # 四年级 119 用例全绿
+cd g4/game && npm run test          # 四年级 121 用例全绿
 cd g4/game && npm run test:coverage # 四年级 statements/lines/functions 100%，branches ≥95%
 cd g4/game && npm run test:e2e      # 四年级 Playwright 6 用例
 cd g5/game && npm run test          # 五年级 105 用例全绿

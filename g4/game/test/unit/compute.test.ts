@@ -39,12 +39,14 @@ describe('computeLab 各 kind', () => {
     const r = computeLab('div-try', { num: 96, div: 24 })
     expect(r.value).toBe(4)
     expect(r.text).toContain('96')
+    expect(r.steps[2]!.result).toContain('正好')
   })
 
   it('div-try 有余数', () => {
     const r = computeLab('div-try', { num: 100, div: 24 })
     expect(r.value).toBe(4)
     expect(r.text).toContain('…… 4')
+    expect(r.steps[2]!.result).toContain('接近')
   })
 
   it('div-pen：156 ÷ 12 = 13', () => {
@@ -85,15 +87,25 @@ describe('computeLab 各 kind', () => {
     expect(r.value).toBe(36)
   })
 
-  it('area-unit：300 平方厘米 = 3 平方分米', () => {
-    const r = computeLab('area-unit', { v: 300, dir: 0 })
-    expect(r.value).toBe(3)
-    expect(r.text).toContain('3 平方分米')
+  it('area-unit：大单位化小单位只出整数', () => {
+    const r = computeLab('area-unit', { v: 3, pair: 0, dir: 0 })
+    expect(r.value).toBe(300)
+    expect(r.text).toContain('3 平方分米 = 300 平方厘米')
+    expect(r.text).not.toMatch(/\d+\.\d/)
   })
 
-  it('area-unit：3 平方分米 = 300 平方厘米', () => {
-    const r = computeLab('area-unit', { v: 3, dir: 1 })
-    expect(r.value).toBe(300)
+  it('area-unit：小单位化大单位使用整百数', () => {
+    const r = computeLab('area-unit', { v: 3, pair: 0, dir: 1 })
+    expect(r.value).toBe(3)
+    expect(r.text).toContain('300 平方厘米 = 3 平方分米')
+    expect(r.text).not.toMatch(/\d+\.\d/)
+  })
+
+  it('area-unit：平方米与平方分米互化也保持整数', () => {
+    const r = computeLab('area-unit', { v: 6, pair: 1, dir: 1 })
+    expect(r.value).toBe(6)
+    expect(r.text).toContain('600 平方分米 = 6 平方米')
+    expect(r.steps[0]!.expr).toBe('1 平方米 = 100 平方分米')
   })
 
   it('peri-area-change：36 个小正方形 4 行', () => {
@@ -154,16 +166,21 @@ describe('computeLab 各 kind', () => {
     const r = computeLab('num-place', { digit: 3, place: 4 })
     expect(r.text).toContain('千位')
     expect(r.conclusion).toContain('3 个千')
+    expect(computeLab('num-place', { digit: 3, place: 99 }).text).toContain('个位')
   })
 
   it('num-multidigit：1600 万', () => {
     const r = computeLab('num-multidigit', { wan: 1600, yi: 0 })
     expect(r.value).toBe(16000000)
+    expect(computeLab('num-multidigit', { wan: 1600, yi: 2 }).conclusion).toContain('和 2 个亿')
   })
 
   it('num-approx：384204 ≈ 38 万', () => {
     const r = computeLab('num-approx', { v: 384204 })
     expect(r.text).toContain('38 万')
+    expect(r.steps[1]!.expr).toContain('舍去千位及以后')
+    expect(computeLab('num-approx', { v: 386685 }).steps[1]!.expr).toContain('向万位进 1')
+    expect(computeLab('num-approx', { v: 9 }).steps[0]!.result).toBe('0')
   })
 
   it('num-idcode：2016年2月18日 → 20160218', () => {

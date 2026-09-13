@@ -17,7 +17,7 @@ g4/
 │   └── 书页 = PDF页 - 3（书页 1 = PDF p4）
 ├── ocr/lower/                未来下册 OCR 占位
 ├── data/upper/                     例题 Lab 数据（纯声明，计算在 game）
-│   ├── schema/lab.ts         Lab 类型：参数定义（滑块范围/单位）+ kind + 公式
+│   ├── schema/lab.ts         Lab 类型：参数定义（滑块范围/选项按钮/单位）+ kind + 公式
 │   ├── schema/validate.ts    运行时校验（id 唯一 / 参数合法）
 │   ├── chapters/meta.ts      9 单元元信息（书页区间来自课本目录）
 │   ├── chapters/c1.ts … c9.ts 各单元 Lab
@@ -25,7 +25,7 @@ g4/
 ├── data/lower/               未来下册 Lab 数据占位
 ├── game/                     四年级 Nuxt4 应用（Nuxt UI，主色 emerald）
 │   ├── src/lib/engine/math.ts   纯数学工具（数位/四舍五入/大数格式化）
-│   ├── src/lib/labs/compute.ts  每种 kind 的求值与分步过程
+│   ├── src/lib/labs/compute.ts  每种 kind 的求值与分步过程（面积单位换算复用 areaUnit.ts 推导）
 │   ├── src/lib/labs/registry.ts kind → 组件
 │   ├── src/lib/games/          10 个游戏元数据 + slug → 组件
 │   ├── src/components/labs/     10 个可视化组件（SVG：竖式/网格/线段图/数位表）
@@ -33,9 +33,9 @@ g4/
 │   ├── src/pages/
 │   │   ├── index.vue           首页（单元 + Lab + 游戏分组）
 │   │   ├── units/[id].vue      单元页（Lab 清单）
-│   │   ├── labs/[id].vue       Lab 页（参数滑块 + 实时公式 + 分步思考）
+│   │   ├── labs/[id].vue       Lab 页（参数滑块/选项按钮 + 实时公式 + 分步思考）
 │   │   └── games/[slug].vue    游戏页
-│   ├── test/                   vitest（119 用例，statements/lines/functions ≥100%，branches ≥95%）
+│   ├── test/                   vitest（121 用例，statements/lines/functions ≥100%，branches ≥95%）
 │   └── e2e/smoke.spec.ts       Playwright 6 用例
 └── docs/
 ```
@@ -45,7 +45,7 @@ g4/
 | 单元 | 书页 | Lab 数 | 亮点 |
 | --- | --- | --- | --- |
 | 一 两、三位数除以两位数 | 1-16 | 4 | 整十数口算分组、**竖式试商**（除数看作整十数）、两步连除 |
-| 二 周长与面积 | 17-41 | 6 | 长方形/正方形周长与面积（SVG 动态图形）、面积单位量面积、面积单位换算 |
+| 二 周长与面积 | 17-41 | 6 | 长方形/正方形周长与面积（SVG 动态图形）、面积单位量面积、10×10 进率图与整数组单位换算 |
 | 周长与面积的变化 | 42-43 | 1 | 面积一定时拼长方形，对比周长变化（正方形周长最短） |
 | 三 乘法数量关系 | 44-56 | 4 | 乘法的意义、总价=单价×数量、路程=速度×时间、归一解决问题 |
 | 四 混合运算与数量关系（二） | 57-63 | 3 | 三步混合运算（先乘除后加减）、含括号运算、线段图分析 |
@@ -54,8 +54,8 @@ g4/
 | 度量衡的故事 | 89-93 | 1 | 古代尺/升/斤与现代单位的换算 |
 | 六 大数的运算 | 94-108 | 3 | 三位数乘两位数竖式、计算器探索规律、1 亿有多大推算 |
 
-Lab 页布局：左侧可视化（SVG），右侧参数滑块，下方"分步思考"过程与结论。
-数据层只需声明 `params`（滑块定义）与 `formula`，计算逻辑在 `lib/labs/compute.ts`。
+Lab 页布局：左侧可视化（SVG/网格），右侧参数滑块或选项按钮，下方"分步思考"过程与结论。
+数据层只需声明 `params`（滑块定义，可用 `choices` 做离散选项）与 `formula`，计算逻辑在 `lib/labs/compute.ts`；面积单位换算的方向、单位组与结果由 `lib/labs/areaUnit.ts` 统一推导。
 
 ## 训练小游戏（10 个）
 
@@ -65,7 +65,7 @@ Lab 页布局：左侧可视化（SVG），右侧参数滑块，下方"分步思
 | 试商小达人 | 除数看作整十数试商 | 5 题选商 |
 | 周长挑战 | 长方形/正方形周长 | 5 题选答案 |
 | 面积挑战 | 长方形/正方形面积 | 5 题选答案 |
-| 面积单位换算 | 平方厘米/平方分米/平方米 | 进率 100，5 题 |
+| 面积单位换算 | 平方厘米/平方分米/平方米 | 相邻单位进率 100，整数组互化，5 题 |
 | 购物总价 | 总价=单价×数量 | 求总价/单价/数量 |
 | 速度时间路程 | 路程=速度×时间 | 求路程/速度/时间 |
 | 混合运算快算 | 三步混合运算 | 5 题选得数 |
@@ -77,7 +77,7 @@ Lab 页布局：左侧可视化（SVG），右侧参数滑块，下方"分步思
 ```bash
 cd g4/game
 npm run dev          # 开发（PORT 3000）
-npm run test         # vitest 119 用例（含共享 GradeShell 组件）
+npm run test         # vitest 121 用例（含共享 GradeShell 组件）
 npm run test:coverage# 四指标：statements/lines/functions 100%，branches ≥95%
 npm run test:e2e     # Playwright 6 用例（NITRO_PRESET=node-server 本地构建）
 npm run build        # 构建（nitro preset: cloudflare-pages，可部署 Pages/静态）
@@ -92,7 +92,7 @@ npm run build        # 构建（nitro preset: cloudflare-pages，可部署 Pages
 
 ## 新增一个 Lab
 
-1. 在 `g4/data/upper/chapters/cN.ts` 加一条 `LabDef`（含 params 滑块定义、formula、可选 fixed 常量）。
+1. 在 `g4/data/upper/chapters/cN.ts` 加一条 `LabDef`（含 params 滑块/choices 定义、formula、可选 fixed 常量）。
 2. 若为全新可视化类型，在 `schema/lab.ts` 扩展 `LabKind`、`lib/labs/compute.ts` 加计算分支、
    `components/labs/` 写组件并注册到 `lib/labs/registry.ts`。
 3. 跑 `npm run test`（validateLabs 自动校验数据）+ `npm run test:coverage`。

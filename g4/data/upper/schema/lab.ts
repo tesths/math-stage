@@ -37,7 +37,7 @@ export interface ChapterMeta {
 /** 题源小节 */
 export type SourceKind = '例题' | '试一试' | '想想做做' | '练一练' | '练习' | '探索' | '综合实践'
 
-/** 可调参数定义（滑块） */
+/** 可调参数定义（滑块或离散选项） */
 export interface LabParam {
   /** 参数名（公式里的字母，如 a / h） */
   key: string
@@ -48,6 +48,8 @@ export interface LabParam {
   default: number
   /** 单位（米/厘米/千米/格/°…） */
   unit?: string
+  /** 离散选项标签，用于替代 0/1 这类不适合滑块的参数 */
+  choices?: { value: number; label: string }[]
 }
 
 /** 可视化 Lab 类型 */

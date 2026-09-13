@@ -31,6 +31,15 @@ function resetParams() {
   playClick()
 }
 
+function setParam(key: string, value: number) {
+  values[key] = value
+  playClick()
+}
+
+function paramDisplay(p: LabDef['params'][number]): number | string {
+  return p.choices?.find((choice) => choice.value === values[p.key])?.label ?? values[p.key] ?? ''
+}
+
 const result = computed(() => computeLab(lab.value!.kind, values))
 
 /** animejs：结果变化时数值滚动 + 结果框弹跳 + 步骤交错淡入 */
@@ -153,20 +162,34 @@ watch(labId, () => {
                 <label class="text-sm font-medium text-(--ui-text-highlighted)">
                   {{ p.label }} <span class="text-xs text-(--ui-text-muted)">{{ p.unit }}</span>
                 </label>
-                <strong class="text-(--ui-primary)">{{ values[p.key] }}</strong>
+                <strong class="text-(--ui-primary)">{{ paramDisplay(p) }}</strong>
               </div>
-              <input
-                v-model.number="values[p.key]"
-                type="range"
-                class="lab-range"
-                :min="p.min"
-                :max="p.max"
-                :step="p.step"
-                @input="playClick"
-              />
-              <div class="mt-0.5 flex justify-between text-[11px] text-(--ui-text-muted)">
-                <span>{{ p.min }}</span><span>{{ p.max }}</span>
+              <div v-if="p.choices" class="choice-group" role="group" :aria-label="p.label">
+                <button
+                  v-for="choice in p.choices"
+                  :key="choice.value"
+                  type="button"
+                  class="choice-btn"
+                  :class="{ active: values[p.key] === choice.value }"
+                  @click="setParam(p.key, choice.value)"
+                >
+                  {{ choice.label }}
+                </button>
               </div>
+              <template v-else>
+                <input
+                  v-model.number="values[p.key]"
+                  type="range"
+                  class="lab-range"
+                  :min="p.min"
+                  :max="p.max"
+                  :step="p.step"
+                  @input="playClick"
+                />
+                <div class="mt-0.5 flex justify-between text-[11px] text-(--ui-text-muted)">
+                  <span>{{ p.min }}</span><span>{{ p.max }}</span>
+                </div>
+              </template>
             </div>
 
             <div ref="resultBoxRef" class="result-box">
@@ -220,6 +243,34 @@ watch(labId, () => {
   width: 100%;
   accent-color: var(--ui-primary);
   cursor: pointer;
+}
+.choice-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+.choice-btn {
+  min-height: 2.25rem;
+  border: 1px solid var(--ui-border-accented);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg);
+  padding: 0.45rem 0.55rem;
+  color: var(--ui-text-toned);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+.choice-btn:hover {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 8%, transparent);
+}
+.choice-btn.active {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 15%, transparent);
+  color: var(--ui-primary);
 }
 .result-box {
   border: 1px dashed var(--ui-border-accented);

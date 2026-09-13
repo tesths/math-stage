@@ -1,5 +1,6 @@
 import type { LabKind, ParamValues } from '@data/schema/lab'
 import { COUNT_UNITS, digitsOf, factorsOf, formatBig, roundTo, toFixed2 } from '@/lib/engine/math'
+import { deriveAreaUnitConversion } from '@/lib/labs/areaUnit'
 
 export interface LabStep {
   expr: string
@@ -170,20 +171,15 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       }
     }
     case 'area-unit': {
-      const v = p.v ?? 300
-      const dir = Math.round(p.dir ?? 0)
-      const bigger = dir === 0
-      const result = bigger ? v / 100 : v * 100
-      const from = bigger ? '平方厘米' : '平方分米'
-      const to = bigger ? '平方分米' : '平方厘米'
+      const conversion = deriveAreaUnitConversion(p)
       return {
-        value: result,
-        text: `${fmt(v)} ${from} = ${fmt(result)} ${to}`,
+        value: conversion.result,
+        text: `${fmt(conversion.fromValue)} ${conversion.fromUnit} = ${fmt(conversion.result)} ${conversion.toUnit}`,
         steps: [
-          { expr: `1 ${bigger ? '平方分米' : '平方厘米'} = ${bigger ? 100 : 1 / 100} ${bigger ? '平方厘米' : '平方分米'}`.replace('= 0.01', '= 0.01'), result: '' },
-          { expr: `${fmt(v)} ${bigger ? '÷' : '×'} 100`, result: `${fmt(result)} ${to}` },
+          { expr: conversion.relationText, result: '' },
+          { expr: `${fmt(conversion.fromValue)} ${conversion.operationSymbol} 100`, result: `${fmt(conversion.result)} ${conversion.toUnit}` },
         ],
-        conclusion: `相邻面积单位的进率是 100：${fmt(v)} ${from} = ${fmt(result)} ${to}。`,
+        conclusion: `相邻面积单位的进率是 100：${fmt(conversion.fromValue)} ${conversion.fromUnit} = ${fmt(conversion.result)} ${conversion.toUnit}。`,
       }
     }
 

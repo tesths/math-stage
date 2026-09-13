@@ -181,7 +181,7 @@ math/
 │   ├── ocr/upper/pages/       上册 121 页 OCR 产物（txt + 整页图 + 插图）
 │   ├── ocr/lower/             未来下册 OCR 占位
 │   ├── data/upper/
-│   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/fixed 常量/kind/公式）
+│   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/choices/fixed 常量/kind/公式）
 │   │   ├── schema/validate.ts 运行时校验（id 唯一/参数范围）
 │   │   ├── chapters/meta.ts   9 单元元信息
 │   │   ├── chapters/c1.ts … c9.ts  28 个 Lab
@@ -189,14 +189,14 @@ math/
 │   ├── data/lower/            未来下册 Lab 数据占位
 │   └── game/                  Nuxt4 应用（主色 emerald，统一来自 shared）
 │       ├── src/lib/engine/math.ts   纯数学工具（数位/四舍五入/大数格式化）
-│       ├── src/lib/labs/             Lab 计算引擎（compute.ts）+ kind→组件注册表
+│       ├── src/lib/labs/             Lab 计算引擎（compute.ts；area-unit 复用 areaUnit.ts 推导）+ kind→组件注册表
 │       ├── src/lib/games/            10 个游戏元数据 + slug→组件注册表
 │       ├── src/lib/storage.ts / sound.ts
-│       ├── src/components/labs/      10 个可视化组件（SVG：竖式/网格/线段图/数位表）
+│       ├── src/components/labs/      10 个可视化组件（SVG：竖式/网格/线段图/数位表；AreaUnitLab 10×10 进率图）
 │       ├── src/components/games/     10 个训练游戏组件
 │       ├── src/components/ui/        GameAnswerBar（选项/输入两种模式）
 │       ├── src/pages/                index / units/[id] / labs/[id] / games/[slug] / games/
-│       ├── test/                     vitest（119 用例，branches ≥95%，其余 100%）+ e2e/（Playwright 6 用例）
+│       ├── test/                     vitest（121 用例，branches ≥95%，其余 100%）+ e2e/（Playwright 6 用例）
 │       └── nuxt.config.ts            baseURL + gradePrerenderIgnore('g4')
 │
 ├── ── 五年级工程（苏教版上册）──
@@ -413,20 +413,21 @@ coin-flip（抛硬币统计，animejs 3D 翻转）/ unit-convert（单位换算�
 
 ### 5.1 数据层 `g4/data/upper/`
 
-**Lab = 一条 `LabDef`**（`schema/lab.ts`，类型与五年级同款）：id 前缀 `g4-`、
-`kind` 28 种、`params` 滑块定义、`fixed` 常量、`formula`。校验器 `validate.ts`
+**Lab = 一条 `LabDef`**（`schema/lab.ts`，在五年级同款结构上支持 `choices` 离散选项）：id 前缀 `g4-`、
+`kind` 28 种、`params` 滑块/选项按钮定义、`fixed` 常量、`formula`。校验器 `validate.ts`
 （id 唯一 / 参数范围）；`index.ts` 提供 `findLabById / byChapter / totalLabs=28`。
 
 **设计原则**：数据只声明；**求值逻辑在 `game/src/lib/labs/compute.ts`**（28 种 kind 全在这里，
 返回 `{ value/text/steps/conclusion }`）；**渲染逻辑在 `components/labs/`**；kind→组件映射在
-`lib/labs/registry.ts`。
+`lib/labs/registry.ts`。面积单位换算的方向、单位组、数值和文案由 `lib/labs/areaUnit.ts`
+统一推导，避免 compute 与组件各自维护一套换算规则。
 
 ### 5.2 28 种 Lab 类型（28 个 Lab）
 
 | 单元 | Lab kind | 数量 | 组件 |
 | --- | --- | --- | --- |
 | c1 两、三位数除以两位数 | div-oral / div-try / div-pen / div-route | 4 | DivLab（口算分组 / 竖式试商 / 两步连除） |
-| c2 周长与面积 | peri-rect / peri-square / area-grid / area-rect / area-square / area-unit | 6 | ShapeLab / AreaUnitLab（SVG 动态图形 / 面积单位换算） |
+| c2 周长与面积 | peri-rect / peri-square / area-grid / area-rect / area-square / area-unit | 6 | ShapeLab / AreaUnitLab（SVG 动态图形 / 10×10 进率图 / 相邻面积单位整数组换算） |
 | c3 周长与面积的变化 | peri-area-change | 1 | PuzzleLab（拼长方形对比周长） |
 | c4 乘法数量关系 | mul-meaning / mul-total / mul-distance / mul-solve | 4 | QuantityLab（点阵 / 购物 / 行程 / 归一） |
 | c5 混合运算与数量关系（二） | mix-three / mix-bracket / mix-segment | 3 | MixCalcLab / SegmentLab（条形图 / 括号 / 线段图） |
@@ -758,7 +759,7 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 | 二年级 | `npm run test:coverage` | 语句/行/分支/函数 ≥95% | v8 |
 | 三年级 | `npm run test` | 112 | vitest（data/compute/registry/组件/共享 GradeShell） |
 | 三年级 | `npm run test:e2e` | 6 | Playwright（`NITRO_PRESET=node-server` 本地构建） |
-| 四年级 | `npm run test` | 119 | vitest（data/compute/registry/组件/共享 GradeShell） |
+| 四年级 | `npm run test` | 121 | vitest（data/compute/registry/组件/共享 GradeShell） |
 | 四年级 | `npm run test:e2e` | 6 | Playwright（`NITRO_PRESET=node-server` 本地构建） |
 | 四年级 | `npm run test:coverage` | 语句/行/函数 100%，分支 ≥95% | v8 |
 | 五年级 | `npm run test` | 105 | vitest（data/compute/registry/组件/共享 GradeShell） |
@@ -770,7 +771,7 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 > 五年级覆盖率阈值（vitest.config.ts）：statements/lines/functions/branches **均 ≥95%**（当前 99.6/99.6/95/96）。
 > 六年级同样四指标 **均 ≥95%**（当前 100/99.17/100/100）。
 > 二年级同样四指标 **均 ≥95%**。
-> 四年级同款 vitest 配置（四指标均 ≥95%；当前 statements/lines/functions 100%，branches 95.23%）。
+> 四年级同款 vitest 配置（四指标均 ≥95%；当前 statements/lines/functions 100%，branches ≥95%）。
 > 三年级同款 vitest 配置（无覆盖率阈值门槛，10 文件 112 用例全绿）。
 > 共享层独立阈值同为 95%。
 

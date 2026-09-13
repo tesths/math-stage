@@ -45,6 +45,15 @@ describe('Lab 组件渲染', () => {
     expect(wrapper.text()).toContain('第 1 轮：15 ÷ 12 = 1')
   })
 
+  it('DivLab：笔算竖式步骤按钮可切换当前轮', async () => {
+    const lab = findLabById('g4-c1-div-pen')!
+    const wrapper = mount(DivLab, { props: { lab, values: { num: 156, div: 12 } } })
+    const buttons = wrapper.findAll('.step-chip')
+    expect(buttons.length).toBeGreaterThan(1)
+    await buttons[1]!.trigger('click')
+    expect(wrapper.text()).toContain('第 2 轮')
+  })
+
   it('DivLab：两步连除渲染书架', () => {
     const lab = findLabById('g4-c1-div-route')!
     const wrapper = mount(DivLab, { props: { lab, values: { total: 224, shelf: 2, floor: 4 } } })
@@ -90,16 +99,19 @@ describe('Lab 组件渲染', () => {
 
   it('AreaUnitLab：换算方向切换', async () => {
     const lab = findLabById('g4-c2-area-unit')!
-    const wrapper = mount(AreaUnitLab, { props: { lab, values: { v: 300, dir: 0 } } })
-    expect(wrapper.text()).toContain('300 平方厘米')
-    expect(wrapper.text()).toContain('= 3 平方分米')
-    expect(wrapper.findAll('.mini-cell')).toHaveLength(100)
-    expect(wrapper.text()).toContain('10 × 10 = 100')
-    await wrapper.setProps({ values: { v: 3, dir: 1 } })
+    const wrapper = mount(AreaUnitLab, { props: { lab, values: { v: 3, pair: 0, dir: 0 } } })
     expect(wrapper.text()).toContain('3 平方分米')
     expect(wrapper.text()).toContain('= 300 平方厘米')
-    const w2 = mount(AreaUnitLab, { props: { lab, values: { v: 5, dir: 1 } } })
-    expect(w2.text()).toContain('= 500 平方厘米')
+    expect(wrapper.findAll('.mini-cell')).toHaveLength(100)
+    expect(wrapper.text()).toContain('10 × 10 = 100')
+    expect(wrapper.text()).not.toMatch(/\d+\.\d/)
+    await wrapper.setProps({ values: { v: 3, pair: 0, dir: 1 } })
+    expect(wrapper.text()).toContain('300 平方厘米')
+    expect(wrapper.text()).toContain('= 3 平方分米')
+    const w2 = mount(AreaUnitLab, { props: { lab, values: { v: 5, pair: 1, dir: 1 } } })
+    expect(w2.text()).toContain('500 平方分米')
+    expect(w2.text()).toContain('= 5 平方米')
+    expect(w2.text()).not.toMatch(/\d+\.\d/)
   })
 
   it('PuzzleLab：拼图形周长对比', () => {
