@@ -5,9 +5,9 @@ import { gameComponentFor } from '@/lib/games/registry'
 import { GAMES, unitNoOf } from '@/lib/games'
 
 describe('Lab 组件注册表', () => {
-  it('全部 33 个 kind 都映射到组件', () => {
+  it('全部 47 个 kind 都映射到组件', () => {
     const kinds = new Set(allLabs.map((l) => l.kind))
-    expect(kinds.size).toBe(33)
+    expect(kinds.size).toBe(47)
     for (const k of kinds) {
       expect(labComponentFor(k)).toBeTruthy()
     }

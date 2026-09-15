@@ -8,9 +8,20 @@ describe('六年级 Lab 数据', () => {
     expect(validateLabs()).toEqual([])
   })
 
-  it('覆盖 7 个有 Lab 的单元，共 33 个 Lab', () => {
-    expect(totalLabs).toBe(33)
+  it('覆盖 7 个有 Lab 的单元，共 47 个 Lab（33 例题 + 14 练习题）', () => {
+    expect(totalLabs).toBe(47)
     expect(byChapter.filter((c) => c.labs.length > 0).length).toBe(7)
+  })
+
+  it('练习题 Lab：7 个单元各 2 个，kind 以 ex- 开头', () => {
+    const exercises = allLabs.filter((l) => l.kind.startsWith('ex-'))
+    expect(exercises.length).toBe(14)
+    for (const c of byChapter) {
+      expect(c.labs.filter((l) => l.kind.startsWith('ex-')).length).toBe(2)
+    }
+    for (const l of exercises) {
+      expect(l.source).not.toBe('例题')
+    }
   })
 
   it('findLabById 能取到每个 Lab', () => {
@@ -49,8 +60,8 @@ describe('六年级 Lab 数据', () => {
   })
 
   it('labsOfChapter / firstLabOf', () => {
-    expect(labsOfChapter('c1').length).toBe(6)
+    expect(labsOfChapter('c1').length).toBe(8)
     expect(firstLabOf('c1')).toBe('g6-c1-mul-decimal')
-    expect(labsOfChapter('c7').length).toBe(2)
+    expect(labsOfChapter('c7').length).toBe(4)
   })
 })

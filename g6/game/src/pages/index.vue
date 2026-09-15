@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { byChapter, totalLabs } from '@data'
+import { byChapter, totalLabs, allLabs } from '@data'
 import { GAMES, unitNoOf } from '@/lib/games'
 
 const units = computed(() =>
-  byChapter.map(({ meta, labs }) => ({ meta, count: labs.length, first: labs[0]?.id })),
+  byChapter.map(({ meta, labs }) => ({
+    meta,
+    count: labs.length,
+    exampleCount: labs.filter((l) => !l.kind.startsWith('ex-')).length,
+    exerciseCount: labs.filter((l) => l.kind.startsWith('ex-')).length,
+    first: labs[0]?.id,
+  })),
 )
+
+const exampleCount = computed(() => allLabs.filter((l) => !l.kind.startsWith('ex-')).length)
+const exerciseCount = computed(() => allLabs.filter((l) => l.kind.startsWith('ex-')).length)
 
 const unitGames = computed(() =>
   units.value.map((u) => ({ meta: u.meta, games: GAMES.filter((m) => m.chapters.includes(u.meta.id)) })),
@@ -21,17 +30,21 @@ const unitCount = computed(() => units.value.filter((u) => u.count > 0).length)
     <div class="text-center">
       <UBadge color="primary" variant="soft" class="mb-4">苏教版 · 2022 版课标 · 六年级上册</UBadge>
       <h1 class="text-3xl font-bold tracking-tight text-(--ui-text-highlighted) md:text-4xl">
-        六年级数学例题可视化
+        六年级数学可视化
       </h1>
       <p class="mt-3 text-(--ui-text-muted)">《义务教育教科书·数学》苏教版六年级上册配套互动演示</p>
       <p class="mt-1 text-sm text-(--ui-text-muted)">
-        {{ unitCount }} 个单元 · {{ totalLabs }} 个可调参数例题 Lab · {{ GAMES.length }} 个训练小游戏
+        {{ unitCount }} 个单元 · {{ exampleCount }} 个可调参数例题 Lab · {{ totalLabs }} 个 Lab 合计 ·
+        {{ GAMES.length }} 个训练小游戏
+      </p>
+      <p class="mt-1 text-xs text-(--ui-text-muted)">
+        其中练习题可视化 {{ exerciseCount }} 个（练一练 / 练习 / 探索与实践）
       </p>
     </div>
 
     <section class="mt-10">
       <div class="mb-4 flex items-baseline gap-2">
-        <h2 class="text-xl font-semibold text-(--ui-text-highlighted)">课本单元 · 例题可视化</h2>
+        <h2 class="text-xl font-semibold text-(--ui-text-highlighted)">课本单元 · 例题 + 练习题可视化</h2>
         <span class="text-sm text-(--ui-text-muted)">拖动参数即可实时观察图形与计算结果</span>
       </div>
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -53,7 +66,8 @@ const unitCount = computed(() => units.value.filter((u) => u.count > 0).length)
                 </h3>
                 <p class="mt-1.5 text-sm text-(--ui-text-muted)">{{ u.meta.summary }}</p>
                 <p class="mt-2 text-xs text-(--ui-text-muted)">
-                  书页 {{ u.meta.pageStart }}–{{ u.meta.pageEnd }} · Lab {{ u.count }} 个
+                  书页 {{ u.meta.pageStart }}–{{ u.meta.pageEnd }} · 例题 {{ u.exampleCount }} 个 · 练习题
+                  {{ u.exerciseCount }} 个
                 </p>
               </div>
             </div>

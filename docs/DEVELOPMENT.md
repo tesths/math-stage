@@ -21,7 +21,7 @@
 | 三年级 | `g3/data/upper/` + `g3/game/` | 苏教版三年级上册：41 个可调参数可视化 Lab + 16 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ three.js / animejs |
 | 四年级 | `g4/data/upper/` + `g4/game/` | 苏教版四年级上册：28 个可调参数可视化 Lab + 10 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
 | 五年级 | `g5/data/upper/` + `g5/game/` | 苏教版五年级上册：33 个可调参数可视化 Lab + 10 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ three.js / chart.js / animejs / jsxgraph |
-| 六年级 | `g6/data/upper/` + `g6/game/` | 苏教版六年级上册：33 个可调参数可视化 Lab + 12 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
+| 六年级 | `g6/data/upper/` + `g6/game/` | 苏教版六年级上册：47 个可调参数可视化 Lab（33 例题 + 14 练习题）+ 12 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
 
 部署后路由：`/` 门户，`/g1/*` 一年级，`/g2/*` 二年级，`/g3/*` 三年级，`/g4/*` 四年级，`/g5/*` 五年级，`/g6/*` 六年级。
 各年级仍保留**独立目录和 Nuxt 工程边界**（方便按年级维护），依赖与构建入口统一在仓库根：Node 24 + npm workspaces + 单一根 `package-lock.json`。
@@ -234,19 +234,22 @@ math/
 │   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/fixed 常量/kind/公式）
 │   │   ├── schema/validate.ts 运行时校验（id 唯一/参数范围）
 │   │   ├── chapters/meta.ts   7 单元元信息
-│   │   ├── chapters/c1.ts … c7.ts  33 个 Lab（c2 附分段计费、c3 附二进制、c4 附黄金比）
-│   │   └── index.ts           汇总（findLabById / byChapter / totalLabs）
+│   │   ├── chapters/c1.ts … c7.ts            33 个例题 Lab（c2 附分段计费、c3 附二进制、c4 附黄金比）
+│   │   ├── chapters/c1-exercises.ts … c7-exercises.ts  14 个练习题 Lab（每单元 2 个）
+│   │   ├── exercises/        练习题候选（candidates.json + briefs/cN.md，由 scripts/extract_g6_exercises.py 生成）
+│   │   └── index.ts           汇总（findLabById / byChapter / totalLabs=47）
 │   ├── data/lower/            未来下册 Lab 数据占位
 │   └── game/                  Nuxt4 应用（主色 emerald，统一来自 shared）
-│       ├── src/lib/engine/math.ts   纯数学工具（四舍五入/进一去尾/分数/比/π）
-│       ├── src/lib/labs/             Lab 计算引擎（compute.ts，33 种 kind）+ kind→组件注册表
+│       ├── src/lib/engine/math.ts   纯数学工具（四舍五入/进一去尾/分数/比/π）+ KIND_LABELS（47 种）
+│       ├── src/lib/labs/             Lab 计算引擎（types.ts + compute.ts 33 种例题 kind + exercises/ 14 种练习题 kind）+ kind→组件注册表
 │       ├── src/lib/games/            12 个游戏元数据 + slug→组件注册表
 │       ├── src/lib/storage.ts / sound.ts
-│       ├── src/components/labs/      8 个可视化组件（SVG：方格模型/圆/扇形/线段图/方位图）
+│       ├── src/components/labs/      8 个例题可视化组件（SVG：方格模型/圆/扇形/线段图/方位图）
+│       ├── src/components/labs/exercises/  7 个练习题可视化组件（每单元 1 个，按 kind 分支）
 │       ├── src/components/games/     12 个训练游戏组件
 │       ├── src/components/ui/        GameAnswerBar（选项/输入两种模式）
 │       ├── src/pages/                index / units/[id] / labs/[id] / games/[slug] / games/
-│       ├── test/                     vitest（8 文件 130 用例，四指标 ≥95%）
+│       ├── test/                     vitest（15 文件 196 用例，statements/lines/functions 100%、branches ≥95%）
 │       └── nuxt.config.ts            baseURL + prerender.crawlLinks
 │
 └── ocr/                       一年级 OCR 管线（ocr.swift / pages/ / book/）
@@ -626,15 +629,21 @@ times-quiz（倍的挑战）。
 
 ### 7.1 数据层 `g6/data/upper/`
 
-**Lab = 一条 `LabDef`**（`schema/lab.ts`，类型与五年级同款）：id 前缀 `g6-`、
-`kind` 33 种、`params` 滑块定义、`fixed` 常量、`formula`。校验器 `validate.ts`
-（id 唯一 / 参数范围）；`index.ts` 提供 `findLabById / byChapter / totalLabs=33`。
+**Lab = 一条 `LabDef`**（`schema/lab.ts`）：id 前缀 `g6-`、`params` 滑块定义、`fixed` 常量、`formula`。
+`kind` 分两类：`CoreLabKind`（33 种例题，逐例题专用）与 `ExerciseLabKind`（14 种练习题，按单元分为
+`C1ExerciseKind` … `C7ExerciseKind`）；`LabKind = CoreLabKind | ExerciseLabKind`。校验器 `validate.ts`
+（id 唯一 / 参数范围）；`index.ts` 提供 `findLabById / byChapter / totalLabs=47`。
 
-**设计原则**：数据只声明；**求值逻辑在 `game/src/lib/labs/compute.ts`**（33 种 kind 全在这里，
-返回 `{ value/text/steps/conclusion }`）；**渲染逻辑在 `components/labs/`**；kind→组件映射在
-`lib/labs/registry.ts`。
+**设计原则**：数据只声明；**例题求值逻辑在 `game/src/lib/labs/compute.ts`**（33 种 kind，
+返回 `{ value/text/steps/conclusion }`）；**练习题求值逻辑在 `game/src/lib/labs/exercises/`**
+（`index.ts` 按 kind 分派到 `c1.ts … c7.ts`，每单元一个模块）；**渲染逻辑在 `components/labs/`**
+（例题）与 `components/labs/exercises/`（练习题）；kind→组件映射在 `lib/labs/registry.ts`。
 
-### 7.2 33 种 Lab 类型（33 个 Lab）
+> **为什么「一条练习题 = 一种新 kind」**：compute 的 `steps` / `conclusion` 文案与题目情境强绑定
+> （例题里写死了“苹果/喷水池/糯米粉”等名词），复用例题 kind 会造成文案与题意不符，因此
+> 练习题一律新建 kind，文案只服务该题情境。
+
+### 7.2 33 种例题 Lab 类型（33 个例题 Lab）
 
 | 单元 | Lab kind | 数量 | 组件 |
 | --- | --- | --- | --- |
@@ -649,6 +658,23 @@ times-quiz（倍的挑战）。
 | c6 放大与缩小 | scale-shape / map-scale | 2 | ScaleLab（方格纸放大） |
 | c7 确定位置 | coordinate / direction | 2 | PositionLab（座位图/方位图） |
 
+### 7.2.1 14 种练习题 Lab 类型（14 个练习题 Lab，2026-09 新增）
+
+识别流程：`scripts/extract_g6_exercises.py` 从 `g6/ocr/upper/book/上册_正文.md`（GLM 合订正文）
+抽取全部练习小节（59 个）→ `g6/data/upper/exercises/candidates.json` + `briefs/cN.md`；
+再用 DeepSeek 按「可视化适配度」（可调参数 / 结构化图形 / 能讲清算理 / 不与已有 Lab 重复 /
+课本代表性）逐单元评分，每单元取 2 条 ≥4 分的题目实现为独立 Lab。人读清单见 `g6/docs/练习题候选清单.md`。
+
+| 单元 | 练习题 kind | 数量 | 组件 |
+| --- | --- | --- | --- |
+| c1 小数乘除法 | ex-c1-div11-cycle / ex-c1-pgram-area | 2 | ExerciseC1Lab |
+| c2 混合运算 | ex-c2-overlap-club / ex-c2-egg-crate | 2 | ExerciseC2Lab |
+| c3 数的再认识 | ex-c3-div-to-mul / ex-c3-frac-split | 2 | ExerciseC3Lab |
+| c4 比和比例 | ex-c4-cube-ratio / ex-c4-football-ratio | 2 | ExerciseC4Lab |
+| c5 圆 | ex-c5-wheel-roll / ex-c5-circle-packing | 2 | ExerciseC5Lab |
+| c6 放大与缩小 | ex-c6-scale-area / ex-c6-two-maps | 2 | ExerciseC6Lab |
+| c7 确定位置 | ex-c7-route-path / ex-c7-observer-point | 2 | ExerciseC7Lab |
+
 ### 7.3 训练游戏（12 个，`src/lib/games/`）
 
 decimal-mul（小数乘法口算）/ decimal-div（小数除法口算）/ decimal-points（积的小数位数）/
@@ -659,9 +685,18 @@ solve-ratio（解比例）/ circle-calc（圆的计算）/ scale-map（比例尺
 
 ### 7.4 新增一个 Lab
 
-与五年级流程一致（见 §4.4）：`data/upper/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
-`schema/lab.ts` 的 `LabKind` + `compute.ts` 加分支 + `components/labs/` 写组件并注册到
+**例题**（与五年级流程一致，见 §4.4）：`data/upper/chapters/cN.ts` 加 `LabDef` → 新 kind 时扩展
+`schema/lab.ts` 的 `CoreLabKind` + `compute.ts` 加分支 + `components/labs/` 写组件并注册到
 `lib/labs/registry.ts` → 跑 `npm run test` + `npm run typecheck`。
+
+**练习题**（一条练习题 = 一种新 kind）：
+
+1. `schema/lab.ts` 对应 `CNExerciseKind` 加 kind 名（`ExerciseLabKind` 自动收敛）。
+2. `data/upper/chapters/cN-exercises.ts` 加 `LabDef`；`lib/labs/exercises/cN.ts` 加 compute case。
+3. `components/labs/exercises/ExerciseCNLab.vue` 加 `kind` 分支。
+4. 同步 `lib/labs/exercises/index.ts`（`EXERCISE_KINDS` + `computeExerciseLab` switch）、
+   `lib/engine/math.ts`（`KIND_LABELS`）、`lib/labs/registry.ts`（kind→组件）。
+5. 补组件测试（含空参数挂载）、更新 `test/unit/data.test.ts` 计数 → `npm run test:coverage` + `npm run typecheck`。
 
 ### 7.5 六年级关键约定（踩坑记录）
 
@@ -673,6 +708,11 @@ solve-ratio（解比例）/ circle-calc（圆的计算）/ scale-map（比例尺
   与课本"海狮的游速大约是多少米/分"一致；曾误写成 ÷3600 得米/秒，2026-08 按 GLM OCR 修正）。
 - 无 Playwright E2E（未配 `playwright.config.ts`），页面行为由 vitest 组件层覆盖；
    `npm run test:click`（§9 真实点击验收）目前**不含 g6**。
+- **练习题分派链路**：`lib/labs/exercises/index.ts` 的 `isExerciseKind()` 类型守卫负责把
+  `LabKind` 分成「练习题 kind」与「33 种例题 kind」；`compute.ts` 顶部先走练习题分派，
+  再进原本的 33 种 switch（`switch` 因此仍保持穷尽，无 default）。
+- **纯类型文件不计覆盖率**：`src/lib/labs/types.ts` 只有 `LabResult / LabStep` 接口，
+  v8 会对其报 0%，已在 `vitest.config.ts` 的 `coverage.include` 中排除（`!src/lib/labs/types.ts`）。
 - 跨应用导航/顶栏切换用共享 GradeShell 的原生 `<a>`（见 §3.5 四坑）。
 - 类型检查：与五年级同源的一处共享 theme 类型提示（`nuxt/config` 在仓库根无 node_modules）
   属既有基线，其余 0 错误。
@@ -765,8 +805,8 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 | 五年级 | `npm run test` | 105 | vitest（data/compute/registry/组件/共享 GradeShell） |
 | 五年级 | `npm run test:e2e` | 6 | Playwright（`NITRO_PRESET=node-server` 本地构建） |
 | 五年级 | `npm run test:coverage` | 语句/行/分支/函数 ≥95% | v8 |
-| 六年级 | `npm run test` | 130 | vitest（data/compute/registry/组件/共享 GradeShell） |
-| 六年级 | `npm run test:coverage` | 语句/行/分支/函数 ≥95% | v8 |
+| 六年级 | `npm run test` | 196 | vitest（15 文件：data/compute/registry/组件/练习题组件/共享 GradeShell） |
+| 六年级 | `npm run test:coverage` | 语句/行/函数 100%、分支 ≥95%（当前 98.99%） | v8（排除纯类型 `types.ts`） |
 
 > 五年级覆盖率阈值（vitest.config.ts）：statements/lines/functions/branches **均 ≥95%**（当前 99.6/99.6/95/96）。
 > 六年级同样四指标 **均 ≥95%**（当前 100/99.17/100/100）。
@@ -933,6 +973,9 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 ./ocr/src/ocr_bin "pdf路径" 1 121 "g4/ocr/upper/pages"   # 四年级务必带输出目录
 ./ocr/src/ocr_bin "pdf路径" 1 131 "g5/ocr/upper/pages"   # 五年级务必带输出目录
 ./ocr/src/ocr_bin "pdf路径" 1 131 "g6/ocr/upper/pages"   # 六年级同上
+
+# 六年级练习题候选（合订正文 → candidates.json + briefs/cN.md + docs/练习题候选清单.md）
+python3 scripts/extract_g6_exercises.py
 ```
 
 ---

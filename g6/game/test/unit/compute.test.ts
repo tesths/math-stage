@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeLab } from '@/lib/labs/compute'
 import { allLabs } from '@data'
+import type { ParamValues } from '@data/schema/lab'
 
 describe('computeLab 一 小数乘法和除法', () => {
   it('mul-decimal：0.6 × 0.4 = 0.24', () => {
@@ -248,5 +249,34 @@ describe('computeLab 分支覆盖', () => {
   it('round-life 进一法结论', () => {
     const r = computeLab('round-life', { method: 1, total: 100 })
     expect(r.conclusion).toContain('至少')
+  })
+})
+
+describe('computeLab 练习题（练习一 … 练习十四）', () => {
+  const exerciseLabs = allLabs.filter((l) => l.kind.startsWith('ex-'))
+
+  it('14 条练习题都能用默认 / 最小 / 最大参数求值（覆盖分支与钳位）', () => {
+    expect(exerciseLabs).toHaveLength(14)
+    for (const l of exerciseLabs) {
+      const variants: ParamValues[] = []
+      for (const pick of ['default', 'min', 'max'] as const) {
+        const vals: ParamValues = { ...(l.fixed ?? {}) }
+        for (const param of l.params) vals[param.key] = param[pick]
+        variants.push(vals)
+      }
+      for (const vals of variants) {
+        const r = computeLab(l.kind, vals)
+        expect(r.text.length).toBeGreaterThan(0)
+        expect(r.steps.length).toBeGreaterThan(0)
+        expect(r.conclusion.length).toBeGreaterThan(0)
+        expect(Number.isFinite(r.value)).toBe(true)
+      }
+    }
+  })
+
+  it('circle-packing 有余料时步骤给出余数（remW > 0 分支）', () => {
+    const r = computeLab('ex-c5-circle-packing', { L: 15, W: 7, d: 2 })
+    expect(r.value).toBe(21)
+    expect(r.steps[1]!.result).toContain('…1')
   })
 })

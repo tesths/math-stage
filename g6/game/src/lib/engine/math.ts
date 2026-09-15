@@ -35,6 +35,21 @@ export const KIND_LABELS: Record<LabKind, string> = {
   'map-scale': '比例尺',
   coordinate: '数对',
   direction: '方向与距离',
+  // 练习题 Lab（练习一…练习十四）
+  'ex-c1-div11-cycle': '除以 11 的循环小数',
+  'ex-c1-pgram-area': '平行四边形面积估算',
+  'ex-c2-overlap-club': '重叠问题（容斥）',
+  'ex-c2-egg-crate': '连筐称重逆推',
+  'ex-c3-div-to-mul': '除法转化成乘法',
+  'ex-c3-frac-split': '分数单位拆分',
+  'ex-c4-cube-ratio': '棱长比·面积比·体积比',
+  'ex-c4-football-ratio': '按比分黑白皮',
+  'ex-c5-wheel-roll': '车轮滚动的路程',
+  'ex-c5-circle-packing': '长方形纸剪圆片',
+  'ex-c6-scale-area': '放大缩小的面积倍数',
+  'ex-c6-two-maps': '两种比例尺对比',
+  'ex-c7-route-path': '数对画出行走路线',
+  'ex-c7-observer-point': '两个观测点找家',
 }
 
 /** 把数值格式化为字符串：整数省略小数部分，小数去尾零 */

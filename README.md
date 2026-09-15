@@ -13,7 +13,7 @@
 | 三年级（苏教版·2022 课标） | 义务教育教科书•数学三年级上册.pdf | `g3/`（独立文件夹） | **41 个可调参数例题可视化 Lab**（24 时记时法钟面、竖式 SVG、曹冲称象、three.js 三视图、线段图等）+ 16 个训练小游戏（详见 `g3/README.md`） |
 | 四年级（苏教版·2022 课标·2026 新编） | 最新【苏教版】4年级数学课本•上册.pdf | `g4/`（独立文件夹） | **28 个可调参数例题可视化 Lab**（除法竖式试商、周长面积、数位表、大数运算等）+ 10 个训练小游戏（详见 `g4/README.md`） |
 | 五年级（苏教版·2022 课标） | 最新【苏教版】5年级数学课本•上册.pdf | `g5/`（独立文件夹） | **33 个可调参数例题可视化 Lab**（three.js 三视图可拖拽、chart.js 统计图、多边形面积剪拼等）+ 10 个训练小游戏（详见 `g5/README.md`） |
-| 六年级（苏教版·2022 课标） | 最新【苏教版】6年级数学课本•上册.pdf | `g6/`（独立文件夹） | **33 个可调参数例题可视化 Lab**（小数方格模型、圆/扇形 SVG、线段图、二进制、黄金比等）+ 12 个训练小游戏（详见 `g6/README.md`） |
+| 六年级（苏教版·2022 课标） | 最新【苏教版】6年级数学课本•上册.pdf | `g6/`（独立文件夹） | **47 个可调参数可视化 Lab**：33 个例题 Lab（小数方格模型、圆/扇形 SVG、线段图、二进制、黄金比等）+ **14 个练习题 Lab**（C1~C7 每单元 2 个，由 DeepSeek 从课本练习题判定生成，详见 `g6/README.md`）+ 12 个训练小游戏 |
 
 ---
 
@@ -82,10 +82,11 @@ math/
 │   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 2）
 │   ├── ocr/upper/book/            上册 GLM 合订正文
 │   ├── ocr/lower/                 未来下册 OCR 占位
-│   ├── data/upper/                上册 33 个可调参数 Lab 数据
+│   ├── data/upper/                上册 47 个可调参数 Lab 数据（33 例题 + 14 练习题）
+│   ├── data/upper/exercises/      练习题候选（candidates.json + briefs/，由抽取脚本生成）
 │   ├── data/lower/                未来下册 Lab 数据占位
 │   ├── game/                      六年级 Nuxt4 应用（Nuxt UI）
-│   └── docs/                      课本 OCR 与页面映射
+│   └── docs/                      课本 OCR 与页面映射 + 练习题候选清单
 ├── （…）·数学一年级上册.pdf        原始扫描 PDF（105 页）
 ├── ocr/                           共享 OCR 工具源码（各年级输出到 gX/ocr/{upper,lower}/）
 │   ├── src/ocr.swift              可执行 OCR：文字 + 整页图 + 插图自动裁剪（macOS Vision）
@@ -102,7 +103,8 @@ math/
 │   ├── verify_examples.py   一年级例题 ↔ Vision OCR 机器核对（STRONG/MEDIUM/FIG 三级证据）
 │   ├── glm_ocr_math.py      六本全量 GLM-OCR 批处理（729 页 → work/glm_ocr/）
 │   ├── verify_glm_examples.py 六本例题 ↔ GLM OCR 全量核对（→ docs/example-audit-glm.md）
-│   └── merge_book_glm.py    用 GLM 文字重建六本合订正文 gX/ocr/upper/book/
+│   ├── merge_book_glm.py    用 GLM 文字重建六本合订正文 gX/ocr/upper/book/
+│   └── extract_g6_exercises.py 六年级练习题抽取（合订正文 → candidates.json + briefs + 候选清单，供可视化适配度判定）
 └── docs/                          其他文档
     ├── example-audit.md           一年级例题逐条核对报告（Vision OCR，含需看图复核清单）
     ├── example-audit-glm.md       六本例题 ↔ GLM OCR 全量核对报告（2026-08，含 FIG 复核结论与数据修正记录）
@@ -200,8 +202,8 @@ cd g4/game && npm run test:coverage # 四年级 statements/lines/functions 100%�
 cd g4/game && npm run test:e2e      # 四年级 Playwright 6 用例
 cd g5/game && npm run test          # 五年级 105 用例全绿
 cd g5/game && npm run test:coverage # 五年级四指标均 ≥95%（99.6/96/95/99.6）
-cd g6/game && npm run test          # 六年级 130 用例全绿
-cd g6/game && npm run test:coverage # 六年级四指标均 ≥95%（100/99.17/100/100）
+cd g6/game && npm run test          # 六年级 196 用例全绿
+cd g6/game && npm run test:coverage # 六年级 statements/lines/functions 100%、branches 98.99%
 ```
 
 Node 约定：开发基线为 Node 24（见 `.nvmrc` / `.node-version`），依赖版本由仓库根 `package.json` + 根 `package-lock.json` 统一管理；各年级目录保留独立工程结构，但不再维护各自 lockfile。
@@ -299,5 +301,8 @@ npm run test:click                 # 真实点击验收 46 项（需先 npm run 
   `g1/ocr/upper/book/上册_正文.md`；数据改动跑 `npm run test`，游戏改动补跑 E2E。
 - 例题准确性回归：增改例题后跑 `python3 scripts/verify_examples.py`
   （STRONG/MEDIUM/FIG 三级证据），并同步 `docs/example-audit.md`。
+- 六年级练习题可视化：候选由 `python3 scripts/extract_g6_exercises.py` 从 GLM 合订正文重建
+  （→ `g6/data/upper/exercises/candidates.json` + `briefs/cN.md` + `g6/docs/练习题候选清单.md`）；
+  增删练习题 Lab 见 `g6/README.md`「新增一个练习题 Lab」，并同步 `docs/DEVELOPMENT.md` §7.2.1 清单。
 - 运行预览：`g1/game/` 内 `npm run dev`（PORT 3000），或 `npm run build` 后
   `PORT=3000 node .output/server/index.mjs`。

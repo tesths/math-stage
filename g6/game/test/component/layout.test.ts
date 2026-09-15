@@ -9,7 +9,7 @@ describe('layouts/default（六年级）', () => {
       slots: { default: '<p class="page-content">正文</p>' },
     })
     expect(w.findComponent(GradeShell).exists()).toBe(true)
-    expect(w.find('.uheader-title').text()).toBe('六年级数学例题可视化')
+    expect(w.find('.uheader-title').text()).toBe('六年级数学可视化')
     expect(w.find('main .page-content').text()).toBe('正文')
   })
 

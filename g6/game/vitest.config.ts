@@ -34,6 +34,8 @@ export default defineConfig({
         '!src/assets/**',
         '!src/types/**',
         '!**/*.d.ts',
+        // 纯类型模块（无运行时代码，v8 会报 0%）
+        '!src/lib/labs/types.ts',
       ],
       thresholds: {
         statements: 95,

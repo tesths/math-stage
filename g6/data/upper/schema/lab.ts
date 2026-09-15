@@ -48,8 +48,8 @@ export interface LabParam {
   unit?: string
 }
 
-/** 可视化 Lab 类型 */
-export type LabKind =
+/** 例题可视化 kind（33 种，逐例题专用；改名保留 LabKind 作为总类型） */
+export type CoreLabKind =
   // 一 小数乘法和除法（二）
   | 'mul-decimal' // 一个数乘小数（方格模型）
   | 'mul-compare' // 积与因数的大小关系
@@ -90,6 +90,31 @@ export type LabKind =
   // 七 确定位置
   | 'coordinate' // 数对
   | 'direction' // 方向与距离
+
+/**
+ * 练习题可视化 kind：分单元成组。
+ * 约定「一条练习题 = 一种 kind」——因为 compute 的 steps/conclusion 文案
+ * 与题目情境强绑定（除法/圆/比… 的情境名词不同），复用例题 kind 会造成文案与题意不符。
+ */
+export type C1ExerciseKind = 'ex-c1-div11-cycle' | 'ex-c1-pgram-area'
+export type C2ExerciseKind = 'ex-c2-overlap-club' | 'ex-c2-egg-crate'
+export type C3ExerciseKind = 'ex-c3-div-to-mul' | 'ex-c3-frac-split'
+export type C4ExerciseKind = 'ex-c4-cube-ratio' | 'ex-c4-football-ratio'
+export type C5ExerciseKind = 'ex-c5-wheel-roll' | 'ex-c5-circle-packing'
+export type C6ExerciseKind = 'ex-c6-scale-area' | 'ex-c6-two-maps'
+export type C7ExerciseKind = 'ex-c7-route-path' | 'ex-c7-observer-point'
+
+export type ExerciseLabKind =
+  | C1ExerciseKind
+  | C2ExerciseKind
+  | C3ExerciseKind
+  | C4ExerciseKind
+  | C5ExerciseKind
+  | C6ExerciseKind
+  | C7ExerciseKind
+
+/** 可视化 Lab 类型 = 例题 kind + 练习题 kind */
+export type LabKind = CoreLabKind | ExerciseLabKind
 
 export interface LabDef {
   id: string

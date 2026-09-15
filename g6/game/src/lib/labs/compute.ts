@@ -1,29 +1,22 @@
 import type { LabKind, ParamValues } from '@data/schema/lab'
+import type { LabResult, LabStep } from './types'
 import { toBinary, toFixed2, simplifyRatio, roundTo } from '@/lib/engine/math'
+import { computeExerciseLab, isExerciseKind } from './exercises'
 
-export interface LabStep {
-  expr: string
-  result: string
-}
-
-export interface LabResult {
-  /** 主结果（数字） */
-  value: number
-  /** 结果文本（带单位） */
-  text: string
-  /** 分步计算过程 */
-  steps: LabStep[]
-  /** 结论语 */
-  conclusion: string
-}
+export type { LabStep, LabResult } from './types'
 
 function fmt(v: number): string {
   return toFixed2(Math.round(v * 100000) / 100000)
 }
 
+/** 供练习题计算模块复用（保持一致的数字格式化） */
+export { fmt }
+
 const PI = 3.14
 
 export function computeLab(kind: LabKind, p: ParamValues): LabResult {
+  // 练习题 Lab（练习一…练习十四）由独立模块分派；其余为 33 种例题 kind
+  if (isExerciseKind(kind)) return computeExerciseLab(kind, p)
   switch (kind) {
     /* ============ 一 小数乘法和除法（二） ============ */
     case 'mul-decimal': {

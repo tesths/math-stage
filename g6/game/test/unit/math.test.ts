@@ -12,8 +12,8 @@ import {
 } from '@/lib/engine/math'
 
 describe('math 工具', () => {
-  it('KIND_LABELS 覆盖全部 33 种 Lab 类型', () => {
-    expect(Object.keys(KIND_LABELS)).toHaveLength(33)
+  it('KIND_LABELS 覆盖全部 47 种 Lab 类型（33 例题 + 14 练习题）', () => {
+    expect(Object.keys(KIND_LABELS)).toHaveLength(47)
     for (const v of Object.values(KIND_LABELS)) expect(v.length).toBeGreaterThan(0)
   })
 

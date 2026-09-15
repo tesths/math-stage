@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { chapters, labsOfChapter } from '@data'
-import type { ChapterId } from '@data/schema/lab'
+import type { ChapterId, LabDef } from '@data/schema/lab'
 import { KIND_LABELS } from '@/lib/engine/math'
 
 const route = useRoute()
@@ -13,6 +13,18 @@ if (!chapter.value) {
 }
 
 const labs = computed(() => labsOfChapter(chapterId.value))
+const exampleLabs = computed(() => labs.value.filter((l) => !l.kind.startsWith('ex-')))
+const exerciseLabs = computed(() => labs.value.filter((l) => l.kind.startsWith('ex-')))
+
+/** 单元内序号（跨分区连续，便于"第 n 个"定位） */
+const indexOf = (l: LabDef) => labs.value.findIndex((x) => x.id === l.id) + 1
+
+const sections = computed(() =>
+  [
+    { key: 'example', title: '例题可视化', hint: '课本例题 / 试一试 · 拖动参数实时联动', items: exampleLabs.value },
+    { key: 'exercise', title: '练习题可视化', hint: '练一练 / 练习 / 探索与实践 · 讲清算理', items: exerciseLabs.value },
+  ].filter((s) => s.items.length > 0),
+)
 </script>
 
 <template>
@@ -25,34 +37,43 @@ const labs = computed(() => labsOfChapter(chapterId.value))
         {{ chapter.icon }} {{ chapter.title }}
       </h1>
       <p class="mt-1 text-(--ui-text-muted)">{{ chapter.summary }}</p>
-      <p class="mt-1 text-sm text-(--ui-text-muted)">书页 {{ chapter.pageStart }}–{{ chapter.pageEnd }}</p>
+      <p class="mt-1 text-sm text-(--ui-text-muted)">
+        书页 {{ chapter.pageStart }}–{{ chapter.pageEnd }} · 例题 {{ exampleLabs.length }} 个 · 练习题
+        {{ exerciseLabs.length }} 个
+      </p>
     </div>
 
-    <div v-if="labs.length" class="grid gap-4 md:grid-cols-2">
-      <NuxtLink
-        v-for="(l, i) in labs"
-        :key="l.id"
-        :to="`/labs/${l.id}`"
-        class="block h-full"
-      >
-        <UCard class="h-full transition-colors hover:bg-(--ui-bg-elevated)">
-          <div class="flex items-start gap-3">
-            <span class="lab-index">{{ i + 1 }}</span>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <h3 class="font-semibold text-(--ui-text-highlighted)">{{ l.title }}</h3>
-                <UBadge size="sm" variant="subtle" color="neutral">{{ l.source }}</UBadge>
+    <section v-for="sec in sections" :key="sec.key" class="mb-8">
+      <div class="mb-3 flex items-baseline gap-2">
+        <h2 class="text-lg font-semibold text-(--ui-text-highlighted)">{{ sec.title }}</h2>
+        <span class="text-sm text-(--ui-text-muted)">{{ sec.hint }}</span>
+      </div>
+      <div class="grid gap-4 md:grid-cols-2">
+        <NuxtLink
+          v-for="l in sec.items"
+          :key="l.id"
+          :to="`/labs/${l.id}`"
+          class="block h-full"
+        >
+          <UCard class="h-full transition-colors hover:bg-(--ui-bg-elevated)">
+            <div class="flex items-start gap-3">
+              <span class="lab-index">{{ indexOf(l) }}</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-(--ui-text-highlighted)">{{ l.title }}</h3>
+                  <UBadge size="sm" variant="subtle" color="neutral">{{ l.source }}</UBadge>
+                </div>
+                <p class="mt-1 text-sm text-(--ui-text-muted)">{{ l.prompt }}</p>
+                <p class="mt-2 text-xs text-(--ui-text-toned)">
+                  {{ KIND_LABELS[l.kind] }} · 书页 {{ l.page }} ·
+                  可调参数：{{ l.params.map((p) => p.label).join('、') }}
+                </p>
               </div>
-              <p class="mt-1 text-sm text-(--ui-text-muted)">{{ l.prompt }}</p>
-              <p class="mt-2 text-xs text-(--ui-text-toned)">
-                {{ KIND_LABELS[l.kind] }} · 书页 {{ l.page }} ·
-                可调参数：{{ l.params.map((p) => p.label).join('、') }}
-              </p>
             </div>
-          </div>
-        </UCard>
-      </NuxtLink>
-    </div>
+          </UCard>
+        </NuxtLink>
+      </div>
+    </section>
   </UContainer>
 </template>
 
