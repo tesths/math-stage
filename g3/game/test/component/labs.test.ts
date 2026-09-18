@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import MixCalcLab from '@/components/labs/MixCalcLab.vue'
 import TimeLab from '@/components/labs/TimeLab.vue'
 import DivLab from '@/components/labs/DivLab.vue'
@@ -46,9 +47,27 @@ describe('Lab 组件渲染', () => {
   it('TimeLab：24 时记时法（晚上 20 时）', () => {
     const lab = findLabById('g3-c2-time24')!
     const wrapper = mount(TimeLab, { props: { lab, values: { hour: 20, min: 0 } } })
-    expect(wrapper.find('.clock-svg').exists()).toBe(true)
+    expect(wrapper.find('.clock-pair').exists()).toBe(true)
+    expect(wrapper.findAll('.clock-svg')).toHaveLength(2)
     expect(wrapper.text()).toContain('晚上')
-    expect(wrapper.text()).toContain('20:00')
+    expect(wrapper.text()).toContain('晚上8时')
+    expect(wrapper.text()).toContain('20时')
+    expect(wrapper.text()).toContain('8:00 = 20:00')
+    expect(wrapper.text()).toContain('同一时刻的三种读法')
+    expect(wrapper.findAll('.clock-num.active')).toHaveLength(2)
+  })
+
+  it('TimeLab：小时和分钟变化后钟面与时间词同步', async () => {
+    const lab = findLabById('g3-c2-time24')!
+    const wrapper = mount(TimeLab, { props: { lab, values: { hour: 20, min: 0 } } })
+
+    await wrapper.setProps({ values: { hour: 13, min: 5 } })
+    await nextTick()
+
+    expect(wrapper.text()).toContain('13时5分')
+    expect(wrapper.text()).toContain('下午1时5分')
+    expect(wrapper.text()).toContain('1:05 = 13:05')
+    expect(wrapper.findAll('.clock-num.active')).toHaveLength(2)
   })
 
   it('TimeLab：经过时间', () => {

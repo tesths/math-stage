@@ -157,15 +157,15 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const hour = Math.round(p.hour ?? 0)
       const min = Math.round(p.min ?? 0)
       const t = time12Text(hour)
-      const mm = min === 0 ? '' : `${fmt(min)} 分`
+      const readable = `${t.period}${fmt(t.display)}时${min === 0 ? '' : `${fmt(min)}分`}`
       return {
         value: hour,
-        text: `${fmt(hour)}:${String(min).padStart(2, '0')} = ${t.period}${fmt(t.display)} 时${mm}`,
+        text: `${fmt(hour)}:${String(min).padStart(2, '0')} = ${readable}`,
         steps: [
           { expr: `时针在钟面转动 2 圈`, result: `一天有 24 小时` },
-          { expr: `24 时制 ${fmt(hour)} 时`, result: `${t.period}${fmt(t.display)} 时${mm}` },
+          { expr: `24 时制 ${fmt(hour)} 时`, result: readable },
         ],
-        conclusion: hour < 12 ? `0~12 时是上午时段，${fmt(hour)} 时就是${t.period}${fmt(t.display)} 时。` : `13~24 时是下午/晚上时段，${fmt(hour)} 时减去 12，就是${t.period}${fmt(t.display)} 时。`,
+        conclusion: hour < 12 ? `0~12 时是一天的前半段，${fmt(hour)} 时就是${readable}。` : `13~23 时是下午/晚上时段，${fmt(hour)} 时减去 12，就是${readable}。`,
       }
     }
     case 'elapsed': {

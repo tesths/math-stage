@@ -42,6 +42,11 @@ describe('computeLab · 一天的时间', () => {
     expect(r.text).toContain('12')
   })
 
+  it('time24：中午与下午时间词', () => {
+    expect(computeLab('time24', { hour: 12, min: 0 }).text).toContain('中午12时')
+    expect(computeLab('time24', { hour: 13, min: 5 }).text).toContain('下午1时5分')
+  })
+
   it('elapsed：经过时间', () => {
     const r = computeLab('elapsed', { start: 9, end: 17 })
     expect(r.value).toBe(8)

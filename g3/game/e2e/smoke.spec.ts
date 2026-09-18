@@ -29,6 +29,24 @@ test('Lab 列表导航', async ({ page }) => {
   await expect(page).toHaveURL(/\/labs\/g3-c3-mul-carry/)
 })
 
+test('24 时记时法：放大钟面并同步中文时间词', async ({ page }) => {
+  await page.goto('/labs/g3-c2-time24')
+  await expect(page.locator('.clock-pair')).toBeVisible()
+  await expect(page.locator('.clock-card-title').nth(0)).toHaveText('12 时记时法')
+  await expect(page.locator('.clock-card-title').nth(1)).toHaveText('24 时记时法')
+
+  const clockBox = await page.locator('.clock-svg').first().boundingBox()
+  expect(clockBox?.width ?? 0).toBeGreaterThan(300)
+
+  await page.locator('.lab-range').nth(0).fill('13')
+  await page.locator('.lab-range').nth(1).fill('5')
+  await expect(page.locator('.reading-value').nth(1)).toHaveText('下午1时5分')
+  await expect(page.locator('.reading-value').nth(2)).toHaveText('1:05 = 13:05')
+  await expect(page.locator('.reading-value').nth(3)).toHaveText('13时5分')
+  await expect(page.locator('.result-box')).toContainText('13:05')
+  await expect(page.locator('.clock-num.active')).toHaveCount(2)
+})
+
 test('游戏页：混合运算快算', async ({ page }) => {
   await page.goto('/games/mix-quiz')
   await expect(page.getByText('先算乘除，再算加减；有小括号先算小括号里的')).toBeVisible()

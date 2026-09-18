@@ -15,8 +15,8 @@ export const c2Labs: LabDef[] = [
       { key: 'hour', label: '24 时制时刻', min: 0, max: 23, step: 1, default: 20, unit: '时' },
       { key: 'min', label: '分钟', min: 0, max: 55, step: 5, default: 0, unit: '分' },
     ],
-    formula: '24 时记时法 ↔ 普通记时法',
-    tip: '0~12 时是上午，13~23 时是下午/晚上，减 12 就是普通记时法。20 时就是晚上 8 时。',
+    formula: '24 时记时法 ↔ 12 时记时法',
+    tip: '0~12 时是一天的前半段，13~23 时减去 12 就是 12 时记时法。20 时就是晚上 8 时。',
   },
   {
     id: 'g3-c2-elapsed',
