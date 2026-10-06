@@ -40,6 +40,7 @@ export const c7Labs: LabDef[] = [
     ],
     formula: '路程 s = v × t',
     tip: '路程 = 速度 × 时间，用字母表示：s = v × t；已知其中两个量可以求出第三个量。',
+    units: { length: '米' },
   },
   {
     id: 'g5-c7-speed-train',
@@ -54,5 +55,7 @@ export const c7Labs: LabDef[] = [
       { key: 't', label: '时间', min: 1, max: 24, step: 1, default: 3, unit: '时' },
     ],
     formula: '路程 s = v × t',
+    tip: '路程 = 速度 × 时间：250 × 3 = 750（千米），速度单位是千米/时，路程单位就是千米。',
+    units: { length: '千米' },
   },
 ]

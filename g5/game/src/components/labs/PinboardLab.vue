@@ -6,53 +6,27 @@
  */
 import { computed } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import { PINBOARD_SHAPES, pickCheck, pointStatus as pinStatus } from '@/lib/labs/pinboard'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
-/** 预设多边形（顶点为格点坐标） */
-const SHAPES: { name: string; pts: [number, number][] }[] = [
-  { name: '矩形', pts: [[0, 0], [5, 0], [5, 3], [0, 3]] },
-  { name: '三角形', pts: [[0, 0], [6, 0], [2, 4]] },
-  { name: 'L 形', pts: [[0, 0], [4, 0], [4, 2], [2, 2], [2, 4], [0, 4]] },
-  { name: '五边形', pts: [[0, 0], [6, 0], [6, 2], [3, 4], [0, 2]] },
-  { name: '凹四边形', pts: [[0, 0], [5, 0], [5, 4], [2, 2], [0, 4]] },
-]
+/** 预设多边形来自共用模块（图形数据只此一份） */
+const SHAPES = PINBOARD_SHAPES
 
 const shapeIdx = computed(() => Math.round(props.values.shape ?? 0) % SHAPES.length)
 const shape = computed(() => SHAPES[shapeIdx.value]!)
 
-function gcd(a: number, b: number): number {
-  while (b) [a, b] = [b, a % b]
-  return Math.abs(a)
-}
-
-/** 鞋带公式求面积 */
-function shoelace(pts: [number, number][]): number {
-  let s = 0
-  for (let i = 0; i < pts.length; i++) {
-    const [x1, y1] = pts[i]!
-    const [x2, y2] = pts[(i + 1) % pts.length]!
-    s += x1 * y2 - x2 * y1
-  }
-  return Math.abs(s) / 2
-}
-
-/** 边上格点数（每条边 gcd(dx,dy) 之和） */
-function boundaryPins(pts: [number, number][]): number {
-  let n = 0
-  for (let i = 0; i < pts.length; i++) {
-    const [x1, y1] = pts[i]!
-    const [x2, y2] = pts[(i + 1) % pts.length]!
-    n += gcd(x2 - x1, y2 - y1)
-  }
-  return n
-}
-
-const area = computed(() => shoelace(shape.value.pts))
-const n = computed(() => boundaryPins(shape.value.pts))
-const b = computed(() => area.value - n.value / 2 + 1)
-const pickArea = computed(() => n.value / 2 + b.value - 1)
-const pickFormula = computed(() => `S = ${n.value} ÷ 2 + ${b.value} − 1 = ${pickArea.value}`)
+/**
+ * 内部钉子逐个**数**出来（边上判定 + 射线法），再用皮克定理去对鞋带公式的面积。
+ * 早期实现是 `b = 面积 − n/2 + 1` 再代回公式，等于把结论当前提，图上钉子与公式还可能对不上。
+ */
+const check = computed(() => pickCheck(shape.value.pts))
+const area = computed(() => check.value.area)
+const n = computed(() => check.value.n)
+const b = computed(() => check.value.b)
+const pickArea = computed(() => check.value.pickArea)
+const pickAgree = computed(() => check.value.ok)
+const pickFormula = computed(() => check.value.formula)
 
 /** 渲染用：缩放后的顶点（格点 1 = 40px，翻 y） */
 const CELL = 40
@@ -63,33 +37,11 @@ const viewPts = computed(() =>
 )
 const polyPoints = computed(() => viewPts.value.map((p) => `${p.x},${p.y}`).join(' '))
 
-/** 判定每个格点是否在边上/内部（含边界判定） */
-function pointStatus(px: number, py: number): 'boundary' | 'inside' | 'outside' {
-  const pts = shape.value.pts
-  // 在边上？
-  for (let i = 0; i < pts.length; i++) {
-    const [x1, y1] = pts[i]!
-    const [x2, y2] = pts[(i + 1) % pts.length]!
-    const cross = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1)
-    if (cross === 0 && px >= Math.min(x1, x2) && px <= Math.max(x1, x2) && py >= Math.min(y1, y2) && py <= Math.max(y1, y2)) {
-      return 'boundary'
-    }
-  }
-  // 射线法判断内部
-  let inside = false
-  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
-    const [xi, yi] = pts[i]!
-    const [xj, yj] = pts[j]!
-    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside
-  }
-  return inside ? 'inside' : 'outside'
-}
-
 const boardPins = computed(() => {
   const out: { x: number; y: number; st: 'boundary' | 'inside' | 'outside' }[] = []
   for (let gy = 0; gy <= 6; gy++) {
     for (let gx = 0; gx <= 8; gx++) {
-      out.push({ x: OX + gx * CELL, y: OY + gy * CELL, st: pointStatus(gx, gy) })
+      out.push({ x: OX + gx * CELL, y: OY + gy * CELL, st: pinStatus(shape.value.pts, gx, gy) })
     }
   }
   return out
@@ -143,7 +95,11 @@ const boardPins = computed(() => {
         <strong class="pick-result">{{ pickArea }}</strong>
       </div>
       <p class="pick-formula">{{ pickFormula }}</p>
-      <p class="pick-check">✓ 与数方格面积 {{ area }} 一致</p>
+      <p class="pick-check">
+        ✓ 边上 {{ n }} 个、内部 {{ b }} 个钉子都是逐个数出来的（内部用射线法判定），
+        代进公式得 {{ pickArea }}；再用鞋带公式/数方格算同一个多边形，面积也是 {{ area }}——
+        <b v-if="pickAgree">两者一致，皮克定理成立</b><b v-else>两者不一致，请检查</b>
+      </p>
     </div>
   </div>
 </template>

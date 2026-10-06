@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import { animate } from 'animejs'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -32,6 +33,11 @@ const MODELS: Record<string, [number, number, number][]> = {
 }
 const cubes = computed(() => MODELS[props.lab.id] ?? MODELS['g5-c8-views3d-blocks']!)
 
+/* ---------- 过程态：一块一块地搭，三视图同步长出来 ---------- */
+const shown = ref(cubes.value.length)
+const visibleCubes = computed(() => cubes.value.slice(0, shown.value))
+const newestIndex = computed(() => shown.value - 1)
+
 const views = [
   { key: 0, name: '前面', dir: 'front', rule: '看宽和高', axis: '宽 x 高' },
   { key: 1, name: '右面', dir: 'right', rule: '看深和高', axis: '深 x 高' },
@@ -42,7 +48,7 @@ const currentView = computed(() => views.find((v) => v.key === view.value) ?? vi
 
 /** 三个方向的投影（2D 网格点集） */
 const projections = computed(() => {
-  const cs = cubes.value
+  const cs = visibleCubes.value
   const front = new Set<string>()
   const right = new Set<string>()
   const top = new Set<string>()
@@ -72,18 +78,71 @@ const projectionCards = computed(() => [
   { ...views[1]!, cells: projRight.value },
   { ...views[2]!, cells: projTop.value },
 ])
+/** 刚刚放上那块之前的三视图（用于高亮"这一块新占了哪几格"） */
+const prevProjections = computed(() => {
+  const cs = cubes.value.slice(0, Math.max(0, shown.value - 1))
+  const front = new Set<string>()
+  const right = new Set<string>()
+  const top = new Set<string>()
+  for (const [x, y, z] of cs) {
+    front.add(`${x},${y}`)
+    right.add(`${z},${y}`)
+    top.add(`${x},${z}`)
+  }
+  return { front, right, top }
+})
+const isNewCell = (key: 'front' | 'right' | 'top', c: number, r: number) =>
+  projections.value[key].has(`${c},${3 - r}`) && !prevProjections.value[key].has(`${c},${3 - r}`)
 
 /* ---------- three.js 场景 ---------- */
 const mountRef = ref<HTMLDivElement | null>(null)
 let renderer: THREE.WebGLRenderer | null = null
 let scene: THREE.Scene | null = null
+let cubeGroup: THREE.Group | null = null
+
+const CUBE_COLORS = [0x10b981, 0x34d399, 0x059669, 0x6ee7b7, 0x14b8a6]
+/** 按当前 shown 重建方块（搭积木过程态：三视图与三维模型同步） */
+function fillCubeGroup() {
+  if (!cubeGroup) return
+  cubeGroup.clear()
+  for (const [i, [x, y, z]] of visibleCubes.value.entries()) {
+    const geo = new THREE.BoxGeometry(0.98, 0.98, 0.98)
+    const mat = new THREE.MeshStandardMaterial({
+      color: CUBE_COLORS[i % CUBE_COLORS.length]!,
+      roughness: 0.45,
+      metalness: 0.05,
+    })
+    const mesh = new THREE.Mesh(geo, mat)
+    mesh.position.set(x, y, z)
+    const edges = new THREE.EdgesGeometry(geo)
+    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x0f172a }))
+    mesh.add(line)
+    cubeGroup.add(mesh)
+  }
+}
+
+function placeOne() {
+  if (shown.value >= cubes.value.length) return
+  shown.value += 1
+  fillCubeGroup()
+  const c = centerOf()
+  controls?.target.copy(c)
+  playClick()
+}
+function resetBuild() {
+  shown.value = 1
+  fillCubeGroup()
+  const c = centerOf()
+  controls?.target.copy(c)
+  playClick()
+}
 let camera: THREE.PerspectiveCamera | null = null
 let controls: OrbitControls | null = null
 let raf = 0
 let resizeObs: ResizeObserver | null = null
 
 function centerOf(): THREE.Vector3 {
-  const cs = cubes.value
+  const cs = visibleCubes.value.length ? visibleCubes.value : cubes.value
   let cx = 0
   let cy = 0
   let cz = 0
@@ -155,22 +214,10 @@ onMounted(() => {
   grid.position.y = -0.51
   scene.add(grid)
 
-  // 方块
-  const colors = [0x10b981, 0x34d399, 0x059669, 0x6ee7b7, 0x14b8a6]
-  for (const [i, [x, y, z]] of cubes.value.entries()) {
-    const geo = new THREE.BoxGeometry(0.98, 0.98, 0.98)
-    const mat = new THREE.MeshStandardMaterial({
-      color: colors[i % colors.length]!,
-      roughness: 0.45,
-      metalness: 0.05,
-    })
-    const mesh = new THREE.Mesh(geo, mat)
-    mesh.position.set(x, y, z)
-    const edges = new THREE.EdgesGeometry(geo)
-    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x0f172a }))
-    mesh.add(line)
-    scene.add(mesh)
-  }
+  // 方块（放进一个 Group，搭积木时可以整组重建）
+  cubeGroup = new THREE.Group()
+  scene.add(cubeGroup)
+  fillCubeGroup()
 
   controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
@@ -193,6 +240,11 @@ onMounted(() => {
 })
 
 watch(view, (v) => setCameraFor(v))
+// 换模型时重置搭建进度
+watch(cubes, () => {
+  shown.value = cubes.value.length
+  fillCubeGroup()
+})
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
@@ -249,11 +301,22 @@ onBeforeUnmount(() => {
             width="24"
             height="24"
             class="proj-cell"
-            :class="{ filled: cell.filled }"
+            :class="{ filled: cell.filled, fresh: cell.filled && isNewCell(card.key === 0 ? 'front' : card.key === 1 ? 'right' : 'top', cell.c, cell.r) }"
           />
         </svg>
         <p class="proj-rule">{{ card.axis }} · {{ card.rule }}</p>
       </div>
+    </div>
+    <div class="build-bar">
+      <UButton size="sm" color="primary" :disabled="shown >= cubes.length" @click="placeOne">
+        再放一块
+      </UButton>
+      <UButton size="sm" variant="outline" color="neutral" :disabled="shown <= 1" @click="resetBuild">
+        只剩一块
+      </UButton>
+      <span class="build-note">
+        已放 <b>{{ shown }}</b> / {{ cubes.length }} 块{{ shown < cubes.length ? '：再放一块，看哪几个视图会多出格子' : '：模型搭好了，橙色格子是最后一块新占的位置' }}
+      </span>
     </div>
     <p class="note">🖱️ 拖拽旋转 3D 场景 · 点击按钮切换观察方向 · 从不同方向看，看到的图形可能不同</p>
   </div>
@@ -297,6 +360,24 @@ onBeforeUnmount(() => {
 .guide-label {
   color: var(--ui-primary);
   font-weight: 800;
+}
+.build-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.build-note {
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+}
+.build-note b {
+  color: var(--ui-primary);
+}
+.proj-cell.fresh {
+  fill: #f59e0b;
+  stroke: #b45309;
 }
 .proj-row {
   display: flex;

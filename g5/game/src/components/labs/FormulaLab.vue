@@ -1,35 +1,70 @@
 <script setup lang="ts">
 /**
  * 用字母表示数量关系 Lab：青蛙歌 / 正方形 / 路程
- * 参数代入字母式，直观展示数量关系
+ *
+ * 三处对齐课本与量纲的改动：
+ * - 青蛙歌：把 emoji 换成「能看到 2 只眼睛、4 条腿」的青蛙图形（n ≤ 12），并给出 1…5 的规律表，
+ *   让学生自己看出「眼睛 = 2n、腿 = 4n」。
+ * - 正方形：格子边长按**最大边长**定比例（原来 a>8 后图形被卡在 260px 不再变化），
+ *   并把周长画成 4 条边、面积画成 a×a 个单位格，C = 4a、S = a² 都能从图上读出来。
+ * - 路程：修掉「s = 45 米/分」的单位错误（路程单位应从速度单位里取出），并把 s = v × t
+ *   画成 t 段、每段 v 的分段累加轨迹。
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import { distanceUnit, frogCounts, frogRows, segmentLayout, speedSegments, squareCell, timeUnit } from '@/lib/labs/number'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
 const kind = computed(() => props.lab.kind)
 
-/* 青蛙歌 */
-const n = computed(() => Math.round(props.values.n ?? 0))
-const frogs = computed(() => Array.from({ length: Math.min(n.value, 20) }, (_, i) => i + 1))
+/* ---------- 青蛙歌 ---------- */
+const n = computed(() => Math.max(1, Math.round(props.values.n ?? 1)))
+const counts = computed(() => frogCounts(n.value))
+const MAX_DRAWN = 12
+const drawnFrogs = computed(() => Array.from({ length: Math.min(n.value, MAX_DRAWN) }, (_, i) => i + 1))
+const patternRows = computed(() => frogRows(5))
+const showNRow = computed(() => n.value > 5)
 
-/* 正方形 */
-const a = computed(() => props.values.a ?? 0)
+/* ---------- 正方形 ---------- */
+const a = computed(() => Math.max(1, Math.round(props.values.a ?? 1)))
+const maxA = computed(() => Math.max(...props.lab.params.filter((p) => p.key === 'a').map((p) => p.max), a.value))
+const SQ_BOX = 236
+const cell = computed(() => squareCell(a.value, maxA.value, SQ_BOX))
+const sidePx = computed(() => a.value * cell.value)
+const sqX = computed(() => (300 - sidePx.value) / 2)
+const sqY = computed(() => (300 - sidePx.value) / 2 + 8)
 const perimeter = computed(() => 4 * a.value)
 const squareArea = computed(() => a.value * a.value)
-const gridSize = 320
-const cell = computed(() => gridSize / Math.max(a.value, 1))
-/** 边长封顶 260，保证图形与文字都在 viewBox 内 */
-const drawSize = computed(() => Math.min(a.value * cell.value, 260))
-const sqX = computed(() => (340 - drawSize.value) / 2)
-const sqY = computed(() => (320 - drawSize.value) / 2)
+const gridLines = computed(() => Array.from({ length: Math.max(0, a.value - 1) }, (_, i) => (i + 1) * cell.value))
 
-/* 路程 */
+/* ---------- 路程 ---------- */
 const v = computed(() => props.values.v ?? 0)
-const t = computed(() => props.values.t ?? 0)
+const t = computed(() => Math.max(1, Math.round(props.values.t ?? 1)))
 const s = computed(() => v.value * t.value)
-const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.unit ?? '米/分')
+const vUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.unit ?? '米/分')
+const dUnit = computed(() => distanceUnit(vUnit.value))
+const tUnit = computed(() => props.lab.params.find((p) => p.key === 't')?.unit ?? timeUnit(vUnit.value))
+const TRACK_X0 = 30
+const TRACK_W = 400
+const layout = computed(() => segmentLayout(v.value, t.value, TRACK_W))
+const seg = computed(() => speedSegments(v.value, t.value, layout.value.shownSegments))
+const carX = ref(0)
+const moving = ref(false)
+function runMove() {
+  moving.value = true
+  carX.value = TRACK_W
+  playClick()
+  setTimeout(() => {
+    moving.value = false
+  }, 900)
+}
+function resetMove() {
+  carX.value = 0
+  moving.value = false
+  playClick()
+}
 </script>
 
 <template>
@@ -37,61 +72,132 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
     <!-- 青蛙歌 -->
     <template v-if="kind === 'frog'">
       <div class="frog-area">
-        <span v-for="i in frogs" :key="i" class="frog">🐸</span>
-        <span v-if="n > 20" class="frog-more">…共 {{ n }} 只</span>
+        <svg v-for="i in drawnFrogs" :key="i" viewBox="0 0 40 38" class="frog">
+          <ellipse cx="20" cy="22" rx="13" ry="10" class="frog-body" />
+          <circle cx="13" cy="10" r="5" class="frog-eye" />
+          <circle cx="27" cy="10" r="5" class="frog-eye" />
+          <circle cx="13" cy="10" r="2.2" class="frog-pupil" />
+          <circle cx="27" cy="10" r="2.2" class="frog-pupil" />
+          <path d="M 14 24 Q 20 29 26 24" class="frog-mouth" />
+          <path d="M 9 29 L 4 35" class="frog-leg" />
+          <path d="M 31 29 L 36 35" class="frog-leg" />
+          <path d="M 15 32 L 14 37" class="frog-leg" />
+          <path d="M 25 32 L 26 37" class="frog-leg" />
+        </svg>
+        <span v-if="n > MAX_DRAWN" class="frog-more">…共 {{ n }} 只</span>
       </div>
       <div class="frog-counts">
         <div class="count-box">
-          <p class="count-num">{{ n }}</p>
-          <p class="count-label">张嘴</p>
+          <p class="count-num">{{ counts.mouths }}</p>
+          <p class="count-label">张嘴（n）</p>
         </div>
         <div class="count-box">
-          <p class="count-num">{{ 2 * n }}</p>
-          <p class="count-label">只眼睛（2n）</p>
+          <p class="count-num">{{ counts.eyes }}</p>
+          <p class="count-label">只眼睛（2 × {{ n }}）</p>
         </div>
         <div class="count-box">
-          <p class="count-num">{{ 4 * n }}</p>
-          <p class="count-label">条腿（4n）</p>
+          <p class="count-num">{{ counts.legs }}</p>
+          <p class="count-label">条腿（4 × {{ n }}）</p>
         </div>
       </div>
+      <table class="pattern-table" aria-label="青蛙歌规律表">
+        <thead>
+          <tr><th>只数</th><th>嘴</th><th>眼睛</th><th>腿</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in patternRows" :key="r.n" :class="{ active: r.n === n }">
+            <td>{{ r.n }}</td><td>{{ r.mouths }}</td><td>{{ r.eyes }}</td><td>{{ r.legs }}</td>
+          </tr>
+          <tr v-if="showNRow" class="active">
+            <td>n = {{ n }}</td><td>{{ counts.mouths }}</td><td>{{ counts.eyes }}</td><td>{{ counts.legs }}</td>
+          </tr>
+        </tbody>
+      </table>
       <p class="formula-line">n 只青蛙 → n 张嘴，<b>2n</b> 只眼睛，<b>4n</b> 条腿</p>
     </template>
 
     <!-- 正方形 -->
     <template v-else-if="kind === 'square'">
-      <svg viewBox="0 0 340 320" class="w-full">
-        <rect :x="sqX" :y="sqY" :width="drawSize" :height="drawSize" class="square-fill" rx="3" />
-        <text :x="170" :y="sqY - 12" text-anchor="middle" class="dim-label">
-          边长 a = {{ a }} 厘米
-        </text>
-        <text :x="sqX + drawSize + 10" :y="170 + 4" class="dim-label">a</text>
-        <text :x="170" :y="170" text-anchor="middle" class="area-label">
-          S = a × a = {{ squareArea }}
+      <svg viewBox="0 0 300 300" class="w-full">
+        <rect :x="sqX" :y="sqY" :width="sidePx" :height="sidePx" class="square-fill" rx="2" />
+        <!-- 面积：a × a 个单位格 -->
+        <g v-if="cell >= 8" class="square-grid">
+          <line v-for="i in gridLines" :key="'v' + i" :x1="sqX + i" :y1="sqY" :x2="sqX + i" :y2="sqY + sidePx" />
+          <line v-for="j in gridLines" :key="'h' + j" :x1="sqX" :y1="sqY + j" :x2="sqX + sidePx" :y2="sqY + j" />
+        </g>
+        <!-- 周长：4 条边分别标出 -->
+        <rect :x="sqX" :y="sqY" :width="sidePx" :height="sidePx" class="square-outline" rx="2" />
+        <text :x="sqX + sidePx / 2" :y="sqY - 8" text-anchor="middle" class="dim-label">上边 a = {{ a }}</text>
+        <text :x="sqX + sidePx / 2" :y="sqY + sidePx + 18" text-anchor="middle" class="dim-label">下边 a = {{ a }}</text>
+        <text :x="sqX - 8" :y="sqY + sidePx / 2" text-anchor="end" class="dim-label">a = {{ a }}</text>
+        <text :x="sqX + sidePx + 8" :y="sqY + sidePx / 2" class="dim-label">a = {{ a }}</text>
+        <text :x="sqX + sidePx / 2" :y="sqY + sidePx / 2 + 5" text-anchor="middle" class="area-label">
+          a × a = {{ squareArea }}
         </text>
       </svg>
       <div class="formula-row">
-        <span class="formula-chip">C = 4a = {{ perimeter }} 厘米</span>
-        <span class="formula-chip">S = a² = {{ squareArea }} 平方厘米</span>
+        <span class="formula-chip">周长 C = a+a+a+a = 4a = {{ perimeter }} 厘米</span>
+        <span class="formula-chip primary">面积 S = a × a = a² = {{ squareArea }} 平方厘米</span>
       </div>
+      <p class="verify-line">
+        ✓ 边长为 {{ a }} 厘米：周长 = 4 × {{ a }} = {{ perimeter }} 厘米；面积 = {{ a }} × {{ a }} = {{ squareArea }} 平方厘米（图上有 {{ squareArea }} 个单位格）
+      </p>
     </template>
 
     <!-- 路程 -->
     <template v-else>
-      <svg viewBox="0 0 360 240" class="w-full">
-        <line x1="20" y1="150" x2="340" y2="150" class="road" />
-        <line v-for="i in 13" :key="i" :x1="20 + i * 25" :y1="150" :x2="20 + i * 25" :y2="158" class="road-mark" />
-        <circle v-for="i in 13" :key="'c' + i" :cx="20 + i * 25" :cy="140" r="2.5" class="dist-dot" />
-        <text x="10" y="132" class="road-label">0</text>
-        <text x="238" y="132" class="road-label">s = {{ s }} {{ speedUnit }}</text>
-        <g :style="{ transform: `translate(${Math.min(320, s * 2.6)}px, 0)`, transition: 'transform .5s' }">
-          <text x="0" y="120" font-size="34">🚗</text>
+      <svg viewBox="0 0 460 200" class="w-full">
+        <!-- 分段轨迹：t 段，每段 v -->
+        <line :x1="TRACK_X0" y1="130" :x2="TRACK_X0 + TRACK_W" y2="130" class="road" />
+        <g v-for="k in layout.shownSegments" :key="'sg' + k">
+          <line
+            :x1="TRACK_X0 + (k - 1) * layout.segPx"
+            y1="130"
+            :x2="TRACK_X0 + k * layout.segPx"
+            y2="130"
+            class="seg-line"
+            :class="{ alt: k % 2 === 0 }"
+          />
+          <line :x1="TRACK_X0 + (k - 1) * layout.segPx" y1="122" :x2="TRACK_X0 + (k - 1) * layout.segPx" y2="138" class="seg-tick" />
+          <text
+            :x="TRACK_X0 + (k - 0.5) * layout.segPx"
+            y="118"
+            text-anchor="middle"
+            class="seg-label"
+          >
+            {{ v }} {{ dUnit }}
+          </text>
+          <text :x="TRACK_X0 + k * layout.segPx" y="152" text-anchor="middle" class="seg-cum">{{ k * v }}</text>
+        </g>
+        <line :x1="TRACK_X0 + layout.shownSegments * layout.segPx" y1="122" :x2="TRACK_X0 + layout.shownSegments * layout.segPx" y2="138" class="seg-tick" />
+        <text :x="TRACK_X0" y="170" class="road-label">0</text>
+        <text :x="TRACK_X0 + TRACK_W" y="170" text-anchor="end" class="road-label">
+          共 {{ t }} 段 × {{ v }} {{ dUnit }} = s = {{ s }} {{ dUnit }}
+        </text>
+        <text v-if="layout.restSegments > 0" :x="TRACK_X0 + TRACK_W" y="186" text-anchor="end" class="road-label">
+          （图上只画了前 {{ layout.shownSegments }} 段，还有 {{ layout.restSegments }} 段同样长）
+        </text>
+        <!-- 车 -->
+        <g :style="{ transform: `translate(${carX}px, 0)`, transition: 'transform .8s ease-out' }">
+          <text :x="TRACK_X0 - 12" y="124" font-size="26">🚗</text>
         </g>
       </svg>
       <div class="formula-row">
-        <span class="formula-chip">速度 v = {{ v }} {{ speedUnit }}</span>
-        <span class="formula-chip">时间 t = {{ t }} 分</span>
-        <span class="formula-chip primary">路程 s = v × t = {{ s }} {{ speedUnit }}</span>
+        <span class="formula-chip">速度 v = {{ v }} {{ vUnit }}</span>
+        <span class="formula-chip">时间 t = {{ t }} {{ tUnit }}</span>
+        <span class="formula-chip primary">路程 s = v × t = {{ s }} {{ dUnit }}</span>
       </div>
+      <div class="controls">
+        <UButton size="sm" color="primary" variant="soft" icon="i-heroicons-arrow-right" @click="runMove">
+          {{ moving ? '行驶中…' : '走一走 · 看路程累加' }}
+        </UButton>
+        <UButton v-if="carX > 0" size="sm" variant="outline" color="neutral" @click="resetMove">复位</UButton>
+        <span class="verify-line">
+          ✓ 每{{ tUnit }}行 {{ v }} {{ dUnit }}，行 {{ t }} {{ tUnit }} 就是 {{ t }} 个 {{ v }} 相加：
+          {{ Array.from({ length: Math.min(t, 8) }, () => v).join(' + ') }}{{ t > 8 ? ' + …' : '' }} = {{ s }} {{ dUnit }}
+        </span>
+      </div>
+      <p class="note">路程 = 速度 × 时间，用字母表示：s = v × t</p>
     </template>
   </div>
 </template>
@@ -100,23 +206,53 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
 .formula-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.7rem;
   align-items: center;
   min-height: 320px;
   justify-content: center;
+  width: 100%;
+}
+.formula-wrap svg {
+  max-width: 560px;
+  height: auto;
 }
 .frog-area {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 0.35rem;
   max-width: 588px;
   justify-content: center;
+  align-items: flex-end;
 }
 .frog {
-  font-size: 1.7rem;
+  width: 44px;
+  height: 42px;
+}
+.frog-body {
+  fill: color-mix(in srgb, var(--ui-primary) 45%, white);
+  stroke: var(--ui-primary);
+  stroke-width: 1.6;
+}
+.frog-eye {
+  fill: white;
+  stroke: var(--ui-primary);
+  stroke-width: 1.2;
+}
+.frog-pupil {
+  fill: var(--ui-text-highlighted);
+}
+.frog-mouth {
+  fill: none;
+  stroke: var(--ui-primary);
+  stroke-width: 1.2;
+}
+.frog-leg {
+  stroke: var(--ui-primary);
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
 .frog-more {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: var(--ui-text-muted);
   align-self: center;
 }
@@ -140,6 +276,27 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
   font-size: 0.8rem;
   color: var(--ui-text-muted);
 }
+.pattern-table {
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+.pattern-table th,
+.pattern-table td {
+  border: 1px solid var(--ui-border);
+  padding: 0.15rem 0.7rem;
+  text-align: center;
+  color: var(--ui-text-toned);
+}
+.pattern-table th {
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-muted);
+  font-weight: 700;
+}
+.pattern-table tr.active td {
+  background: color-mix(in srgb, var(--ui-primary) 15%, transparent);
+  color: var(--ui-primary);
+  font-weight: 800;
+}
 .formula-line {
   font-size: 1.05rem;
   color: var(--ui-text-highlighted);
@@ -148,13 +305,20 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
   color: var(--ui-primary);
 }
 .square-fill {
-  fill: color-mix(in srgb, var(--ui-primary) 45%, white);
+  fill: color-mix(in srgb, var(--ui-primary) 40%, white);
+  transition: all 0.35s;
+}
+.square-outline {
+  fill: none;
   stroke: var(--ui-primary);
-  stroke-width: 2;
-  transition: all 0.4s;
+  stroke-width: 2.4;
+}
+.square-grid line {
+  stroke: color-mix(in srgb, var(--ui-primary) 45%, white);
+  stroke-width: 0.8;
 }
 .area-label {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   fill: var(--ui-text-highlighted);
 }
@@ -164,11 +328,13 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
   fill: var(--ui-text-muted);
   font-weight: 600;
 }
-.formula-row {
+.formula-row,
+.controls {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
 }
 .formula-chip {
   border-radius: 9999px;
@@ -184,15 +350,42 @@ const speedUnit = computed(() => props.lab.params.find((p) => p.key === 'v')?.un
   color: var(--ui-primary);
   font-weight: 700;
 }
+.verify-line {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+}
+.note {
+  font-size: 0.85rem;
+  color: var(--ui-text-toned);
+  text-align: center;
+}
 .road {
   stroke: var(--ui-text-muted);
-  stroke-width: 4;
+  stroke-width: 3;
 }
-.road-mark {
+.seg-line {
+  stroke: var(--ui-primary);
+  stroke-width: 6;
+}
+.seg-line.alt {
+  stroke: color-mix(in srgb, var(--ui-primary) 55%, white);
+}
+.seg-tick {
   stroke: var(--ui-text-muted);
-  stroke-width: 2;
+  stroke-width: 1.5;
 }
-.dist-dot {
+.seg-label {
+  font-size: 11px;
+  fill: #b45309;
+  font-weight: 700;
+}
+.seg-cum {
+  font-size: 11px;
   fill: var(--ui-primary);
+  font-weight: 800;
 }
 </style>

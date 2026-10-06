@@ -83,6 +83,17 @@ export type LabKind =
   // 八 观察物体（三）
   | 'views3d' // three.js 三视图
 
+/**
+ * 可视化量纲声明。
+ * - `length`：图形上长度量的真实单位（米 / 分米 / 厘米 / 千米…），用于结果文案与尺寸标注。
+ * - `cellSize`：方格模型中「每格代表的真实长度」。有值时结果同时给出「格数」与真实面积，
+ *   避免把 6 格 × 4 格 直接说成 24 平方米这类单位误导（课本原题是 60 米 × 40 米 = 2400 平方米）。
+ */
+export interface LabUnits {
+  length: string
+  cellSize?: number
+}
+
 export interface LabDef {
   id: string
   chapter: ChapterId
@@ -101,6 +112,8 @@ export interface LabDef {
   formula: string
   /** 教学提示 */
   tip?: string
+  /** 量纲声明（真实单位 / 每格代表的长度） */
+  units?: LabUnits
 }
 
 /** 参数表类型：key → 当前值 */

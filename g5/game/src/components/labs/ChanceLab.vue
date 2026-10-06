@@ -7,6 +7,7 @@ import { computed, ref } from 'vue'
 import { animate } from 'animejs'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { playClick, playCorrect } from '@/lib/sound'
+import { ballProbability, normalizeFractions, pickSector, sectorKeyAt, spinTarget, tallyChars as tallyOf } from '@/lib/labs/chance'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -18,57 +19,49 @@ const blue = computed(() => props.values.blue ?? 30)
 const yellow = computed(() => props.values.yellow ?? 20)
 const sum = computed(() => red.value + blue.value + yellow.value)
 const sectors = computed(() => {
-  const s = sum.value || 1
+  const fracs = normalizeFractions([red.value, blue.value, yellow.value])
   return [
-    { key: 'red', label: '红', frac: red.value / s, color: '#ef4444' },
-    { key: 'blue', label: '蓝', frac: blue.value / s, color: '#3b82f6' },
-    { key: 'yellow', label: '黄', frac: yellow.value / s, color: '#eab308' },
+    { key: 'red', label: '红', frac: fracs[0]!, color: '#ef4444' },
+    { key: 'blue', label: '蓝', frac: fracs[1]!, color: '#3b82f6' },
+    { key: 'yellow', label: '黄', frac: fracs[2]!, color: '#eab308' },
   ]
 })
 const needleAngle = ref(0)
+/** 指针角度累加基准：每次转动在基准上加整圈，保证指针只会向前转 */
+const spinBase = ref(0)
 const spinning = ref(false)
 const spinCounts = ref<Record<string, number>>({ red: 0, blue: 0, yellow: 0 })
+const spinTotal = computed(() => spinCounts.value.red! + spinCounts.value.blue! + spinCounts.value.yellow!)
 
 function spin() {
   if (spinning.value) return
   spinning.value = true
   playClick()
-  // 加权随机选落点
-  const r = Math.random()
-  let acc = 0
-  let targetFrac = 0
-  for (const s of sectors.value) {
-    acc += s.frac
-    if (r <= acc) {
-      targetFrac = acc - s.frac + s.frac / 2 // 扇区中心（0~1）
-      break
-    }
-  }
+  // 加权随机选落点（扇区中心）
+  const picked = pickSector(Math.random(), sectors.value)
   const turns = 4 + Math.floor(Math.random() * 3)
-  const targetDeg = 360 * targetFrac + 360 * turns
+  // 目标 = 累加基准 + 整圈 + 扇区中心；指针永远向前转
+  const next = spinTarget(spinBase.value, picked.centerFrac, turns)
+  const landedKey = sectorKeyAt(sectors.value, next.target / 360)
   animate(needleAngle, {
-    value: targetDeg,
+    value: next.target,
     duration: 1600,
     easing: 'cubicOut',
     update: () => {
       needleAngle.value = Math.round(needleAngle.value)
     },
     complete: () => {
+      needleAngle.value = next.target
+      spinBase.value = next.base
       spinning.value = false
-      const landed = Math.round((needleAngle.value % 360) / 360 * 100) / 100
-      let acc2 = 0
-      let key = 'red'
-      for (const s of sectors.value) {
-        acc2 += s.frac
-        if (landed <= acc2) {
-          key = s.key
-          break
-        }
-      }
-      spinCounts.value[key] = (spinCounts.value[key] ?? 0) + 1
+      spinCounts.value[landedKey] = (spinCounts.value[landedKey] ?? 0) + 1
       playCorrect()
     },
   })
+}
+function resetSpins() {
+  spinCounts.value = { red: 0, blue: 0, yellow: 0 }
+  playClick()
 }
 
 function sectorPath(cx: number, cy: number, r: number, startFrac: number, frac: number): string {
@@ -108,14 +101,9 @@ function resetDraws() {
   results.value = []
 }
 
-function tallyChars(n: number): string {
-  let out = ''
-  const full = Math.floor(n / 5)
-  for (let i = 0; i < full; i++) out += '正'
-  const rem = n % 5
-  if (rem) out += ['一', '丅', '下', '正'][rem - 1]!
-  return out || '—'
-}
+const tallyChars = tallyOf
+/** 理论概率 */
+const theory = computed(() => ballProbability(redBalls.value, yellowBalls.value))
 </script>
 
 <template>
@@ -156,11 +144,21 @@ function tallyChars(n: number): string {
               class="spin-stat"
               :style="{ color: s.color }"
             >
-              {{ s.label }}：{{ spinCounts[s.key] }} 次
+              {{ s.label }}：{{ spinCounts[s.key] }} 次{{
+                spinTotal > 0 ? `（${((spinCounts[s.key]! / spinTotal) * 100).toFixed(0)}%，理论上 ${Math.round(s.frac * 100)}%）` : ''
+              }}
             </p>
           </div>
+          <UButton size="sm" variant="outline" color="neutral" :disabled="spinning || spinTotal === 0" @click="resetSpins">
+            清零
+          </UButton>
         </div>
       </div>
+      <p v-if="spinTotal > 0" class="verify-line">
+        ✓ 共转 {{ spinTotal }} 次：红 {{ spinCounts.red }} 次、蓝 {{ spinCounts.blue }} 次、黄 {{ spinCounts.yellow }} 次；
+        与理论可能性（红 {{ Math.round(sectors[0]!.frac * 100) }}% / 蓝 {{ Math.round(sectors[1]!.frac * 100) }}% / 黄
+        {{ Math.round(sectors[2]!.frac * 100) }}%）比较：转的次数越多，频率越接近它
+      </p>
       <p class="note">
         各颜色区域占的面积越大，指针停在那里的可能性越大（当前红
         {{ Math.round((red / sum) * 100) }}% / 蓝 {{ Math.round((blue / sum) * 100) }}% / 黄
@@ -233,6 +231,16 @@ function tallyChars(n: number): string {
   align-items: center;
   min-height: 320px;
   justify-content: center;
+}
+.verify-line {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  text-align: center;
+  max-width: 44rem;
 }
 .spinner-row {
   display: flex;

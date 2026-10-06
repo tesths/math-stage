@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { computeLab, isPrimeNum } from '@/lib/labs/compute'
-import { allLabs } from '@data'
+import { allLabs, findLabById } from '@data'
 import { factorsOf, isPrime, primesUpTo, gcd, lcm, areaOf } from '@/lib/engine/math'
 
 describe('math 工具', () => {
@@ -42,9 +42,18 @@ describe('computeLab 各 kind', () => {
     expect(r.text).toContain('顺时针')
   })
 
-  it('area：梯形面积', () => {
-    const r = computeLab('area', { a: 36, b: 54, h: 40, shape: 2 })
+  it('area：梯形麦田面积带平方米单位', () => {
+    const lab = findLabById('g5-c3-area-mcfield')!
+    const r = computeLab('area', { a: 36, b: 54, h: 40, shape: 2 }, lab)
     expect(r.value).toBe(1800)
+    expect(r.text).toBe('1800 平方米')
+  })
+
+  it('area：平行四边形同时给出格数与真实面积', () => {
+    const lab = findLabById('g5-c3-area-parallelogram')!
+    const r = computeLab('area', { a: 6, h: 4, slant: 1, shape: 0 }, lab)
+    expect(r.value).toBe(24)
+    expect(r.text).toBe('24 格 = 2400 平方米')
   })
 
   it('hectare：100 米边长 = 1 公顷', () => {
@@ -121,9 +130,32 @@ describe('computeLab 各 kind', () => {
     expect(r.text).toContain('面积 25')
   })
 
+  it('speed：单位由 Lab 的 units 决定（米 / 千米）', () => {
+    const car = findLabById('g5-c7-speed-car')!
+    const train = findLabById('g5-c7-speed-train')!
+    expect(computeLab('speed', { v: 15, t: 3 }, car).text).toBe('45 米')
+    expect(computeLab('speed', { v: 250, t: 3 }, train).text).toBe('750 千米')
+    expect(computeLab('speed', { v: 250, t: 3 }, train).conclusion).toContain('750 千米')
+  })
+
   it('speed：15 × 3 = 45', () => {
     const r = computeLab('speed', { v: 15, t: 3 })
     expect(r.value).toBe(45)
+  })
+
+  it('pinboard：与组件共用图形数据，矩形 5×3 得 n=16、b=8、面积 15', () => {
+    const r = computeLab('pinboard', { shape: 0 })
+    expect(r.value).toBe(15)
+    expect(r.text).toBe('矩形面积 = 15（格）')
+    expect(r.steps[0]!.expr).toContain('边上 n = 16')
+    expect(r.steps[0]!.expr).toContain('内部 b = 8')
+    expect(r.steps[1]!.result).toBe('16 ÷ 2 + 8 − 1 = 15')
+    expect(r.steps[2]!.result).toContain('两种算法一致')
+    // 5 个图形都要自洽
+    for (let i = 0; i < 5; i++) {
+      const ri = computeLab('pinboard', { shape: i })
+      expect(ri.steps[2]!.result).toContain('一致')
+    }
   })
 
   it('pinboard：皮克定理', () => {
@@ -185,9 +217,9 @@ describe('computeLab 分支覆盖', () => {
     expect(trap.conclusion).toContain('梯形')
   })
 
-  it('area：带单位参数显示平方米', () => {
-    const r = computeLab('area', { a: 6, h: 4, shape: 0, unit: 1 })
-    expect(r.text).toContain('平方米')
+  it('area：未声明 units 时退回「格」', () => {
+    const r = computeLab('area', { a: 6, h: 4, shape: 0 })
+    expect(r.text).toBe('24 平方格')
   })
 
   it('hectare：非 100 米边长的换算结论', () => {

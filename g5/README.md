@@ -89,6 +89,18 @@ npm run build        # 构建（nitro preset: cloudflare-pages，可部署 Pages
 - 书页 = PDF 页 - 2；OCR 脚本 `ocr/src/ocr.swift` 支持第 5 参数指定输出目录，
   五年级产物在 `g5/ocr/upper/pages`，勿与一年级 `g1/ocr/upper/pages` 混淆。
 
+## 可视化质量与回归证据
+
+- 纯几何（剪拼、平移/旋转/轴对称）抽到 `game/src/lib/labs/area.ts`、`motion.ts`，由
+  `test/unit/area-geometry.test.ts`、`test/unit/motion-geometry.test.ts` 用坐标/鞋带公式断言；
+  例如「剪下的直角三角形向左平移**一个底**后，顶点与左侧缺口完全重合」有断言兜底。
+- 数据层的 `units`（真实长度单位 / 每格代表的长度）决定结果文案：平行四边形的 24 格必须写成
+  「24 格 = 2400 平方米」，梯形麦田必须是「1800 平方米」而不是「1800 格」。
+- 截图回归：`node scripts/visual-shots.mjs --base http://localhost:3105 --grade g5 --all-labs`
+  输出初始态 `<id>.png` 与过程态 `<id>-act.png`（自动点击「剪一剪/拼一拼/数一数方格/对折验证」）。
+- 逐题改动清单、数学错因与验证证据：[`docs/example-visual-improvements.md`](../docs/example-visual-improvements.md)；
+  调研结论：[`docs/research/`](../docs/research/)。
+
 ## 新增一个 Lab
 
 1. 在 `g5/data/upper/chapters/cN.ts` 加一条 `LabDef`（含 params 滑块定义、formula、可选 fixed 常量）。

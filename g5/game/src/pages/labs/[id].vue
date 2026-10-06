@@ -31,7 +31,7 @@ function resetParams() {
   playClick()
 }
 
-const result = computed(() => computeLab(lab.value!.kind, values))
+const result = computed(() => computeLab(lab.value!.kind, values, lab.value))
 
 /** animejs：结果变化时数值滚动 + 结果框弹跳 + 步骤交错淡入 */
 const resultBoxRef = ref<HTMLElement | null>(null)

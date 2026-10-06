@@ -1,10 +1,18 @@
 <script setup lang="ts">
 /**
- * 测量与单位 Lab：公顷/平方千米换算 + 组合图形分割法求面积
+ * 测量与单位 Lab：公顷/平方千米换算 + 组合图形割补求面积
+ *
+ * 两处对齐课本的改动（都由 `@/lib/labs/area` 的新函数 + 单元测试兜底）：
+ * - 公顷：原来 `sidePx = 60 + 边长 × 0.14` 是「假映射」——1 米和 100 米的方块看起来差不多大。
+ *   现在用真实比例尺（1 千米 = 画框边长），并始终画出 1 千米外框与 10×10 个 1 公顷格子。
+ * - 组合图形：原来按 w/h1/h2 算成 10750 m²，与课本例 6（上边 100、左边高 90、右上竖边 40、下底 140）
+ *   的正确结果 **10000 m² = 1 公顷** 不符。现在按课本图形建模，并给出三种割补方法的对照。
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { toFixed2 } from '@/lib/engine/math'
+import { compositeMethods, compositeOutline, hectareScale, polygonArea, toHectare, type Pt } from '@/lib/labs/area'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -15,25 +23,58 @@ const side = computed(() => props.values.side ?? 100)
 const m2 = computed(() => side.value * side.value)
 const ha = computed(() => m2.value / 10000)
 const km2 = computed(() => m2.value / 1_000_000)
-/** 缩放：边长 px（log-ish 映射，保证直观） */
-const sidePx = computed(() => Math.min(200, 60 + side.value * 0.14))
+const BOX = 240
+/** 真实比例尺：1 千米 = 200px；当前正方形的边长按同一比例 */
+const sidePx = computed(() => hectareScale(side.value, 1000, BOX))
+const sidePxShown = computed(() => Math.max(sidePx.value, 1.5))
 const haTiles = computed(() => Math.min(100, Math.round(ha.value)))
-const sideInKmPct = computed(() => Math.min(100, (side.value / 1000) * 100))
+const sqX = 24
+const sqY = 226
+const isOneHectare = computed(() => Math.abs(side.value - 100) < 1e-9)
+const isOneKm = computed(() => Math.abs(side.value - 1000) < 1e-9)
+const hectareVerify = computed(() =>
+  isOneHectare.value
+    ? `✓ 边长 100 米 → 100 × 100 = 10000 平方米 = 1 公顷`
+    : isOneKm.value
+      ? `✓ 边长 1000 米 → 1000 × 1000 = 1000000 平方米 = 100 公顷 = 1 平方千米`
+      : `✓ 边长 ${side.value} 米 → ${side.value} × ${side.value} = ${m2.value} 平方米 = ${toFixed2(ha.value)} 公顷（1 公顷 = 10000 平方米）`,
+)
 
 /* ---------- 组合图形 ---------- */
-const w = computed(() => props.values.w ?? 100)
-const h1 = computed(() => props.values.h1 ?? 40)
-const h2 = computed(() => props.values.h2 ?? 90)
-const sRect = computed(() => w.value * h1.value)
-const sTrap = computed(() => ((w.value + w.value / 2) * h2.value) / 2)
-const total = computed(() => sRect.value + sTrap.value)
-/** 组合图形顶点：矩形（左上）+ 梯形（右下），整体缩放保证在 viewBox 内 */
-const W = 150
-const H1 = computed(() => (h1.value / 120) * 105)
-const H2 = computed(() => (h2.value / 200) * 105)
-const pondPts = computed(() => {
-  return `60,40 ${60 + W},40 ${60 + W},${40 + H1.value} ${60 + W + W / 2},${40 + H1.value} ${60 + W + W / 2},${40 + H1.value + H2.value} 60,${40 + H1.value + H2.value}`
-})
+const spec = computed(() => ({
+  top: props.values.top ?? 100,
+  left: props.values.left ?? 90,
+  right: props.values.right ?? 40,
+  bottom: props.values.bottom ?? 140,
+}))
+const methods = computed(() => compositeMethods(spec.value))
+const outline = computed(() => compositeOutline(spec.value))
+const methodIdx = ref(0)
+const activeMethod = computed(() => methods.value[Math.min(methodIdx.value, methods.value.length - 1)]!)
+const total = computed(() => activeMethod.value.total)
+const totalHectare = computed(() => toHectare(total.value))
+/** 用鞋带公式独立算一遍图形面积，和三种方法互证 */
+const shapeArea = computed(() => polygonArea(outline.value))
+const allAgree = computed(() => methods.value.every((m) => Math.abs(m.total - shapeArea.value) < 1e-6))
+function pickMethod(i: number) {
+  methodIdx.value = i
+  playClick()
+}
+
+/* ---------- 组合图形：米 → 像素（等比） ---------- */
+const PAD = 70
+const DRAW = 260
+const drawScale = computed(() => DRAW / Math.max(spec.value.bottom, spec.value.left, 1))
+const pxOf = (v: number) => v * drawScale.value
+const toSvg = (p: Pt) => `${(PAD + pxOf(p[0])).toFixed(1)},${(PAD + DRAW - pxOf(p[1])).toFixed(1)}`
+const viewBox = computed(() => `0 0 ${PAD * 2 + DRAW} ${PAD * 2 + DRAW}`)
+const outlinePts = computed(() => outline.value.map(toSvg).join(' '))
+const partPts = (points: Pt[]) => points.map(toSvg).join(' ')
+const partLabelPos = (points: Pt[]) => {
+  const cx = points.reduce((s, p) => s + p[0], 0) / points.length
+  const cy = points.reduce((s, p) => s + p[1], 0) / points.length
+  return { x: PAD + pxOf(cx), y: PAD + DRAW - pxOf(cy) }
+}
 </script>
 
 <template>
@@ -42,15 +83,26 @@ const pondPts = computed(() => {
     <template v-if="kind === 'hectare'">
       <div class="ha-row">
         <div class="ha-square-box">
-          <svg viewBox="0 0 260 260" class="w-full">
-            <rect x="30" y="30" :width="sidePx" :height="sidePx" class="square-fill" rx="4" />
-            <text :x="30 + sidePx / 2" :y="30 + sidePx + 22" text-anchor="middle" class="dim-label">
-              边长 {{ side }} 米
-            </text>
-            <text :x="30 + sidePx / 2" :y="30 + sidePx / 2" text-anchor="middle" class="m2-label">
+          <svg :viewBox="`0 0 ${PAD * 4 + BOX} ${PAD * 4 + BOX}`" class="w-full">
+            <!-- 1 千米外框（参照系） -->
+            <rect :x="sqX" :y="sqY - BOX" :width="BOX" :height="BOX" class="km-outline" />
+            <text :x="sqX + BOX - 4" :y="sqY - BOX + 14" text-anchor="end" class="dim-label">1 千米 × 1 千米 = 1 平方千米</text>
+            <!-- 1 公顷小方块（100 米） -->
+            <rect :x="sqX" :y="sqY - (BOX / 10) * 1" :width="BOX / 10" :height="BOX / 10" class="ha-unit" />
+            <text :x="sqX + BOX / 10 + 4" :y="sqY - 4" class="dim-label">100 米 = 1 公顷</text>
+            <!-- 当前正方形 -->
+            <rect :x="sqX" :y="sqY - sidePxShown" :width="sidePxShown" :height="sidePxShown" class="square-fill" />
+            <text :x="sqX + BOX / 2" :y="sqY + 18" text-anchor="middle" class="dim-label">边长 {{ side }} 米</text>
+            <text
+              :x="sqX + Math.max(sidePxShown / 2, 40)"
+              :y="sqY - Math.max(sidePxShown / 2, 20)"
+              text-anchor="middle"
+              class="m2-label"
+            >
               {{ m2 }} m²
             </text>
           </svg>
+          <p class="grid-note">同一个比例尺下比较：边长 100 米的方块只有 1 千米外框的十分之一宽，面积是它的百分之一</p>
         </div>
         <div class="ha-convert">
           <div class="convert-row">
@@ -65,16 +117,7 @@ const pondPts = computed(() => {
             <span class="convert-unit">平方千米</span>
             <strong>{{ toFixed2(km2) }}</strong>
           </div>
-        </div>
-      </div>
-      <div class="ref-squares">
-        <div class="ref-item">
-          <span class="ref-square" style="width: 46px; height: 46px" />
-          <p>边长 100 米 = 1 公顷</p>
-        </div>
-        <div class="ref-item">
-          <span class="ref-square" style="width: 84px; height: 84px" />
-          <p>边长 1000 米 = 1 平方千米<br />= 100 公顷</p>
+          <p class="convert-note">1 公顷 = 10000 平方米<br />1 平方千米 = 100 公顷</p>
         </div>
       </div>
       <div class="km-reference">
@@ -85,29 +128,61 @@ const pondPts = computed(() => {
           <p><b>1 平方千米</b> = 10 × 10 个 1 公顷 = <b>100 公顷</b></p>
           <p>每格 1 公顷；当前正方形约占 <b>{{ toFixed2(ha) }}</b> 格。</p>
         </div>
-        <div class="km-frame" aria-label="当前边长占 1 千米边长的比例">
-          <span class="km-current" :style="{ width: sideInKmPct + '%', height: sideInKmPct + '%' }" />
-          <span class="km-frame-label">1 km × 1 km</span>
-        </div>
       </div>
-      <p class="note">1 公顷 = 10000 平方米；1 平方千米 = 1000000 平方米 = 100 公顷</p>
+      <p class="verify-line">{{ hectareVerify }}</p>
+      <p class="note">测量或计量土地面积，常用公顷（hm²）作单位；边长 100 米的正方形土地面积就是 1 公顷。</p>
     </template>
 
     <!-- 组合图形 -->
     <template v-else>
-      <svg viewBox="0 0 340 290" class="w-full">
-        <!-- 分割线（虚线）：长方形 | 梯形 -->
-        <line :x1="60 + W" :y1="40" :x2="60 + W" :y2="40 + H1" class="split-line" />
-        <polygon :points="pondPts" class="pond-fill" />
-        <text :x="60 + W / 2" :y="40 + H1 / 2" text-anchor="middle" class="dim-label">长方形</text>
-        <text :x="60 + W + W / 4" :y="40 + H1 + H2 / 2" text-anchor="middle" class="dim-label">梯形</text>
+      <div class="method-bar">
+        <UButton
+          v-for="(m, i) in methods"
+          :key="m.key"
+          size="sm"
+          :color="i === methodIdx ? 'primary' : 'neutral'"
+          :variant="i === methodIdx ? 'solid' : 'outline'"
+          @click="pickMethod(i)"
+        >
+          {{ m.label }}
+        </UButton>
+      </div>
+      <svg :viewBox="viewBox" class="pond-svg" role="img" aria-label="池塘平面图与割补方法">
+        <!-- 底图 -->
+        <polygon :points="outlinePts" class="pond-fill" />
+        <!-- 当前方法的各部分 -->
+        <g v-for="(part, i) in activeMethod.parts" :key="part.name">
+          <polygon
+            :points="partPts(part.points)"
+            :class="activeMethod.op === 'subtract' && i === 1 ? 'part-missing' : i === 0 ? 'part-a' : 'part-b'"
+          />
+          <text :x="partLabelPos(part.points).x" :y="partLabelPos(part.points).y" text-anchor="middle" class="part-label">
+            {{ part.area }} m²
+          </text>
+        </g>
+        <polygon :points="outlinePts" class="pond-outline" />
+        <!-- 尺寸标注 -->
+        <line :x1="PAD" :y1="PAD + DRAW" :x2="PAD + pxOf(spec.bottom)" :y2="PAD + DRAW" class="dim-line" />
+        <text :x="PAD + pxOf(spec.bottom) / 2" :y="PAD + DRAW + 18" text-anchor="middle" class="dim-label">下底 {{ spec.bottom }} 米</text>
+        <text :x="PAD + pxOf(spec.top) / 2" :y="PAD + DRAW - pxOf(spec.left) - 8" text-anchor="middle" class="dim-label">上边 {{ spec.top }} 米</text>
+        <text :x="PAD - 6" :y="PAD + DRAW - pxOf(spec.left) / 2" text-anchor="end" class="dim-label">左边 {{ spec.left }} 米</text>
+        <text :x="PAD + pxOf(spec.top) + 6" :y="PAD + DRAW - pxOf(spec.left) + 24" class="dim-label">右上 {{ spec.right }} 米</text>
       </svg>
       <div class="formula-row">
-        <span class="formula-chip">S长方形 = {{ w }} × {{ h1 }} = {{ toFixed2(sRect) }} m²</span>
-        <span class="formula-chip">S梯形 = ({{ w }} + {{ Math.round(w / 2) }}) × {{ h2 }} ÷ 2 = {{ toFixed2(sTrap) }} m²</span>
-        <span class="formula-chip primary">S组合 = {{ toFixed2(total) }} m²</span>
+        <span v-for="(part, i) in activeMethod.parts" :key="part.name" class="formula-chip">
+          {{ activeMethod.op === 'add' ? (i === 0 ? '' : '+ ') : i === 0 ? '' : '− ' }}{{ part.name }} = {{ part.area }} m²
+        </span>
+        <span class="formula-chip primary">
+          S = {{ total }} 平方米 = {{ toFixed2(totalHectare) }} 公顷
+        </span>
       </div>
-      <p class="note">分割成几个简单图形，分别求面积再相加 —— 分割法</p>
+      <p class="verify-line">
+        <template v-if="allAgree">
+          ✓ 三种割补方法结果相同，都是 <b>{{ shapeArea }}</b> 平方米 = <b>{{ toFixed2(totalHectare) }}</b> 公顷（用图形顶点+鞋带公式独立核对过）
+        </template>
+        <template v-else>注意：三种方法结果不一致，请检查已知条件</template>
+      </p>
+      <p class="note">求组合图形的面积：可以割补成能直接计算面积的图形；割补时要根据图形特点利用已知条件。</p>
     </template>
   </div>
 </template>
@@ -116,10 +191,11 @@ const pondPts = computed(() => {
 .measure-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.7rem;
   align-items: center;
   min-height: 320px;
   justify-content: center;
+  width: 100%;
 }
 .ha-row {
   display: flex;
@@ -129,23 +205,42 @@ const pondPts = computed(() => {
   justify-content: center;
 }
 .ha-square-box {
-  width: 200px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+.ha-square-box svg {
+  max-width: 320px;
+  height: auto;
+}
+.km-outline {
+  fill: color-mix(in srgb, var(--ui-primary) 6%, transparent);
+  stroke: var(--ui-primary);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 4;
+}
+.ha-unit {
+  fill: color-mix(in srgb, var(--ui-warning, #f59e0b) 35%, transparent);
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 1.2;
 }
 .square-fill {
-  fill: color-mix(in srgb, var(--ui-primary) 40%, white);
+  fill: color-mix(in srgb, var(--ui-primary) 45%, white);
   stroke: var(--ui-primary);
   stroke-width: 2;
-  transition: all 0.4s;
+  transition: all 0.3s;
 }
 .m2-label {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 800;
   fill: var(--ui-text-highlighted);
 }
 .dim-label {
-  font-size: 12px;
+  font-size: 11px;
   fill: var(--ui-text-muted);
-  font-weight: 600;
+  font-weight: 700;
 }
 .ha-convert {
   display: flex;
@@ -168,28 +263,10 @@ const pondPts = computed(() => {
   font-size: 1.15rem;
   color: var(--ui-primary);
 }
-.ref-squares {
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-  justify-content: center;
-}
-.ref-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-}
-.ref-square {
-  display: block;
-  border: 2px solid var(--ui-primary);
-  background: color-mix(in srgb, var(--ui-primary) 25%, transparent);
-  border-radius: 4px;
-}
-.ref-item p {
-  font-size: 0.75rem;
+.convert-note {
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
   color: var(--ui-text-muted);
-  text-align: center;
 }
 .km-reference {
   display: flex;
@@ -197,7 +274,6 @@ const pondPts = computed(() => {
   justify-content: center;
   gap: 1rem;
   flex-wrap: wrap;
-  width: 100%;
 }
 .km-grid {
   display: grid;
@@ -227,57 +303,48 @@ const pondPts = computed(() => {
 .km-caption b {
   color: var(--ui-primary);
 }
-.km-frame {
-  position: relative;
-  width: 5.6rem;
-  height: 5.6rem;
-  border: 2px solid var(--ui-primary);
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--ui-primary) 8%, transparent);
+.method-bar {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
-.km-current {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  min-width: 2px;
-  min-height: 2px;
-  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 45%, transparent);
-  border-top: 2px solid var(--ui-warning, #f59e0b);
-  border-right: 2px solid var(--ui-warning, #f59e0b);
-}
-.km-frame-label {
-  position: absolute;
-  right: 0.25rem;
-  top: 0.2rem;
-  font-size: 0.62rem;
-  color: var(--ui-text-muted);
-  font-weight: 800;
-}
-.note {
-  font-size: 0.85rem;
-  color: var(--ui-text-muted);
-  text-align: center;
-}
-@media (max-width: 520px) {
-  .ref-squares {
-    gap: 1rem;
-  }
-  .km-reference {
-    gap: 0.75rem;
-  }
-  .km-caption {
-    text-align: center;
-  }
+.pond-svg {
+  max-width: 420px;
+  height: auto;
 }
 .pond-fill {
+  fill: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.pond-outline {
+  fill: none;
+  stroke: var(--ui-primary);
+  stroke-width: 2.4;
+}
+.part-a {
   fill: color-mix(in srgb, var(--ui-primary) 45%, white);
   stroke: var(--ui-primary);
-  stroke-width: 2;
+  stroke-width: 1.4;
 }
-.split-line {
-  stroke: var(--ui-primary);
-  stroke-width: 2;
-  stroke-dasharray: 6 4;
+.part-b {
+  fill: color-mix(in srgb, var(--ui-warning, #f59e0b) 35%, white);
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 1.4;
+}
+.part-missing {
+  fill: color-mix(in srgb, var(--ui-text-muted) 18%, transparent);
+  stroke: var(--ui-text-muted);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 4;
+}
+.part-label {
+  font-size: 11px;
+  font-weight: 800;
+  fill: var(--ui-text-highlighted);
+}
+.dim-line {
+  stroke: var(--ui-text-muted);
+  stroke-width: 1.2;
 }
 .formula-row {
   display: flex;
@@ -298,5 +365,29 @@ const pondPts = computed(() => {
   border-color: var(--ui-primary);
   color: var(--ui-primary);
   font-weight: 700;
+}
+.verify-line {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  text-align: center;
+  max-width: 42rem;
+}
+.verify-line b {
+  color: var(--ui-primary);
+}
+.note {
+  font-size: 0.85rem;
+  color: var(--ui-text-muted);
+  text-align: center;
+  max-width: 42rem;
+}
+.grid-note {
+  font-size: 0.72rem;
+  color: var(--ui-text-muted);
+  text-align: center;
 }
 </style>

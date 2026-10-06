@@ -1,40 +1,59 @@
 <script setup lang="ts">
 /**
- * 因数与倍数 Lab：因数拼图 / 倍数数轴 / 质数筛 / 公因数公倍数
+ * 因数与倍数 Lab：因数拼长方形 / 倍数数轴 / 质数筛 / 公因数公倍数
+ *
+ * 三处对齐课本的改动：
+ * - 拼长方形：每种拼法都按**同一比例尺**真的画出 w×h 个小正方形（原来超 6 就截断成示意图），
+ *   并给出「12 的因数有 6 个 → 能拼成 3 种长方形」。
+ * - 倍数数轴：标出「每次加 n」的跳跃箭头，落点等距。
+ * - 质数筛：按 2→3→5→7 逐轮划掉倍数（可点「筛一轮」），被划掉的数标出理由，
+ *   并断言「筛完剩下的恰好是质数」。
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { factorsOf, isPrime, lcm, primesUpTo } from '@/lib/engine/math'
+import { factorsOf, lcm, primesUpTo } from '@/lib/engine/math'
+import { SIEVE_PRIMES, axisTicks, factorPairs, multiples, sieveReasons, sieveRemaining } from '@/lib/labs/number'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
 const kind = computed(() => props.lab.kind)
 
 /* ---------- 因数 ---------- */
-const n = computed(() => Math.round(props.values.n ?? 0))
-const factorPairs = computed(() => {
-  const out: { w: number; h: number }[] = []
-  for (let i = 1; i * i <= n.value; i++) {
-    if (n.value % i === 0) out.push({ w: i, h: n.value / i })
-  }
-  return out.slice(0, 6)
-})
+const n = computed(() => Math.round(props.values.n ?? 1))
+const pairs = computed(() => factorPairs(n.value))
 const allFactors = computed(() => factorsOf(n.value))
+/** 同一比例尺：以最大的那条边（= n）为准，画框 128px */
+const PAIR_BOX = 128
+const pairCell = computed(() => PAIR_BOX / Math.max(1, Math.max(...pairs.value.map(([, h]) => h))))
+const pairShapes = computed(() =>
+  pairs.value.map(([w, h]) => ({
+    w,
+    h,
+    px: w * pairCell.value,
+    py: h * pairCell.value,
+    cell: pairCell.value,
+  })),
+)
 
 /* ---------- 倍数 ---------- */
 const mBase = computed(() => Math.round(props.values.n ?? 3))
 const mCount = computed(() => Math.round(props.values.k ?? 10))
-const multiples = computed(() => Array.from({ length: mCount.value }, (_, i) => mBase.value * (i + 1)))
-const lineMax = computed(() => Math.max(60, multiples.value[multiples.value.length - 1]!))
-const lineStep = computed(() => {
-  const s = Math.ceil(lineMax.value / 15 / 5) * 5
-  return Math.max(1, s)
-})
+const mList = computed(() => multiples(mBase.value, mCount.value))
+const lineMax = computed(() => Math.max(30, mList.value[mList.value.length - 1] ?? 30))
+const lineStep = computed(() => Math.max(1, Math.ceil(lineMax.value / 12 / mBase.value) * mBase.value))
+const lineTicks = computed(() => axisTicks(lineMax.value, lineStep.value))
+const LINE_X0 = 26
+const LINE_W = 408
+const lineX = (v: number) => LINE_X0 + (v * LINE_W) / lineMax.value
 
 /* ---------- 质数 ---------- */
 const primeN = computed(() => Math.round(props.values.n ?? 50))
+const primeStep = ref(0)
 const primes = computed(() => primesUpTo(primeN.value))
 const primeSet = computed(() => new Set(primes.value))
+const remaining = computed(() => sieveRemaining(primeN.value, primeStep.value))
+const remainingSet = computed(() => new Set(remaining.value))
 const table = computed(() => {
   const rows: number[][] = []
   for (let i = 2; i <= primeN.value; i += 10) {
@@ -42,6 +61,27 @@ const table = computed(() => {
   }
   return rows
 })
+const sieveLabel = computed(() =>
+  primeStep.value === 0 ? '还没开始筛' : `已划掉 ${SIEVE_PRIMES.slice(0, primeStep.value).join('、')} 的倍数`,
+)
+const sieveDone = computed(() => primeStep.value >= SIEVE_PRIMES.length)
+function nextSieveStep() {
+  if (sieveDone.value) return
+  primeStep.value++
+  playClick()
+}
+function resetSieve() {
+  primeStep.value = 0
+  playClick()
+}
+function cellClass(v: number) {
+  if (primeStep.value === 0) return primeSet.value.has(v) ? 'prime' : 'composite'
+  return remainingSet.value.has(v) ? 'prime' : 'sifted'
+}
+function cellReason(v: number) {
+  const reasons = sieveReasons(v)
+  return reasons.length ? `${reasons.join('、')} 的倍数` : ''
+}
 
 /* ---------- 公因数公倍数 ---------- */
 const a = computed(() => Math.round(props.values.a ?? 8))
@@ -49,140 +89,172 @@ const b = computed(() => Math.round(props.values.b ?? 12))
 const fa = computed(() => factorsOf(a.value))
 const fb = computed(() => factorsOf(b.value))
 const common = computed(() => fa.value.filter((x) => fb.value.includes(x)))
-const isLcmMode = computed(() => props.lab.title.includes('公倍数'))
+const onlyA = computed(() => fa.value.filter((x) => !fb.value.includes(x)))
+const onlyB = computed(() => fb.value.filter((x) => !fa.value.includes(x)))
+const gcdVal = computed(() => Math.max(1, ...common.value))
+const isLcmMode = computed(() => props.lab.kind === 'gcdlcm' && props.lab.title.includes('公倍数'))
 const lcmVal = computed(() => lcm(a.value, b.value))
 const lcmShow = computed(() => lcmVal.value <= 60)
 const lcmLine = computed(() => {
-  const ma = Array.from({ length: Math.floor(60 / a.value) }, (_, i) => a.value * (i + 1))
-  const mb = Array.from({ length: Math.floor(60 / b.value) }, (_, i) => b.value * (i + 1))
-  return { ma, mb }
+  const ma = multiples(a.value, Math.floor(60 / a.value))
+  const mb = multiples(b.value, Math.floor(60 / b.value))
+  return { ma, mb, common: ma.filter((x) => mb.includes(x)) }
 })
 </script>
 
 <template>
   <div class="number-wrap">
-    <!-- 因数 -->
+    <!-- 因数：按同一比例尺真的拼出长方形 -->
     <template v-if="kind === 'factors'">
       <div class="pair-grids">
-        <div v-for="(p, i) in factorPairs" :key="i" class="pair-box">
-          <div
-            class="mini-grid"
-            :style="{
-              gridTemplateColumns: `repeat(${Math.min(p.w, 6)}, 13px)`,
-            }"
-          >
-            <span v-for="c in Math.min(p.w, 6) * Math.min(p.h, 6)" :key="c" class="mini-cell" />
-            <span v-if="p.w * p.h > 36" class="mini-more">…</span>
-          </div>
-          <p class="pair-label">{{ p.w }} × {{ p.h }} = {{ n }}</p>
+        <div v-for="p in pairShapes" :key="`${p.w}x${p.h}`" class="pair-box">
+          <svg :viewBox="`0 0 ${p.px} ${p.py}`" :width="Math.min(140, Math.max(40, p.px))" class="pair-svg">
+            <rect x="0" y="0" :width="p.px" :height="p.py" class="pair-rect" />
+            <g v-if="p.cell >= 6" class="pair-grid">
+              <line v-for="i in p.w - 1" :key="'v' + i" :x1="i * p.cell" :y1="0" :x2="i * p.cell" :y2="p.py" />
+              <line v-for="j in p.h - 1" :key="'h' + j" :x1="0" :y1="j * p.cell" :x2="p.px" :y2="j * p.cell" />
+            </g>
+            <text :x="p.px / 2" :y="-3" text-anchor="middle" class="pair-dim">{{ p.w }}</text>
+            <text :x="p.px + 4" :y="p.py / 2 + 4" class="pair-dim">{{ p.h }}</text>
+          </svg>
+          <p class="pair-label">{{ p.w }} × {{ p.h }} = {{ p.w * p.h }}</p>
         </div>
       </div>
       <div class="factor-chips">
         <span v-for="f in allFactors" :key="f" class="factor-chip">{{ f }}</span>
       </div>
-      <p class="note">{{ n }} 的因数有 {{ allFactors.length }} 个，成对出现</p>
+      <p class="verify-line">
+        ✓ {{ n }} 的因数有 {{ allFactors.length }} 个（成对出现），所以用 {{ n }} 个小正方形能拼成
+        <b>{{ pairs.length }}</b> 种长方形
+      </p>
+      <p class="note">每排几个 × 排几排 = {{ n }}；能整除 {{ n }} 的数都是 {{ n }} 的因数</p>
     </template>
 
-    <!-- 倍数 -->
+    <!-- 倍数：数轴 + 每次加 n 的跳跃 -->
     <template v-else-if="kind === 'multiples'">
       <div class="numline-wrap">
-        <svg viewBox="0 0 460 120" class="w-full">
-          <line x1="20" y1="60" x2="440" y2="60" class="nl-line" />
-          <g v-for="v in Math.floor(lineMax / lineStep)" :key="v">
-            <line :x1="20 + (v * lineStep * 420) / lineMax" :y1="60" :x2="20 + (v * lineStep * 420) / lineMax" :y2="70" class="nl-tick" />
-            <text :x="20 + (v * lineStep * 420) / lineMax" :y="52" text-anchor="middle" class="nl-num">{{ v * lineStep }}</text>
+        <svg viewBox="0 0 460 150" class="w-full">
+          <line :x1="LINE_X0" y1="96" :x2="LINE_X0 + LINE_W" y2="96" class="nl-line" />
+          <g v-for="v in lineTicks" :key="v">
+            <line :x1="lineX(v)" y1="96" :x2="lineX(v)" y2="106" class="nl-tick" />
+            <text :x="lineX(v)" y="120" text-anchor="middle" class="nl-num">{{ v }}</text>
           </g>
-          <g v-for="m in multiples" :key="m">
+          <!-- 每次加 n 的跳跃箭头 -->
+          <g v-for="(m, i) in mList.slice(0, -1)" :key="'j' + i">
             <path
-              :d="`M ${20 + (m * 420) / lineMax} 92 l -6 -8 l 12 0 Z`"
-              class="nl-mark"
+              :d="`M ${lineX(m)} 88 Q ${lineX((m + mList[i + 1]!) / 2)} 56 ${lineX(mList[i + 1]!)} 88`"
+              class="jump-arc"
+              marker-end="url(#numarrow)"
             />
-            <text :x="20 + (m * 420) / lineMax" :y="110" text-anchor="middle" class="nl-mark-num">{{ m }}</text>
           </g>
+          <defs>
+            <marker id="numarrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
+            </marker>
+          </defs>
+          <g v-for="m in mList" :key="'m' + m">
+            <circle :cx="lineX(m)" cy="96" r="5" class="nl-mark" />
+            <text :x="lineX(m)" y="80" text-anchor="middle" class="nl-mark-num">{{ m }}</text>
+          </g>
+          <text :x="LINE_X0" y="24" class="jump-label">每次加 {{ mBase }}（箭头 = 跳一次）</text>
         </svg>
       </div>
       <div class="factor-chips">
-        <span v-for="m in multiples" :key="m" class="factor-chip primary">{{ m }}</span>
+        <span v-for="m in mList" :key="m" class="factor-chip primary">{{ m }}</span>
       </div>
-      <p class="note">{{ mBase }} 的倍数：每次加 {{ mBase }}，有无数个</p>
+      <p class="verify-line">✓ {{ mBase }} × 1 = {{ mBase }}，{{ mBase }} × 2 = {{ mBase * 2 }}，… 每次加 {{ mBase }}；最小的倍数是 {{ mBase }} 本身</p>
+      <p class="note">{{ mBase }} 的倍数有无数个，所以没有最大的倍数</p>
     </template>
 
-    <!-- 质数 -->
+    <!-- 质数筛：逐轮划掉倍数 -->
     <template v-else-if="kind === 'prime'">
+      <div class="sieve-controls">
+        <UButton size="sm" color="primary" variant="soft" icon="i-heroicons-scissors" :disabled="sieveDone" @click="nextSieveStep">
+          {{ sieveDone ? '筛完了' : primeStep === 0 ? '开始筛 · 划掉 2 的倍数' : `再划掉 ${SIEVE_PRIMES[primeStep]} 的倍数` }}
+        </UButton>
+        <UButton v-if="primeStep > 0" size="sm" variant="outline" color="neutral" @click="resetSieve">复位</UButton>
+        <span class="sieve-status">{{ sieveLabel }}；剩下 {{ remaining.length }} 个数</span>
+      </div>
       <div class="sieve-table">
         <div v-for="(row, ri) in table" :key="ri" class="sieve-row">
           <span
             v-for="v in row"
             :key="v"
             class="sieve-cell"
-            :class="{
-              prime: primeSet.has(v),
-              composite: !primeSet.has(v),
-            }"
+            :class="cellClass(v)"
+            :title="cellReason(v)"
           >
             {{ v }}
+            <em v-if="cellClass(v) === 'sifted'" class="sieve-reason">{{ cellReason(v).replace(' 的倍数', '') }}</em>
           </span>
         </div>
       </div>
       <div class="legend">
-        <span class="legend-item"><span class="dot prime" />质数（只有 1 和它本身两个因数）</span>
-        <span class="legend-item"><span class="dot composite" />合数（还有别的因数）</span>
+        <span class="legend-item"><span class="dot prime" />质数（只剩 1 和它本身两个因数）</span>
+        <span class="legend-item"><span class="dot composite" />合数</span>
+        <span class="legend-item"><span class="dot sifted" />已被划掉（某个质数的倍数）</span>
       </div>
-      <p class="note">2~{{ primeN }} 中共有 {{ primes.length }} 个质数：{{ primes.slice(0, 20).join('、') }}{{ primes.length > 20 ? '…' : '' }}</p>
+      <p v-if="sieveDone" class="verify-line">
+        ✓ 划掉 2、3、5、7 的倍数后，剩下的恰好是质数：{{ primeSet.size }} 个（{{ primes.slice(0, 12).join('、') }}…）
+      </p>
+      <p class="note">1 既不是质数也不是合数（表里从 2 开始）；2 是最小的质数，也是唯一的偶数质数</p>
     </template>
 
-    <!-- 公因数公倍数 -->
+    <!-- 公因数 / 公倍数 -->
     <template v-else>
       <div class="gcdlcm">
-        <div class="factor-chips">
-          <span class="gc-label">{{ a }} 的因数</span>
-          <span
-            v-for="f in fa"
-            :key="'a' + f"
-            class="factor-chip"
-            :class="{ common: common.includes(f) }"
-          >
-            {{ f }}
-          </span>
-        </div>
-        <div class="factor-chips">
-          <span class="gc-label">{{ b }} 的因数</span>
-          <span
-            v-for="f in fb"
-            :key="'b' + f"
-            class="factor-chip"
-            :class="{ common: common.includes(f) }"
-          >
-            {{ f }}
-          </span>
-        </div>
-        <p class="note">
-          <template v-if="!isLcmMode">
-            公因数：{{ common.join('、') }} · <b>最大公因数 = {{ Math.max(...common) }}</b>
-          </template>
-          <template v-else>
-            公倍数中最小的一个 = <b>最小公倍数 {{ lcmVal }}</b>
-          </template>
-        </p>
+        <template v-if="!isLcmMode">
+          <div class="venn-row">
+            <div class="venn-box only-a">
+              <p class="venn-title">{{ a }} 独有的因数</p>
+              <div class="factor-chips">
+                <span v-for="f in onlyA" :key="'oa' + f" class="factor-chip">{{ f }}</span>
+              </div>
+            </div>
+            <div class="venn-box common">
+              <p class="venn-title">公有的因数（交集）</p>
+              <div class="factor-chips">
+                <span v-for="f in common" :key="'c' + f" class="factor-chip common" :class="{ max: f === gcdVal }">{{ f }}</span>
+              </div>
+            </div>
+            <div class="venn-box only-b">
+              <p class="venn-title">{{ b }} 独有的因数</p>
+              <div class="factor-chips">
+                <span v-for="f in onlyB" :key="'ob' + f" class="factor-chip">{{ f }}</span>
+              </div>
+            </div>
+          </div>
+          <p class="verify-line">
+            ✓ 公因数：{{ common.join('、') }}；其中最大的一个是 <b>{{ gcdVal }}</b
+            >（最大公因数）
+          </p>
+          <p class="note">{{ gcdVal === 1 ? `${a} 和 ${b} 只有公因数 1，它们是互质的` : `列举法：先分别写出两个数的因数，再找出公有的因数` }}</p>
+        </template>
 
-        <template v-if="isLcmMode && lcmShow">
-          <svg viewBox="0 0 460 150" class="w-full">
-            <line x1="20" y1="40" x2="440" y2="40" class="nl-line" />
-            <line x1="20" y1="100" x2="440" y2="100" class="nl-line" />
+        <template v-else>
+          <p class="note">{{ a }} 的倍数和 {{ b }} 的倍数中，公有的最小一个是 {{ lcmVal }}</p>
+          <svg v-if="lcmShow" viewBox="0 0 460 150" class="w-full">
+            <line x1="20" y1="44" x2="440" y2="44" class="nl-line" />
+            <line x1="20" y1="108" x2="440" y2="108" class="nl-line" />
+            <text x="4" y="38" class="gc-label">{{ a }} 的倍数</text>
+            <text x="4" y="102" class="gc-label">{{ b }} 的倍数</text>
             <g v-for="m in lcmLine.ma" :key="'a' + m">
-              <line :x1="20 + (m * 420) / 60" :y1="40" :x2="20 + (m * 420) / 60" :y2="50" class="nl-tick" />
-              <text :x="20 + (m * 420) / 60" :y="32" text-anchor="middle" class="nl-num a">{{ m }}</text>
+              <line :x1="20 + (m * 420) / 60" y1="44" :x2="20 + (m * 420) / 60" y2="54" class="nl-tick" />
+              <text :x="20 + (m * 420) / 60" y="34" text-anchor="middle" class="nl-num a">{{ m }}</text>
             </g>
             <g v-for="m in lcmLine.mb" :key="'b' + m">
-              <line :x1="20 + (m * 420) / 60" :y1="100" :x2="20 + (m * 420) / 60" :y2="110" class="nl-tick" />
-              <text :x="20 + (m * 420) / 60" :y="122" text-anchor="middle" class="nl-num b">{{ m }}</text>
+              <line :x1="20 + (m * 420) / 60" y1="108" :x2="20 + (m * 420) / 60" y2="118" class="nl-tick" />
+              <text :x="20 + (m * 420) / 60" y="134" text-anchor="middle" class="nl-num b">{{ m }}</text>
             </g>
-            <text x="12" y="42" class="gc-label">{{ a }} 的倍数</text>
-            <text x="12" y="102" class="gc-label">{{ b }} 的倍数</text>
-            <g v-for="m in lcmLine.ma.filter((x) => lcmLine.mb.includes(x))" :key="'s' + m">
-              <text :x="20 + (m * 420) / 60" :y="72" text-anchor="middle" class="star">★</text>
+            <g v-for="m in lcmLine.common" :key="'s' + m">
+              <line :x1="20 + (m * 420) / 60" y1="44" :x2="20 + (m * 420) / 60" y2="108" class="common-line" />
+              <text :x="20 + (m * 420) / 60" y="80" text-anchor="middle" class="star">★</text>
             </g>
           </svg>
+          <p class="verify-line">
+            ✓ 公倍数：{{ lcmLine.common.join('、') }}；最小的一个是 <b>{{ lcmVal }}</b
+            >（最小公倍数 = 两数公有倍数中最小的）
+          </p>
         </template>
       </div>
     </template>
@@ -193,45 +265,47 @@ const lcmLine = computed(() => {
 .number-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.7rem;
   align-items: center;
   min-height: 320px;
   justify-content: center;
+  width: 100%;
 }
 .pair-grids {
   display: flex;
-  gap: 0.8rem;
+  gap: 0.9rem;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: flex-end;
 }
 .pair-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
 }
-.mini-grid {
-  display: grid;
-  gap: 1px;
-  background: var(--ui-border);
-  padding: 1px;
-  border-radius: 4px;
+.pair-svg {
+  overflow: visible;
+  max-height: 150px;
 }
-.mini-cell {
-  width: 13px;
-  height: 13px;
-  background: color-mix(in srgb, var(--ui-primary) 45%, white);
-  border-radius: 1px;
+.pair-rect {
+  fill: color-mix(in srgb, var(--ui-primary) 40%, white);
+  stroke: var(--ui-primary);
+  stroke-width: 1.5;
 }
-.mini-more {
-  font-size: 0.7rem;
-  color: var(--ui-text-muted);
-  grid-column: 1 / -1;
-  text-align: center;
+.pair-grid line {
+  stroke: color-mix(in srgb, var(--ui-primary) 55%, white);
+  stroke-width: 0.8;
+}
+.pair-dim {
+  font-size: 11px;
+  fill: var(--ui-text-muted);
+  font-weight: 700;
 }
 .pair-label {
-  font-size: 0.75rem;
-  color: var(--ui-text-muted);
+  font-size: 0.76rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
 }
 .factor-chips {
   display: flex;
@@ -261,11 +335,39 @@ const lcmLine = computed(() => {
   color: var(--ui-primary);
   font-weight: 800;
 }
+.factor-chip.common.max {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 1px;
+}
 .gc-label {
-  font-size: 0.8rem;
-  color: var(--ui-text-muted);
-  font-weight: 600;
-  margin-right: 0.2rem;
+  font-size: 0.72rem;
+  fill: var(--ui-text-muted);
+  font-weight: 700;
+}
+.venn-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+}
+.venn-box {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-muted);
+  padding: 0.45rem 0.6rem;
+  min-width: 8rem;
+}
+.venn-box.common {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 8%, var(--ui-bg));
+}
+.venn-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--ui-text-toned);
+  text-align: center;
+  margin-bottom: 0.25rem;
 }
 .note {
   font-size: 0.85rem;
@@ -273,6 +375,18 @@ const lcmLine = computed(() => {
   text-align: center;
 }
 .note b {
+  color: var(--ui-primary);
+}
+.verify-line {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  text-align: center;
+}
+.verify-line b {
   color: var(--ui-primary);
 }
 .nl-line {
@@ -301,9 +415,36 @@ const lcmLine = computed(() => {
   fill: var(--ui-primary);
   font-weight: 700;
 }
+.jump-arc {
+  fill: none;
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 1.5;
+}
+.jump-label {
+  font-size: 12px;
+  fill: #b45309;
+  font-weight: 700;
+}
+.common-line {
+  stroke: color-mix(in srgb, var(--ui-primary) 45%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
 .star {
   fill: var(--ui-primary);
-  font-size: 16px;
+  font-size: 15px;
+}
+.sieve-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.sieve-status {
+  font-size: 0.82rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
 }
 .sieve-table {
   display: flex;
@@ -315,13 +456,16 @@ const lcmLine = computed(() => {
   gap: 2px;
 }
 .sieve-cell {
-  width: 2.1rem;
-  height: 2.1rem;
+  position: relative;
+  width: 2.3rem;
+  height: 2.3rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   border-radius: 0.35rem;
   font-size: 0.85rem;
+  transition: opacity 0.3s;
 }
 .sieve-cell.prime {
   background: color-mix(in srgb, var(--ui-primary) 30%, white);
@@ -332,6 +476,19 @@ const lcmLine = computed(() => {
 .sieve-cell.composite {
   background: var(--ui-bg-muted);
   color: var(--ui-text-muted);
+}
+.sieve-cell.sifted {
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-muted);
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+.sieve-reason {
+  font-size: 0.5rem;
+  font-style: normal;
+  text-decoration: none;
+  color: var(--ui-warning, #f59e0b);
+  font-weight: 800;
 }
 .legend {
   display: flex;
@@ -357,6 +514,10 @@ const lcmLine = computed(() => {
 }
 .dot.composite {
   background: var(--ui-text-muted);
+}
+.dot.sifted {
+  background: color-mix(in srgb, var(--ui-text-muted) 50%, transparent);
+  border: 1px solid var(--ui-warning, #f59e0b);
 }
 .gcdlcm {
   display: flex;

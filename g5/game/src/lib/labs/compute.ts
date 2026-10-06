@@ -1,4 +1,4 @@
-import type { LabKind, ParamValues } from '@data/schema/lab'
+import type { LabDef, LabKind, ParamValues } from '@data/schema/lab'
 import {
   areaOf,
   factorsOf,
@@ -10,6 +10,8 @@ import {
   toFixed2,
   type AreaShape,
 } from '@/lib/engine/math'
+import { compositeMethods, toHectare } from '@/lib/labs/area'
+import { PINBOARD_SHAPES, pickCheck } from '@/lib/labs/pinboard'
 
 export interface LabStep {
   expr: string
@@ -56,7 +58,14 @@ function divSteps(total: number, count: number): LabStep[] {
   ]
 }
 
-export function computeLab(kind: LabKind, p: ParamValues): LabResult {
+/**
+ * 计算各 Lab 的结果与分步过程。
+ *
+ * `lab` 为可选参数：Lab 数据里的 `units`（真实长度单位 / 每格代表的长度）只有数据层知道，
+ * 传入后结果文案才能给出正确单位（例如梯形麦田是「1800 平方米」而不是「1800 格」，
+ * 动车组路程是「750 千米」而不是「750 米」）。
+ */
+export function computeLab(kind: LabKind, p: ParamValues, lab?: LabDef): LabResult {
   switch (kind) {
     case 'stats-table': {
       const boys = [p.a1 ?? 0, p.a2 ?? 0, p.a3 ?? 0, p.a4 ?? 0]
@@ -144,22 +153,50 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const h = p.h ?? 0
       const s = areaOf(shape, { a, b, h })
       const name = shape === 'parallelogram' ? '平行四边形' : shape === 'triangle' ? '三角形' : '梯形'
+      const lengthUnit = lab?.units?.length ?? '格'
+      const cellSize = lab?.units?.cellSize
+      const realArea = cellSize ? s * cellSize * cellSize : undefined
+      /** 每格就是 1 个单位面积时不必再重复「格」 */
+      const sameAsCell = cellSize === 1
+      const areaText =
+        realArea !== undefined && !sameAsCell
+          ? `${fmt(s)} 格 = ${fmt(realArea)} 平方${lengthUnit}`
+          : `${fmt(s)} 平方${lengthUnit}`
+      const sizeStep =
+        cellSize === 1
+          ? `每格 1 平方${lengthUnit}`
+          : `每格 ${fmt(cellSize ?? 0)} ${lengthUnit}`
+      const scaleStep: LabStep[] =
+        realArea !== undefined && !sameAsCell
+          ? [
+              {
+                expr: `${sizeStep}，${fmt(s)} × ${fmt((cellSize ?? 0) * (cellSize ?? 0))}`,
+                result: `${fmt(realArea)} 平方${lengthUnit}`,
+              },
+            ]
+          : []
       const steps: LabStep[] =
         shape === 'parallelogram'
           ? [
-              { expr: `转化成长方形`, result: `长 = 底 ${fmt(a)}，宽 = 高 ${fmt(h)}` },
-              { expr: `S = 底 × 高 = ${fmt(a)} × ${fmt(h)}`, result: `${fmt(s)}` },
+              { expr: `数方格（或剪拼）转化成长方形`, result: `长 = 底 ${fmt(a)}，宽 = 高 ${fmt(h)}` },
+              { expr: `S = 底 × 高 = ${fmt(a)} × ${fmt(h)}`, result: sameAsCell ? `${fmt(s)} 平方${lengthUnit}` : `${fmt(s)} 格` },
+              ...scaleStep,
             ]
           : shape === 'triangle'
             ? [
                 { expr: `两个完全一样的三角形拼成平行四边形`, result: `底 ${fmt(a)}，高 ${fmt(h)}` },
-                { expr: `S = 底 × 高 ÷ 2 = ${fmt(a)} × ${fmt(h)} ÷ 2`, result: `${fmt(s)}` },
+                { expr: `S = 底 × 高 ÷ 2 = ${fmt(a)} × ${fmt(h)} ÷ 2`, result: `${fmt(s)} 平方${lengthUnit}` },
               ]
             : [
                 { expr: `两个完全一样的梯形拼成平行四边形`, result: `底 = 上底 + 下底 = ${fmt(a + b)}` },
-                { expr: `S = (上底 + 下底) × 高 ÷ 2 = (${fmt(a)} + ${fmt(b)}) × ${fmt(h)} ÷ 2`, result: `${fmt(s)}` },
+                { expr: `S = (上底 + 下底) × 高 ÷ 2 = (${fmt(a)} + ${fmt(b)}) × ${fmt(h)} ÷ 2`, result: `${fmt(s)} 平方${lengthUnit}` },
               ]
-      return { value: s, text: `${fmt(s)} 平方${p.unit ? '米' : '格'}`, steps, conclusion: `${name}的面积 = ${fmt(s)}` }
+      return {
+        value: s,
+        text: areaText,
+        steps,
+        conclusion: `${name}的面积 = ${areaText}`,
+      }
     }
     case 'hectare': {
       const side = p.side ?? 0
@@ -178,21 +215,23 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       }
     }
     case 'composite': {
-      const w = p.w ?? 0
-      const h1 = p.h1 ?? 0
-      const h2 = p.h2 ?? 0
-      const sRect = w * h1
-      const sTrap = ((w + w / 2) * h2) / 2
-      const total = sRect + sTrap
+      const spec = { top: p.top ?? 0, left: p.left ?? 0, right: p.right ?? 0, bottom: p.bottom ?? 0 }
+      const methods = compositeMethods(spec)
+      const total = methods[0]!.total
+      const ha = toHectare(total)
+      const steps: LabStep[] = methods.map((m) => ({
+        expr:
+          m.op === 'add'
+            ? `${m.label}：${m.parts.map((part) => fmt(part.area)).join(' + ')}`
+            : `${m.label}：${fmt(m.parts[0]!.area)} − ${fmt(m.parts[1]!.area)}`,
+        result: `${fmt(m.total)} 平方米`,
+      }))
+      steps.push({ expr: `换算成公顷（10000 平方米 = 1 公顷）`, result: `${fmt(total)} ÷ 10000 = ${fmt(ha)} 公顷` })
       return {
         value: total,
-        text: `${fmt(total)} 平方米`,
-        steps: [
-          { expr: `S长方形 = 长 × 宽 = ${fmt(w)} × ${fmt(h1)}`, result: `${fmt(sRect)} 平方米` },
-          { expr: `S梯形 = (上底 + 下底) × 高 ÷ 2`, result: `${fmt(sTrap)} 平方米` },
-          { expr: `S组合 = S长方形 + S梯形`, result: `${fmt(total)} 平方米` },
-        ],
-        conclusion: `分割成简单图形，分别求面积再相加：${fmt(total)} 平方米。`,
+        text: `${fmt(total)} 平方米 = ${fmt(ha)} 公顷`,
+        steps,
+        conclusion: `三种割补方法算出的结果相同：${fmt(total)} 平方米 = ${fmt(ha)} 公顷。`,
       }
     }
     case 'decimal-mul': {
@@ -333,35 +372,40 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const v = p.v ?? 0
       const t = p.t ?? 0
       const s = v * t
+      const unit = lab?.units?.length ?? '米'
+      const timeUnit = lab?.params.find((x) => x.key === 't')?.unit ?? '分'
       return {
         value: s,
-        text: `${fmt(s)} ${p.unit ?? '米'}`,
+        text: `${fmt(s)} ${unit}`,
         steps: [
-          { expr: `路程 = 速度 × 时间`, result: `${fmt(v)} × ${fmt(t)}` },
-          { expr: `s = v × t`, result: `${fmt(s)} ${p.unit ?? '米'}` },
+          { expr: `路程 = 速度 × 时间`, result: `${fmt(v)} ${unit}/${timeUnit} × ${fmt(t)} ${timeUnit}` },
+          { expr: `s = v × t`, result: `${fmt(s)} ${unit}` },
         ],
-        conclusion: `速度 ${fmt(v)}，时间 ${fmt(t)}，路程是 ${fmt(s)} ${p.unit ?? '米'}。`,
+        conclusion: `速度 ${fmt(v)} ${unit}/${timeUnit}，时间 ${fmt(t)} ${timeUnit}，路程是 ${fmt(s)} ${unit}。`,
       }
     }
     case 'pinboard': {
-      const shape = Math.round(p.shape ?? 0)
-      const defs: { n: number; b: number; name: string }[] = [
-        { n: 10, b: 4, name: '矩形' },
-        { n: 8, b: 3, name: '三角形' },
-        { n: 12, b: 4, name: 'L 形' },
-        { n: 12, b: 5, name: '五边形' },
-        { n: 10, b: 2, name: '凹四边形' },
-      ]
-      const d = defs[shape]!
-      const s = d.n / 2 + d.b - 1
+      // 与组件共用同一份图形与"逐个数钉子"的判定：
+      // 原来 compute 里手写了一套 n/b（矩形 n=10、b=4 → 面积 8），
+      // 与右边图上数出来的（矩形 5×3：n=16、b=8 → 面积 15）互相矛盾。
+      const idx = Math.round(p.shape ?? 0) % PINBOARD_SHAPES.length
+      const def = PINBOARD_SHAPES[idx]!
+      const r = pickCheck(def.pts)
       return {
-        value: s,
-        text: `${d.name}面积 = ${fmt(s)}（格）`,
+        value: r.area,
+        text: `${def.name}面积 = ${fmt(r.area)}（格）`,
         steps: [
-          { expr: `边上钉子数 n = ${d.n}`, result: `内部钉子数 b = ${d.b}` },
-          { expr: `S = n ÷ 2 + b - 1`, result: `${d.n} ÷ 2 + ${d.b} - 1 = ${fmt(s)}` },
+          {
+            expr: `数钉子：边上 n = ${r.n}，内部 b = ${r.b}`,
+            result: `边上每段 gcd 求和得 ${r.n}；内部用射线法逐个判定得 ${r.b}`,
+          },
+          { expr: `S = n ÷ 2 + b − 1`, result: `${r.n} ÷ 2 + ${r.b} − 1 = ${fmt(r.pickArea)}` },
+          {
+            expr: `再用鞋带公式独立算一次面积`,
+            result: `${fmt(r.area)} 格${r.ok ? '，两种算法一致，皮克定理成立' : '，两种算法不一致！'}`,
+          },
         ],
-        conclusion: `${d.name}：边上有 ${d.n} 枚钉子、内部有 ${d.b} 枚，面积 ${fmt(s)} 格（皮克定理）。`,
+        conclusion: `${def.name}：边上有 ${r.n} 枚钉子、内部有 ${r.b} 枚，S = ${r.n} ÷ 2 + ${r.b} − 1 = ${fmt(r.pickArea)}；用鞋带公式算面积也是 ${fmt(r.area)}，两者一致。`,
       }
     }
     case 'views3d': {
