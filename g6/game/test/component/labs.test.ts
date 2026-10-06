@@ -126,6 +126,14 @@ describe('Lab 组件渲染', () => {
     expect(t).toContain('合计 500 克')
   })
 
+  it('DecimalLab：第三组标注题源、速度兜底与数据一致（审计销项）', () => {
+    const lab = findLabById('g6-c1-div-decimal')!
+    const wrapper = mount(DecimalLab, { props: { lab, values: { a: 0.34, v: 0.017, sel: 2 } } })
+    // 第三组来自书页 8 的验证题，不能再叫「微型例题」
+    expect(wrapper.text()).toContain('书页 8 验证题')
+    expect(wrapper.text()).not.toContain('微型例题')
+  })
+
   it('RatioLab：ratio-distribute 显示分配结果', () => {
     const lab = findLabById('g6-c4-ratio-distribute')!
     const wrapper = mount(RatioLab, { props: { lab, values: { a: 3, b: 2, total: 500 } } })

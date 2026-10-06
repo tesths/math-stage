@@ -50,6 +50,36 @@ describe('computeLab 一 小数乘法和除法', () => {
   })
 })
 
+describe('审计销项（第 29 轮）：扇形占比用最简分数、环形不静默夹取', () => {
+  it('sector：占圆的比例显示最简分数，不出现 0.08 / 0.13', () => {
+    const t30 = computeLab('sector', { angle: 30 })
+    expect(t30.text).toContain('1/12')
+    // 旧实现显示的是两位近似「占圆的 0.08」，现在必须给分数（近似值保留三位）
+    expect(t30.text).not.toContain('占圆的 0.08')
+    expect(t30.text).not.toContain('占圆的 0.13')
+    expect(t30.steps[1]!.result).toContain('1/12')
+    expect(computeLab('sector', { angle: 45 }).text).toContain('1/8')
+    expect(computeLab('sector', { angle: 90 }).text).toContain('1/4')
+    // 360° 时最简分数化简为整数 1（fractionText 分母为 1 时给整数）
+    expect(computeLab('sector', { angle: 360 }).text).toContain('占圆的 1（≈ 1.000）')
+    // 近似值仍在（保留三位小数），方便学生对照
+    expect(t30.text).toContain('≈ 0.083')
+  })
+
+  it('annulus：内圆半径 ≥ 外圆半径时给提示，而不是静默夹取成「≈ 0」', () => {
+    const bad = computeLab('annulus', { R: 5, r: 8 })
+    expect(bad.value).toBe(0)
+    expect(bad.text).toContain('无法围成环形')
+    expect(bad.text).not.toContain('环形面积')
+    expect(bad.steps.some((x) => x.result.includes('r < R'))).toBe(true)
+    const eq = computeLab('annulus', { R: 6, r: 6 })
+    expect(eq.text).toContain('无法围成环形')
+    const ok = computeLab('annulus', { R: 10, r: 6 })
+    expect(ok.value).toBeCloseTo(200.96, 2)
+    expect(ok.text).toContain('环形面积 ≈ 200.96')
+  })
+})
+
 describe('computeLab 二 混合运算与数量关系', () => {
   it('frac-mix：两种解法结果一致', () => {
     const r = computeLab('frac-mix', { a: 2, b: 3, n: 18 })

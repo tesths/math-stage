@@ -45,7 +45,7 @@ const mulReason = computed(() =>
 const divExamples = [
   { d: 0.6, v: 0.3, i1: 6, i2: 3, q: 2, name: '红彩带剪小段' },
   { d: 1.2, v: 0.24, i1: 120, i2: 24, q: 5, name: '绿彩带剪小段' },
-  { d: 0.34, v: 0.017, i1: 340, i2: 17, q: 20, name: '微型例题' },
+  { d: 0.34, v: 0.017, i1: 340, i2: 17, q: 20, name: '书页 8 验证题' },
 ]
 const divSel = computed(() => divExamples[Math.round(props.values.sel ?? 0) % 3]!)
 
@@ -67,7 +67,7 @@ const approxShown = computed(() => fixedN(approxExact.value, approxDigits.value)
 const approxNext = computed(() => fixedN(approxExact.value, approxDigits.value + 1).slice(-1))
 
 /* ---------- 商的近似值 ---------- */
-const divSpeed = computed(() => props.values.speed ?? 30)
+const divSpeed = computed(() => props.values.speed ?? 40)
 const divApproxRaw = computed(() => (divSpeed.value * 1000) / 60)
 const divApproxDecimals = computed(() => (String(divApproxRaw.value).split('.')[1] ?? '').padEnd(3, '0'))
 const divApproxKeep = computed(() => divApproxDecimals.value.slice(0, 2))

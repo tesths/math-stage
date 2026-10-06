@@ -29,10 +29,10 @@ export const c7Labs: LabDef[] = [
     kind: 'direction',
     params: [
       { key: 'angle', label: '偏转角度', min: 0, max: 75, step: 5, default: 30, unit: '°' },
-      { key: 'dist', label: '距离', min: 1, max: 8, step: 1, default: 3, unit: '千米' },
+      { key: 'dist', label: '距离', min: 1, max: 8, step: 1, default: 2, unit: '千米' },
       { key: 'dir', label: '方向', min: 0, max: 3, step: 1, default: 0, unit: '0北偏东 1北偏西 2南偏东 3南偏西' },
     ],
     formula: '位置 = 方向 + 角度 + 距离',
-    tip: '东北方向也叫北偏东方向；只说方向无法确定位置，必须加上距离（如北偏东 30° 方向 3 千米处）。',
+    tip: '东北方向也叫北偏东方向；只说方向无法确定位置，必须加上距离（如北偏东 30° 方向 2 千米处）。',
   },
 ]

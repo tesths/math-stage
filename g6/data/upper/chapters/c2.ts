@@ -28,7 +28,7 @@ export const c2Labs: LabDef[] = [
     prompt:
       '妈妈带 100 元到超市购物，买了 1 盒鸡蛋（19.6 元/盒）、2 箱牛奶（30.4 元/箱）。剩下的钱够买 1 袋大米（21.6 元）吗？够买 1 袋面粉（16.8 元）吗？',
     kind: 'estimate-shop',
-    params: [{ key: 'budget', label: '带的钱', min: 80, max: 150, step: 5, default: 100, unit: '元' }],
+    params: [{ key: 'budget', label: '带的钱', min: 85, max: 150, step: 5, default: 100, unit: '元' }],
     formula: '估大法：最少剩 = 预算 - 20 - 31×2；估小法：最多剩 = 预算 - 19 - 30×2',
     tip: '要判断"够不够买面粉"把单价估大一点（最少剩）；要判断"够不够买大米"把单价估小一点（最多剩），这样结论才可靠。',
   },

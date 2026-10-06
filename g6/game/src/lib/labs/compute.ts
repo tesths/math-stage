@@ -507,10 +507,13 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const angle = p.angle ?? 0
       return {
         value: angle,
-        text: `圆心角 ${fmt(angle)}°，占圆的 ${fmt(angle / 360)}`,
+        text: `圆心角 ${fmt(angle)}°，占圆的 ${fractionText(angle, 360)}（≈ ${fixedN(angle / 360, 3)}）`,
         steps: [
           { expr: `圆心角`, result: `${fmt(angle)}°` },
-          { expr: `扇形占圆的比例 = 圆心角 ÷ 360°`, result: `${fmt(angle)} ÷ 360 = ${fmt(angle / 360)}` },
+          {
+            expr: `扇形占圆的比例 = 圆心角 ÷ 360°`,
+            result: `${fmt(angle)} ÷ 360 = ${fractionText(angle, 360)} ≈ ${fixedN(angle / 360, 3)}`,
+          },
         ],
         conclusion: `在同一个圆中，圆心角越大，所对的弧越长，扇形越大。`,
       }
@@ -545,7 +548,19 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
     }
     case 'annulus': {
       const R = p.R ?? 0
-      const r = Math.min(p.r ?? 0, R)
+      const r = p.r ?? 0
+      // 内圆半径 ≥ 外圆半径时不成立：与图上的一致处理是给出提示，而不是静默夹取成"≈ 0"
+      if (r >= R) {
+        return {
+          value: 0,
+          text: `内圆半径 ${fmt(r)} 厘米不小于外圆半径 ${fmt(R)} 厘米，无法围成环形`,
+          steps: [
+            { expr: `环形的条件`, result: `内圆半径必须小于外圆半径（r < R）` },
+            { expr: `当前取值`, result: `r = ${fmt(r)} 厘米，R = ${fmt(R)} 厘米，不满足 r < R` },
+          ],
+          conclusion: `把内圆半径调小（小于外圆半径 ${fmt(R)} 厘米）才能围成环形：环宽 = R − r，面积 = π(R² − r²)。`,
+        }
+      }
       const s = roundTo(PI * (R * R - r * r), 2)
       return {
         value: s,

@@ -2,33 +2,121 @@
 /**
  * 比和比例 Lab：比的认识 / 比值与形状 / 化简比 / 按比例分配 / 比例性质 / 解比例 / 黄金比
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { gcd, simplifyRatio, toFixed2 } from '@/lib/engine/math'
+import { gcd, simplifyRatio, toFixed2, toFixedN } from '@/lib/engine/math'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
 const kind = computed(() => props.lab.kind)
 
+/**
+ * 预设按钮改写参数后递增。
+ * 真实页面传进来的是 reactive 对象，靠它自己就能触发重渲染；
+ * 这里额外留一个版本号，保证父级若传入普通对象（测试/特殊用法）时预设结果也照样渲染出来。
+ */
+const paramRev = ref(0)
+
+/** 读取参数值；依赖 paramRev，使预设按钮写入后必然重算并重渲染 */
+function param(key: string, fallback: number): number {
+  void paramRev.value
+  const v = props.values[key]
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+}
+
 /* ---------- 比的认识 · 橙汁饮料 ---------- */
-const ra = computed(() => Math.round(props.values.a ?? 3))
-const rb = computed(() => Math.round(props.values.b ?? 2))
+const ra = computed(() => Math.round(param('a', 3)))
+const rb = computed(() => Math.round(param('b', 2)))
+
+/**
+ * 水位基准：两杯共用一个「满杯」份数，取自本 Lab 参数声明的 max（a、b 中较大者）。
+ * 这样杯高比 = 份数比，参数 max 改动后水位自动跟着改，不再写死除以 8。
+ */
+const cupCap = computed(() => {
+  const caps = props.lab.params
+    .filter((p) => p.key === 'a' || p.key === 'b')
+    .map((p) => p.max)
+    .filter((m) => typeof m === 'number' && Number.isFinite(m) && m > 0)
+  return caps.length ? Math.max(...caps) : 8
+})
+/** 水位高度（百分比）：份数 ÷ 同一基准，保证两杯高度比 = 份数比 */
+function fillPct(part: number): string {
+  return `${(part / cupCap.value) * 100}%`
+}
+/**
+ * 倍数文案：能除尽就给精确小数（3:2 → 1.5、1:8 → 0.125），
+ * 除不尽给最简分数 + 三位小数近似（1:3 → 1/3 ≈ 0.333），不再把 1/3 写成 0.33。
+ */
+const multipleText = computed(() => {
+  const a = ra.value
+  const b = rb.value
+  if (!b) return '—'
+  const g = gcd(a, b)
+  const n = a / g
+  const d = b / g
+  let rest = d
+  while (rest % 2 === 0) rest /= 2
+  while (rest % 5 === 0) rest /= 5
+  if (rest === 1) return String(Number((a / b).toFixed(6)))
+  return `${n}/${d} ≈ ${toFixedN(a / b, 3)}`
+})
 
 /* ---------- 比值与形状 · 长方形名片 ---------- */
-const w = computed(() => Math.round(props.values.w ?? 90))
-const h = computed(() => Math.round(props.values.h ?? 54))
+const w = computed(() => Math.round(param('w', 90)))
+const h = computed(() => Math.round(param('h', 54)))
 const ratioVal = computed(() => w.value / h.value)
 /** 必须用 computed 保存化简结果：写成 `const [sn, sd] = computed(...).value` 会在 setup 期就取快照，拖动后不再更新 */
 const simp = computed(() => simplifyRatio(w.value, h.value))
 
+/** 课本例题预设：宽 54 不在 h 的滑块步进网格上（min 20 / step 5），用按钮一键取到课本数值 */
+interface ValuePreset {
+  label: string
+  w: number
+  h: number
+}
+const VALUE_PRESETS: ValuePreset[] = [
+  { label: '90 : 54', w: 90, h: 54 },
+  { label: '90 : 45', w: 90, h: 45 },
+  { label: '80 : 40', w: 80, h: 40 },
+]
+/** 点击预设：直接写回响应式的 props.values（同时 bump 版本号，保证非 reactive 入参也会重渲染） */
+function applyValuePreset(p: ValuePreset): void {
+  props.values.w = p.w
+  props.values.h = p.h
+  paramRev.value++
+}
+/** 当前参数是否命中该预设（模板据此打高亮 + aria-pressed） */
+function hitValuePreset(p: ValuePreset): boolean {
+  return w.value === p.w && h.value === p.h
+}
+
 /* ---------- 化简比 ---------- */
 const SIMPLIFY_EXAMPLES = [
   { label: '12 : 18', expr: '同时除以 6（12 和 18 的最大公因数）', ans: '2 : 3', a: 12, b: 18, group: 6 },
-  { label: '5/6 : 3/4', expr: '同时乘 12（6 和 4 的公分母）', ans: '10 : 9' },
+  { label: '5/6 : 3/4', expr: '同时乘 12（6 和 4 的最小公倍数）', ans: '10 : 9' },
   { label: '1.8 : 0.09', expr: '同时乘 100 化成整数比，再化简', ans: '20 : 1' },
   { label: '0.32 : 0.8', expr: '同时乘 100 得 32 : 80，再除以 16', ans: '2 : 5' },
 ]
-const sim = computed(() => SIMPLIFY_EXAMPLES[Math.round(props.values.sel ?? 0) % SIMPLIFY_EXAMPLES.length]!)
+/** sel 的合法下标（对示例数取模，负值也归一到 0..n-1） */
+const selIndex = computed(() => {
+  const n = Math.round(param('sel', 0))
+  const len = SIMPLIFY_EXAMPLES.length
+  return ((n % len) + len) % len
+})
+const sim = computed(() => SIMPLIFY_EXAMPLES[selIndex.value]!)
+/** 四个示例各一个预设按钮，切到哪个就高亮哪个（替代原文塞在参数 unit 里的一串说明） */
+interface SelPreset {
+  label: string
+  sel: number
+}
+const SIMPLIFY_PRESETS: SelPreset[] = SIMPLIFY_EXAMPLES.map((e, i) => ({ label: e.label, sel: i }))
+function applySelPreset(p: SelPreset): void {
+  props.values.sel = p.sel
+  paramRev.value++
+}
+function hitSelPreset(p: SelPreset): boolean {
+  return selIndex.value === p.sel
+}
 const simFlow = computed(() => [sim.value.label, sim.value.expr, sim.value.ans])
 /** 整数示例：可展示按公因数分组的量条 */
 const simBars = computed(() => {
@@ -85,12 +173,17 @@ const sx = computed(() => (sa.value * sc.value) / sb.value)
 
 /* ---------- 黄金比 ---------- */
 const gw = computed(() => props.values.w ?? 200)
-const gl = computed(() => gw.value / 0.618)
+/**
+ * 黄金比的近似值 0.618：只在这里定义一次（可被参数 `ratio` 覆盖），
+ * 图形、文案、算式都引用它，避免"改一处、别处还对不上"。
+ */
+const GOLDEN_RATIO = computed(() => props.values.ratio ?? 0.618)
+const GOLDEN_TEXT = computed(() => toFixedN(GOLDEN_RATIO.value, 3))
+const gl = computed(() => gw.value / GOLDEN_RATIO.value)
 const gtotal = computed(() => gw.value + gl.value)
-const RATIO = 0.618
 /** 画出的黄金长方形：高度 = 宽度 × 0.618，宽度受限时高度同步受限，比例始终是 1.618:1 */
 const goldW = computed(() => Math.min(gl.value, 320))
-const goldH = computed(() => goldW.value * RATIO)
+const goldH = computed(() => goldW.value * GOLDEN_RATIO.value)
 </script>
 
 <template>
@@ -100,12 +193,12 @@ const goldH = computed(() => goldW.value * RATIO)
       <div class="juice">
         <div class="cup-set">
           <div class="cup">
-            <div class="cup-fill juice-a" :style="{ height: `${(ra / 8) * 100}%` }" />
+            <div class="cup-fill juice-a" :style="{ height: fillPct(ra) }" />
             <span class="cup-label">{{ ra }} 杯</span>
             <span class="cup-name">纯橙汁</span>
           </div>
           <div class="cup">
-            <div class="cup-fill juice-b" :style="{ height: `${(rb / 8) * 100}%` }" />
+            <div class="cup-fill juice-b" :style="{ height: fillPct(rb) }" />
             <span class="cup-label">{{ rb }} 杯</span>
             <span class="cup-name">水</span>
           </div>
@@ -113,7 +206,8 @@ const goldH = computed(() => goldW.value * RATIO)
         <p class="ratio-big">
           纯橙汁 : 水 = <b>{{ ra }} : {{ rb }}</b>
         </p>
-        <p class="note">前项 {{ ra }}，后项 {{ rb }}；表示橙汁是水的 {{ toFixed2(ra / rb) }} 倍</p>
+        <p class="note">前项 {{ ra }}，后项 {{ rb }}；表示橙汁是水的 {{ multipleText }} 倍</p>
+        <p class="note">两杯同高、同一水位基准（满杯 {{ cupCap }} 份），杯内高度比就是份数比 {{ ra }} : {{ rb }}</p>
       </div>
     </template>
 
@@ -125,9 +219,22 @@ const goldH = computed(() => goldW.value * RATIO)
           <span class="rect-ht">{{ h }}</span>
         </div>
         <p class="ratio-big">
-          {{ w }} : {{ h }} = <b>{{ toFixed2(ratioVal) }}</b>（化简比 {{ simp[0] }}:{{ simp[1] }}）
+          {{ w }} : {{ h }} = <b>{{ toFixed2(ratioVal) }}</b>（最简比 {{ simp[0] }}:{{ simp[1] }}）
         </p>
         <p class="note">长 ÷ 宽 = 比值；比值相等的长方形形状相同</p>
+        <div class="preset-row" aria-label="课本例题预设">
+          <button
+            v-for="p in VALUE_PRESETS"
+            :key="p.label"
+            type="button"
+            class="preset-btn"
+            :class="{ active: hitValuePreset(p) }"
+            :aria-pressed="hitValuePreset(p)"
+            @click="applyValuePreset(p)"
+          >
+            {{ p.label }}<span v-if="hitValuePreset(p)" class="preset-hit">✓ 当前</span>
+          </button>
+        </div>
       </div>
     </template>
 
@@ -135,6 +242,19 @@ const goldH = computed(() => goldW.value * RATIO)
     <template v-else-if="kind === 'ratio-simplify'">
       <div class="cmp-card">
         <p class="ratio-big">{{ sim.label }}</p>
+        <div class="preset-row" aria-label="化简示例预设">
+          <button
+            v-for="p in SIMPLIFY_PRESETS"
+            :key="p.label"
+            type="button"
+            class="preset-btn"
+            :class="{ active: hitSelPreset(p) }"
+            :aria-pressed="hitSelPreset(p)"
+            @click="applySelPreset(p)"
+          >
+            {{ p.label }}<span v-if="hitSelPreset(p)" class="preset-hit">✓ 当前</span>
+          </button>
+        </div>
         <div class="sim-flow" aria-label="化简比同步处理流程">
           <span v-for="(step, i) in simFlow" :key="step" class="flow-chip" :class="{ ans: i === simFlow.length - 1 }">
             {{ i === 1 ? '两边同做：' : '' }}{{ step }}
@@ -257,7 +377,7 @@ const goldH = computed(() => goldW.value * RATIO)
     <template v-else>
       <div class="card-block">
         <div class="gold-rect" :style="{ width: `${goldW}px`, height: `${goldH}px` }">
-          <div class="gold-line" :style="{ left: `${RATIO * 100}%` }" />
+          <div class="gold-line" :style="{ left: `${GOLDEN_RATIO * 100}%` }" />
           <span class="gold-leb">{{ toFixed2(gl) }}</span>
         </div>
         <div class="gold-segment" aria-label="黄金比分割线段">
@@ -267,9 +387,9 @@ const goldH = computed(() => goldW.value * RATIO)
         <p class="ratio-big">
           {{ toFixed2(gw) }} : {{ toFixed2(gl) }} ≈ <b>{{ toFixed2(gw / gl) }}</b>
         </p>
-        <p class="sim-step">长 = 宽 ÷ 0.618 = {{ toFixed2(gw) }} ÷ 0.618 = {{ toFixed2(gl) }}</p>
+        <p class="sim-step">长 = 宽 ÷ {{ GOLDEN_TEXT }} = {{ toFixed2(gw) }} ÷ {{ GOLDEN_TEXT }} = {{ toFixed2(gl) }}</p>
         <p class="sim-step">较短 : 较长 ≈ 较长 : 全长，即 {{ toFixed2(gw) }} : {{ toFixed2(gl) }} ≈ {{ toFixed2(gl) }} : {{ toFixed2(gtotal) }}</p>
-        <p class="note">宽与长的比越接近 0.618，看起来越协调、越美</p>
+        <p class="note">宽与长的比越接近 {{ GOLDEN_TEXT }}，看起来越协调、越美</p>
       </div>
     </template>
   </div>
@@ -402,6 +522,34 @@ const goldH = computed(() => goldW.value * RATIO)
 }
 .sim-ans b {
   color: var(--ui-primary);
+}
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+.preset-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  padding: 0.28rem 0.7rem;
+  cursor: pointer;
+}
+.preset-btn:hover {
+  border-color: var(--ui-primary);
+}
+.preset-btn.active {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 16%, transparent);
+  color: var(--ui-primary);
+}
+.preset-hit {
+  margin-left: 0.25rem;
 }
 .sim-flow,
 .solve-flow,

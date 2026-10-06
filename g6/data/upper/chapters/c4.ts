@@ -29,7 +29,7 @@ export const c4Labs: LabDef[] = [
     kind: 'ratio-value',
     params: [
       { key: 'w', label: '长', min: 20, max: 120, step: 5, default: 90, unit: '毫米' },
-      { key: 'h', label: '宽', min: 20, max: 80, step: 5, default: 54, unit: '毫米' },
+      { key: 'h', label: '宽', min: 20, max: 80, step: 1, default: 54, unit: '毫米' },
     ],
     formula: '比值 = 前项 ÷ 后项 = 长 ÷ 宽',
     tip: '比的前项除以后项所得的商叫作比值；比值相等的比，表示的两个量关系相同。',
@@ -44,7 +44,7 @@ export const c4Labs: LabDef[] = [
       '12:18 同时除以 6 得 2:3；1.8:0.09 同时乘 100 得 180:9 = 20:1。应用比的基本性质，把比化成前项、后项只有公因数 1 的最简整数比。',
     kind: 'ratio-simplify',
     params: [
-      { key: 'sel', label: '化简示例', min: 0, max: 3, step: 1, default: 0, unit: '0=12:18 1=5/6:3/4 2=1.8:0.09 3=0.32:0.8' },
+      { key: 'sel', label: '化简示例', min: 0, max: 3, step: 1, default: 0, unit: '例题序号' },
     ],
     formula: '前项 ÷ 最大公因数（整数比）/ 同时乘公分母（分数比）/ 同时乘 100（小数比）',
     tip: '比的基本性质：比的前项和后项同时乘或除以相同的数（0 除外），比值不变。',

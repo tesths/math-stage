@@ -11,7 +11,7 @@
 import { computed, ref } from 'vue'
 import { animate } from 'animejs'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { fixedN, roundTo, toFixed2 } from '@/lib/engine/math'
+import { fixedN, gcd, roundTo, toFixed2 } from '@/lib/engine/math'
 import { approxLengthInR, cycloidPath, rollDistance, rollPoint, sectorPath, wedgeLayout } from '@/lib/labs/circle'
 import { playClick } from '@/lib/sound'
 
@@ -22,7 +22,13 @@ const PI = 3.14
 
 /* ---------- 认识圆 ---------- */
 const cr = computed(() => Math.round(props.values.r ?? 4))
-const crPx = computed(() => cr.value * 16)
+/**
+ * 比例尺（px/厘米）：上限 16，r=8 时收窄到 12.5 → crPx=100，
+ * 圆纵向 [120−100, 120+100] = [20, 220] 完整落在 240 高的视口里，
+ * 竖直半径线的箭头也不会被裁掉。
+ */
+const crK = computed(() => Math.min(16, 100 / Math.max(1, cr.value)))
+const crPx = computed(() => cr.value * crK.value)
 const cd = computed(() => cr.value * 2)
 const CX = 170
 const CY = 120
@@ -34,10 +40,29 @@ const radiusEnds = computed(() =>
     return { x: CX + crPx.value * Math.cos(rad), y: CY + crPx.value * Math.sin(rad) }
   }),
 )
+/** 两条过圆心的虚线直径（对称轴）——圆有无数条对称轴 */
+/** 20°/160°（浅斜）避开图内「半径 r / r / 直径 d / 圆心 O」四处标注，又明显不等于水平直径 */
+const axisDirs = [20, 160]
+const axisEnds = computed(() =>
+  axisDirs.map((deg) => {
+    const rad = (deg * Math.PI) / 180
+    return {
+      x1: CX - crPx.value * Math.cos(rad),
+      y1: CY - crPx.value * Math.sin(rad),
+      x2: CX + crPx.value * Math.cos(rad),
+      y2: CY + crPx.value * Math.sin(rad),
+    }
+  }),
+)
 
 /* ---------- 扇形 ---------- */
 const angle = computed(() => Math.max(0, Math.round(props.values.angle ?? 90)))
 const sectorR = computed(() => Math.max(1, Math.round(props.values.r ?? 6)))
+/** 占比的最简分数：30° → 1/12，45° → 1/8，90° → 1/4 */
+const angleFrac = computed(() => {
+  const g = gcd(Math.round(angle.value), 360) || 1
+  return `${Math.round(angle.value) / g}/${360 / g}`
+})
 const sr = 96
 /** 圆心角 360° 时整圆都是扇形，用圆代替扇形路径（SVG 弧在 360° 会退化） */
 const isFullCircle = computed(() => angle.value >= 360)
@@ -95,6 +120,20 @@ const markPoint = computed(() => rollPoint(rollX0, rollBaseY, rollR.value, rollT
 const cycloid = computed(() => cycloidPath(rollX0, rollBaseY, rollR.value))
 const rolledFull = computed(() => rollTheta.value >= 2 * Math.PI - 1e-6)
 const rollTurns = computed(() => rollTheta.value / (2 * Math.PI))
+/** 图上比例尺（px/米）：圆、直径线、滚动距离都按它绘制，因此图上 C ÷ d 恒为 π */
+const rollScale = computed(() => rollR.value / cir.value)
+/**
+ * 绕绳 / 滚圆测量表：三个大小不同的圆（半径 r、2r、3r），
+ * C ÷ d 都是 3.14——把「π 是定值」的发现过程摆出来。
+ */
+const measureRows = computed(() =>
+  [1, 2, 3].map((m) => {
+    const rr = cir.value * m
+    const d = 2 * rr
+    const c = roundTo(2 * PI * rr, 2)
+    return { r: rr, d, c, ratio: fixedN(c / d, 2) }
+  }),
+)
 function runRoll() {
   if (rolling.value) return
   playClick()
@@ -160,11 +199,19 @@ const ringPath = computed(
 
 /* ---------- 组合图形 · 窗户 ---------- */
 const side = computed(() => props.values.side ?? 1.8)
-const sqPx = computed(() => side.value * 46)
-const smRadius = computed(() => (side.value * 46) / 2)
+/**
+ * 比例尺（px/米）：上限 46；side 较大时收窄到 120/side，
+ * 保证「正方形 + 半圆 + 上下标注」总高（1.5·sqPx + 标注）不超过 200，
+ * 正方形顶部与半圆顶都不会被 240 高的视口裁掉。
+ */
+const sqK = computed(() => Math.min(46, 120 / Math.max(1, side.value)))
+const sqPx = computed(() => side.value * sqK.value)
+const smRadius = computed(() => sqPx.value / 2)
 const windowSq = computed(() => roundTo(side.value * side.value, 4))
 const windowSemi = computed(() => roundTo((PI * (side.value / 2) ** 2) / 2, 4))
 const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2))
+/** 窗户周长 = 3 条正方形边 + 半圆弧 = 边长 ×(3 + π/2) */
+const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
 </script>
 
 <template>
@@ -179,6 +226,17 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
             </marker>
           </defs>
           <circle :cx="CX" :cy="CY" :r="crPx" class="circle-outline" />
+          <!-- 过圆心的虚线直径：每一条都是圆的对称轴（有无数条） -->
+          <line
+            v-for="(a, i) in axisEnds"
+            :key="'ax' + i"
+            :x1="a.x1"
+            :y1="a.y1"
+            :x2="a.x2"
+            :y2="a.y2"
+            class="line-axis"
+            stroke-dasharray="6 4"
+          />
           <line :x1="CX - crPx" :y1="CY" :x2="CX + crPx" :y2="CY" class="line-diameter" />
           <g v-for="(p, i) in radiusEnds" :key="'r' + i">
             <line :x1="CX" :y1="CY" :x2="p.x" :y2="p.y" class="line-radius" :marker-end="i === 0 ? 'url(#arr)' : undefined" />
@@ -187,8 +245,9 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
           <circle :cx="CX" :cy="CY" r="4" class="dot-center" />
           <text :x="CX" :y="CY + 22" text-anchor="middle" class="t-lbl">圆心 O</text>
           <text :x="CX + 8" :y="CY - crPx / 2 - 6" class="t-lbl amber">半径 r = {{ cr }} 厘米</text>
-          <text :x="CX + crPx / 2 + 6" :y="CY + 16" class="t-lbl sky">直径 d = {{ cd }} 厘米</text>
+          <text :x="CX + Math.max(crPx / 2 + 6, 50)" :y="CY + 16" class="t-lbl sky">直径 d = {{ cd }} 厘米</text>
           <text :x="CX + 14" :y="CY - 10" class="t-lbl amber">r</text>
+          <text x="8" y="232" class="t-lbl2">虚线是过圆心的直线——圆有无数条对称轴</text>
         </svg>
       </div>
       <p class="res-line">同一个圆里所有半径都相等（OA = OB = OC = {{ cr }} 厘米）：d = 2r = 2 × {{ cr }} = <b>{{ cd }}</b> 厘米</p>
@@ -225,7 +284,7 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
         <span class="part-chip primary">圆心角 ∠AOB = {{ angle }}°</span>
       </div>
       <p class="res-line">
-        扇形占全圆的 {{ angle }} ÷ 360 = <b>{{ toFixed2(angle / 360) }}</b>；弧长 = 2πr × {{ angle }}/360 ≈
+        扇形占全圆的 {{ angle }} ÷ 360 = <b>{{ angleFrac }}</b> ≈ {{ fixedN(angle / 360, 3) }}；弧长 = 2πr × {{ angle }}/360 ≈
         <b>{{ fixedN(sectorArcLen, 2) }}</b> 厘米，面积 = πr² × {{ angle }}/360 ≈ <b>{{ fixedN(sectorArea, 2) }}</b> 平方厘米
       </p>
     </template>
@@ -256,6 +315,9 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
           <text :x="352" :y="rollBaseY - 6" text-anchor="end" class="t-lbl2">滚圆一周，前进的距离就是周长</text>
         </svg>
       </div>
+      <p class="scale-line">
+        比例尺：图上 1 米 ≈ {{ toFixed2(rollScale) }} px（圆、直径线、滚动距离都按同一比例尺绘制，长度单位统一用米）
+      </p>
       <div class="controls">
         <UButton size="sm" color="primary" variant="soft" icon="i-heroicons-arrow-path" :disabled="rolling" @click="runRoll">
           滚一周 · 看前进多少米
@@ -269,6 +331,21 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
           <template v-else>半径 r = {{ cir }} 米，直径 d = {{ cdValue }} 米，周长 C = 2πr = {{ C }} 米</template>
         </span>
       </div>
+      <!-- 绕绳 / 滚圆量一量：三个大小不同的圆，比值都相同 -->
+      <table class="measure-table" aria-label="绕绳滚圆测量表">
+        <caption>绕绳、滚圆量一量：圆的半径越大，直径和周长都变大，但 C ÷ d 始终是 3.14</caption>
+        <thead>
+          <tr><th>半径 r / 米</th><th>直径 d / 米</th><th>周长 C / 米</th><th>C ÷ d</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, i) in measureRows" :key="'m' + i">
+            <td>{{ row.r }}</td>
+            <td>{{ row.d }}</td>
+            <td>{{ fixedN(row.c, 2) }}</td>
+            <td>{{ row.ratio }}</td>
+          </tr>
+        </tbody>
+      </table>
       <p class="res-line">C = πd = 2πr = 2 × 3.14 × {{ cir }} = <b>{{ C }}</b> 米，且 C ÷ d ≈ <b>π = 3.14</b></p>
     </template>
 
@@ -316,35 +393,46 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
     <!-- 环形面积 -->
     <template v-else-if="kind === 'annulus'">
       <p v-if="invalidRing" class="warn-line">注意：内圆半径 {{ r }} 应小于外圆半径 {{ R }}，请调大外圆或调小内圆</p>
-      <div v-else class="ring-stage">
-        <div class="ring-card">
-          <svg :width="130" :height="130" viewBox="0 0 130 130">
-            <circle cx="65" cy="65" :r="OUTER_PX" class="ring-fill" />
-            <circle cx="65" cy="65" :r="innerPx" fill="var(--ui-bg)" />
-          </svg>
-          <p class="ring-tag">外圆半径 R = {{ R }} 厘米<br />S大 = πR² = {{ fixedN(aOuter, 2) }}</p>
+      <template v-else>
+        <div class="ring-stage">
+          <div class="ring-card">
+            <svg :width="130" :height="130" viewBox="0 0 130 130">
+              <circle cx="65" cy="65" :r="OUTER_PX" class="ring-fill" />
+              <circle cx="65" cy="65" :r="innerPx" class="ring-hole" fill="var(--ui-bg-muted)" />
+            </svg>
+            <p class="ring-tag">外圆半径 R = {{ R }} 厘米<br />S大 = πR² = {{ fixedN(aOuter, 2) }} 平方厘米</p>
+          </div>
+          <p class="op">－</p>
+          <div class="ring-card">
+            <svg :width="130" :height="130" viewBox="0 0 130 130">
+              <circle cx="65" cy="65" :r="OUTER_PX" class="ring-fill" />
+              <circle
+                cx="65"
+                cy="65"
+                :r="innerPx"
+                class="ring-hole"
+                fill="var(--ui-bg-muted)"
+                stroke="#f59e0b"
+                stroke-width="2"
+                stroke-dasharray="4 3"
+              />
+            </svg>
+            <p class="ring-tag">内圆半径 r = {{ r }} 厘米<br />S小 = πr² = {{ fixedN(aInner, 2) }} 平方厘米</p>
+          </div>
+          <p class="op">＝</p>
+          <div class="ring-card">
+            <svg :width="130" :height="130" viewBox="0 0 130 130">
+              <path :d="ringPath" class="ring-fill-stroke" />
+              <line x1="65" y1="65" :x2="65 + innerPx" y2="65" class="line-radius" />
+              <line x1="65" y1="65" :x2="65 + OUTER_PX" y2="65" class="line-diameter" />
+            </svg>
+            <p class="ring-tag ring-result">S环 = {{ fixedN(annulus, 2) }} 平方厘米<br />（占外圆的 {{ fixedN(ringShare * 100, 1) }}%）</p>
+          </div>
         </div>
-        <p class="op">－</p>
-        <div class="ring-card">
-          <svg :width="130" :height="130" viewBox="0 0 130 130">
-            <circle cx="65" cy="65" :r="OUTER_PX" class="ring-fill" />
-            <circle cx="65" cy="65" :r="innerPx" fill="var(--ui-bg)" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 3" />
-          </svg>
-          <p class="ring-tag">内圆半径 r = {{ r }} 厘米<br />S小 = πr² = {{ fixedN(aInner, 2) }}</p>
-        </div>
-        <p class="op">＝</p>
-        <div class="ring-card">
-          <svg :width="130" :height="130" viewBox="0 0 130 130">
-            <path :d="ringPath" class="ring-fill-stroke" />
-            <line x1="65" y1="65" :x2="65 + innerPx" y2="65" class="line-radius" />
-            <line x1="65" y1="65" :x2="65 + OUTER_PX" y2="65" class="line-diameter" />
-          </svg>
-          <p class="ring-tag ring-result">S环 = {{ fixedN(annulus, 2) }} 平方厘米<br />（占外圆的 {{ fixedN(ringShare * 100, 1) }}%）</p>
-        </div>
-      </div>
-      <p class="res-line">
-        S 环 = πR² − πr² = π(R² − r²) = 3.14 × ({{ R }}² − {{ r }}²) = <b>{{ fixedN(annulus, 2) }}</b> 平方厘米；环宽 R − r = {{ R - r }} 厘米
-      </p>
+        <p class="res-line">
+          S 环 = πR² − πr² = π(R² − r²) = 3.14 × ({{ R }}² − {{ r }}²) = <b>{{ fixedN(annulus, 2) }}</b> 平方厘米；环宽 R − r = {{ R - r }} 厘米
+        </p>
+      </template>
     </template>
 
     <!-- 组合图形 · 窗户 -->
@@ -369,16 +457,24 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
             />
             <line :x1="-sqPx / 2" :y1="-sqPx" :x2="sqPx / 2" :y2="-sqPx" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 4" />
             <text :x="0" :y="-sqPx - smRadius - 8" text-anchor="middle" class="t-lbl">
-              半圆直径 = 正方形边长 = {{ toFixed2(side) }}，r = {{ toFixed2(side / 2) }}
+              半圆直径 = 正方形边长 = {{ toFixed2(side) }} 米，r = {{ toFixed2(side / 2) }} 米
             </text>
-            <text :x="sqPx / 2 + 10" :y="-sqPx / 2" class="t-lbl">正方形 {{ toFixed2(side) }} × {{ toFixed2(side) }} = {{ fixedN(windowSq, 2) }}</text>
-            <text :x="-sqPx / 2 - 4" :y="-sqPx - 6" text-anchor="end" class="t-lbl sky">半圆 S = πr²÷2 = {{ fixedN(windowSemi, 2) }}</text>
+            <!-- 半圆面积标注在半圆内部，不再落进正方形 -->
+            <text :x="0" :y="-sqPx - smRadius / 2 + 4" text-anchor="middle" class="t-lbl sky semi-area-label">
+              半圆 S = πr²÷2 = {{ fixedN(windowSemi, 2) }} 平方米
+            </text>
+            <!-- 正方形面积标注放在图形下方居中，不会右溢出 -->
+            <text :x="0" :y="24" text-anchor="middle" class="t-lbl sq-area-label">
+              正方形 {{ toFixed2(side) }} × {{ toFixed2(side) }} = {{ fixedN(windowSq, 2) }} 平方米
+            </text>
+            <text :x="sqPx / 2 + 8" :y="-sqPx / 2 + 4" class="t-lbl2 side-label">边长 {{ toFixed2(side) }} 米</text>
           </g>
         </svg>
       </div>
       <p class="res-line">
         S = {{ fixedN(windowSq, 2) }} + π×{{ toFixed2(side / 2) }}²÷2 = {{ fixedN(windowSq, 2) }} + {{ fixedN(windowSemi, 2) }} =
-        <b>{{ fixedN(windowTotal, 2) }} 平方米</b>
+        <b>{{ fixedN(windowTotal, 2) }} 平方米</b>；周长 = {{ toFixed2(side) }} × (3 + 3.14 ÷ 2) ≈
+        <b>{{ fixedN(windowPerim, 3) }}</b> 米
       </p>
     </template>
   </div>
@@ -454,6 +550,11 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
 .line-angle {
   stroke: var(--ui-warning, #f59e0b);
   stroke-width: 2;
+}
+.line-axis {
+  stroke: #a855f7;
+  stroke-width: 1.2;
+  stroke-dasharray: 6 4;
 }
 .baseline {
   stroke: var(--ui-text-muted);
@@ -572,6 +673,40 @@ const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2)
   font-size: 0.86rem;
   font-weight: 700;
   padding: 0.3rem 0.75rem;
+}
+.scale-line {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  text-align: center;
+}
+.measure-table {
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+}
+.measure-table caption {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted);
+  font-weight: 600;
+  padding-bottom: 0.25rem;
+  caption-side: top;
+}
+.measure-table th,
+.measure-table td {
+  border: 1px solid var(--ui-border);
+  padding: 0.15rem 0.6rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.measure-table th {
+  background: var(--ui-bg-muted);
+  font-weight: 800;
+}
+.measure-table td:last-child {
+  color: var(--ui-primary);
+  font-weight: 800;
 }
 .res-line {
   font-size: 0.95rem;

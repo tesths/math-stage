@@ -55,7 +55,7 @@ export const c5Labs: LabDef[] = [
     kind: 'circle-area',
     params: [
       { key: 'r', label: '半径', min: 1, max: 20, step: 1, default: 5, unit: '米' },
-      { key: 'slices', label: '平均分的份数', min: 4, max: 64, step: 4, default: 8 },
+      { key: 'slices', label: '平均分的份数', min: 8, max: 64, step: 8, default: 8 },
     ],
     formula: 'S = π × r × r = 3.14 × 半径²',
     tip: '平均分的份数越多，拼成的图形越接近长方形；圆的面积 = 长方形面积 = πr × r = πr²。',
