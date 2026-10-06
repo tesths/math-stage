@@ -251,7 +251,15 @@
 新增的锁定断言：`circle-lab.audit.test.ts`（18）、`ratio-lab.audit.test.ts`（9）、`data-params.test.ts`（26），
 以及 `compute.test.ts` 中"扇形占比用最简分数""环形不静默夹取"2 例。
 
-**仍未闭环（保留为后续可选项）**：① 参数 `options` 预设字段（让 1:2200000 这类教材比例尺可达）；② 页面上隐藏参数旁的例题序号说明；③ 人数/天数整除性从"提示"升级为"约束"。
+### 4.1 三个可选项已在第 30 轮闭环
+
+| 可选项 | 做法 | 证据 |
+|---|---|---|
+| ① 参数 `options` 预设字段（让教材比例尺可达） | `schema/lab.ts` 的 `LabParam` 增加 `options?: { label, value }[]`；页面改用新组件 `components/lab/ParamControl.vue`（有 options 渲染按钮组、否则渲染滑块） | `param-control.test.ts`（5 例，含"所有含 options 的参数唯一/在范围内/默认值在其中"）；截图可见比例尺按钮 `1 : 500 / 1 : 1000 / 1 : 1500 / 1 : 2000 / 1 : 5000 / 1 : 2200000` |
+| ② 页面上不再堆"0=xxx 1=yyy"的例题序号 | 有 options 时 `ParamControl` 不渲染 `unit`，选项名直接显示在按钮与右上角 | `param-control.test.ts` 断言有 options 时不显示 unit、右上角显示选项名；c1/c3/c4 的 5 个 `sel` 参数已改用 options（题源说明迁到按钮文字） |
+| ③ 整除性从"提示"升级为"可操作修正" | `SegmentLab` 的警示条上新增「一键改成 49 人」按钮（`snapUpToMultiple` 取最近的 fd 倍数），点击即修正参数、警示消失 | 组件测试：45 人/1÷7 时按钮显示"一键改成 49 人"，点击后 `values.total === 49` 且警示消失 |
+
+至此本轮三个可选项全部闭环。**新增 7 个参数使用 options**：c1 `sel`、c3 `sel`×3、c4 `sel`、c6 `scaleDen`、c6 `ask`。
 
 ## 4.5 截图工具的两个修复（本轮，恢复全量回归能力）
 
