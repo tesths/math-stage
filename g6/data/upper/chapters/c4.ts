@@ -44,7 +44,20 @@ export const c4Labs: LabDef[] = [
       '12:18 同时除以 6 得 2:3；1.8:0.09 同时乘 100 得 180:9 = 20:1。应用比的基本性质，把比化成前项、后项只有公因数 1 的最简整数比。',
     kind: 'ratio-simplify',
     params: [
-      { key: 'sel', label: '化简示例', min: 0, max: 3, step: 1, default: 0, unit: '例题序号' },
+      {
+        key: 'sel',
+        label: '化简示例',
+        min: 0,
+        max: 3,
+        step: 1,
+        default: 0,
+        options: [
+          { label: '12 : 18', value: 0 },
+          { label: '5/6 : 3/4', value: 1 },
+          { label: '1.8 : 0.09', value: 2 },
+          { label: '0.32 : 0.8', value: 3 },
+        ],
+      },
     ],
     formula: '前项 ÷ 最大公因数（整数比）/ 同时乘公分母（分数比）/ 同时乘 100（小数比）',
     tip: '比的基本性质：比的前项和后项同时乘或除以相同的数（0 除外），比值不变。',

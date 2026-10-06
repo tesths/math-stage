@@ -73,7 +73,16 @@ async function shoot(page, id, suffix, clickAction) {
   const url = `${base}/labs/${id}/`
   const errors = []
   const onConsole = (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text())
+    const text = msg.text()
+    if (msg.type() === 'error') {
+      errors.push(text)
+      return
+    }
+    // 组件解析失败/渲染告警只走 warning，不会进 console.error：
+    // 第 30 轮实测 <ParamControl> 因 Nuxt 目录前缀解析不到，整块参数控件静默消失。
+    if (/Failed to resolve component|Failed to resolve directive|Cannot read propert|is not a function/i.test(text)) {
+      errors.push(`[warn] ${text}`)
+    }
   }
   const onPageError = (err) => errors.push(String(err))
   page.on('console', onConsole)

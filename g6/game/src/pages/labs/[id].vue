@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { animate } from 'animejs'
 import { findLabById, labsOfChapter, chapters } from '@data'
+import ParamControl from '@/components/lab/ParamControl.vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { labComponentFor } from '@/lib/labs/registry'
 import { computeLab } from '@/lib/labs/compute'
@@ -148,26 +149,14 @@ watch(labId, () => {
 
           <!-- 右侧：滑块 + 结果 -->
           <div class="flex flex-col gap-4">
-            <div v-for="p in lab.params" :key="p.key" class="param-block">
-              <div class="mb-1 flex items-baseline justify-between">
-                <label class="text-sm font-medium text-(--ui-text-highlighted)">
-                  {{ p.label }} <span class="text-xs text-(--ui-text-muted)">{{ p.unit }}</span>
-                </label>
-                <strong class="text-(--ui-primary)">{{ values[p.key] }}</strong>
-              </div>
-              <input
-                v-model.number="values[p.key]"
-                type="range"
-                class="lab-range"
-                :min="p.min"
-                :max="p.max"
-                :step="p.step"
-                @input="playClick"
-              />
-              <div class="mt-0.5 flex justify-between text-[11px] text-(--ui-text-muted)">
-                <span>{{ p.min }}</span><span>{{ p.max }}</span>
-              </div>
-            </div>
+            <ParamControl
+              v-for="p in lab.params"
+              :key="p.key"
+              :param="p"
+              :model-value="values[p.key] ?? p.default"
+              @update:model-value="(v: number) => (values[p.key] = v)"
+              @pick="playClick"
+            />
 
             <div ref="resultBoxRef" class="result-box">
               <p class="text-xs text-(--ui-text-muted)">{{ lab.formula }}</p>

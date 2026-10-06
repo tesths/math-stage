@@ -387,6 +387,17 @@ describe('Lab 组件渲染', () => {
     expect(sweeps[3]).toContain('0 0 1 ')
   })
 
+  it('SegmentLab：人数不整时给出一键改成倍数的按钮（把提示变成可操作）', async () => {
+    const lab = findLabById('g6-c2-segment')!
+    const wrapper = mount(SegmentLab, { props: { lab, values: { total: 45, fn: 1, fd: 7 } } })
+    const fix = wrapper.findAll('button').find((b) => b.text().includes('一键改成'))!
+    expect(fix.text()).toContain('49 人')
+    await fix.trigger('click')
+    expect(wrapper.props('values').total).toBe(49)
+    // 修正后警告消失（49 是 7 的倍数）
+    expect(wrapper.find('.seg-warn').exists()).toBe(false)
+  })
+
   it('SegmentLab：工程问题显示最简分数与合作时间；人数不整时给出提示', () => {
     const work = findLabById('g6-c2-work-together')!
     const w = mount(SegmentLab, { props: { lab: work, values: { a: 5, b: 7 } } })

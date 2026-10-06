@@ -4,6 +4,7 @@
  */
 import { computed } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import { playClick } from '@/lib/sound'
 import { toFixed2 } from '@/lib/engine/math'
 import { fractionCount, fractionDecimal, fractionText, snapUpToMultiple, unitFractionSum } from '@/lib/labs/fractions'
 
@@ -45,6 +46,12 @@ const rateText = computed(() => fractionText(rateFraction.value[0], rateFraction
 const hoursFraction = computed(() => fractionDecimal(rateFraction.value[1], rateFraction.value[0], 2))
 const hoursText = computed(() => fractionText(rateFraction.value[1], rateFraction.value[0]))
 const hoursExact = computed(() => hoursFraction.value.exact || rateFraction.value[1] === 1)
+
+/** 一键把总人数改成 fd 的倍数：把"只提示"变成"可操作修正" */
+function fixTotalToMultiple() {
+  props.values.total = snapUpToMultiple(total.value, fd.value)
+  playClick()
+}
 </script>
 
 <template>
@@ -68,6 +75,15 @@ const hoursExact = computed(() => hoursFraction.value.exact || rateFraction.valu
         </p>
         <p v-if="!boysCount.integral" class="seg-warn">
           人数必须是整数：{{ total }} 不是 {{ fd }} 的倍数，算出 {{ toFixed2(boysCount.value) }} 人。把总人数调成 {{ fd }} 的倍数（如 {{ snapUpToMultiple(total, fd) }} 人）才合适。
+          <UButton
+            size="xs"
+            color="warning"
+            variant="soft"
+            class="seg-fix"
+            @click="fixTotalToMultiple"
+          >
+            一键改成 {{ snapUpToMultiple(total, fd) }} 人
+          </UButton>
         </p>
       </div>
     </template>
@@ -195,6 +211,9 @@ const hoursExact = computed(() => hoursFraction.value.exact || rateFraction.valu
 .seg-part.girls {
   background: color-mix(in srgb, var(--ui-primary) 40%, white);
   color: var(--ui-text-highlighted);
+}
+.seg-fix {
+  margin-left: 0.4rem;
 }
 .seg-warn {
   margin-top: 0.35rem;

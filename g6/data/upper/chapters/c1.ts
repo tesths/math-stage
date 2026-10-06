@@ -61,7 +61,19 @@ export const c1Labs: LabDef[] = [
       '红彩带长 0.6 米，剪成 0.3 米的小段可以剪几段？一个数除以小数，可以把被除数和除数的小数点同时向右移动相同的位数，转化成整数除法。',
     kind: 'div-decimal',
     params: [
-      { key: 'sel', label: '例题选择', min: 0, max: 2, step: 1, default: 0, unit: '0红彩带（书页7例） 1绿彩带（书页7例） 2书页8验证：0.34÷0.017' },
+      {
+        key: 'sel',
+        label: '例题选择',
+        min: 0,
+        max: 2,
+        step: 1,
+        default: 0,
+        options: [
+          { label: '红彩带（书页 7 例）', value: 0 },
+          { label: '绿彩带（书页 7 例）', value: 1 },
+          { label: '书页 8 验证 0.34÷0.017', value: 2 },
+        ],
+      },
     ],
     fixed: {},
     formula: '转化：除数变成整数，被除数小数点同步右移',

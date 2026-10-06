@@ -189,9 +189,12 @@ describe('审计条 4 · c1 div-decimal：第 3 组 0.34÷0.017 溯源为书页 
   const lab = pick(c1Labs, 'g6-c1-div-decimal')
   const sel = param(lab, 'sel')
 
-  it('选择器标注了题源，tip 说明第 3 组不是例题', () => {
-    expect(sel.unit).toContain('书页7例')
-    expect(sel.unit).toContain('书页8')
+  it('选择器标注了题源（渲染成按钮文字），tip 说明第 3 组不是例题', () => {
+    // 第 29 轮起 `sel` 用 options 渲染成按钮：题源标注在按钮文字上，不再塞进 unit
+    const labels = (sel.options ?? []).map((o) => o.label).join(' | ')
+    expect(labels).toContain('书页 7 例')
+    expect(labels).toContain('书页 8')
+    expect(sel.unit ?? '').not.toContain('书页')
     expect(lab.tip).toContain('0.34÷0.017')
     expect(lab.tip).toContain('书页 8')
     expect(lab.tip).toContain('不是例题')
@@ -307,8 +310,19 @@ describe('审计条 10 · c6 map-scale：教材比例尺可达性', () => {
     }
   })
 
-  it('1:2200000 这类跨数量级的教材比例尺超出线性滑块范围（需 schema 侧预设列表）', () => {
-    expect(scaleDen.max).toBeLessThan(2200000)
+  it('1:2200000 这类跨数量级的教材比例尺现在可达（第 29 轮起用 options 预设列表）', () => {
+    const values = (scaleDen.options ?? []).map((o) => o.value)
+    expect(values).toContain(2200000)
+    expect(values).toContain(1500)
+    expect(values).toContain(1000)
+    // 有 options 就不再渲染滑块，因此 max 放宽到 2200000 不会让滑块范围失真
+    expect(scaleDen.max).toBeGreaterThanOrEqual(2200000)
+  })
+
+  it('比例尺选项也标注成 1 : n 的形式，学生看得到比例尺本身', () => {
+    const labels = (scaleDen.options ?? []).map((o) => o.label)
+    expect(labels).toContain('1 : 2200000')
+    expect(labels).toContain('1 : 1500')
   })
 
   it('求实际 / 求图上 / 求比例尺三种问法都可达', () => {
