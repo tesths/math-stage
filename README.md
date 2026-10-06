@@ -104,12 +104,35 @@ math/
 │   ├── glm_ocr_math.py      六本全量 GLM-OCR 批处理（729 页 → work/glm_ocr/）
 │   ├── verify_glm_examples.py 六本例题 ↔ GLM OCR 全量核对（→ docs/example-audit-glm.md）
 │   ├── merge_book_glm.py    用 GLM 文字重建六本合订正文 gX/ocr/upper/book/
-│   └── extract_g6_exercises.py 六年级练习题抽取（合订正文 → candidates.json + briefs + 候选清单，供可视化适配度判定）
+│   ├── extract_g6_exercises.py 六年级练习题抽取（合订正文 → candidates.json + briefs + 候选清单，供可视化适配度判定）
+│   └── visual-shots.mjs     例题可视化批量截图回归（初始态 + 过程态，控制台报错落 notes）
 └── docs/                          其他文档
     ├── example-audit.md           一年级例题逐条核对报告（Vision OCR，含需看图复核清单）
     ├── example-audit-glm.md       六本例题 ↔ GLM OCR 全量核对报告（2026-08，含 FIG 复核结论与数据修正记录）
+    ├── example-visual-review.md   六册逐题可视化 review（截图 + 问题 + 改进方案 + 优先级）
+    ├── example-visual-improvements.md 五、六年级逐题改进记录（本轮：改了什么、数学错在哪、怎么验证）
+    ├── research/                  数学例题可视化调研（国内实践 / 国际平台与前端实现）
+    ├── audit/                     g6 逐 Lab 数学审查报告（含坐标复算与行号证据）
     └── 游戏形式调研.md            20 个小游戏的课本出处/玩法设计调研
 ```
+
+### 例题可视化改进闭环（五年级 / 六年级）
+
+调研 → 逐题审查 → 纯几何 + 单元测试 → 组件改造 → 截图回归，四步都留证据：
+
+```bash
+# 1) 单元测试（含剪拼/旋转/反射/滚圆/等分几何与十进制安全四舍五入的断言）
+cd g5/game && npx vitest run && npx vue-tsc --noEmit
+cd g6/game && npx vitest run && npx vue-tsc --noEmit
+
+# 2) 截图回归：<id>.png 为初始态，<id>-act.png 为点击「剪一剪/拼一拼/数方格/对折/滚一周」后的过程态
+cd g5/game && PORT=3105 npx nuxt dev --port 3105 &
+node scripts/visual-shots.mjs --base http://localhost:3105 --grade g5 --all-labs
+cd g6/game && PORT=3106 npx nuxt dev --port 3106 &
+node scripts/visual-shots.mjs --base http://localhost:3106 --grade g6 --all-labs
+```
+
+逐题改动清单与证据见 [`docs/example-visual-improvements.md`](docs/example-visual-improvements.md)。
 
 ## OCR 管线（文字 + 图片）
 
