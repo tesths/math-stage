@@ -4,9 +4,10 @@
  * ex-c1-div11-cycle  除以 11 的循环小数（长除法 / 循环节 / 规律表 / 放大数轴）
  * ex-c1-pgram-area   平行四边形面积估算（估算值与计算值对比）
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { roundTo, toFixed2 } from '@/lib/engine/math'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -41,7 +42,20 @@ const exactText = computed(() => `0.${(cycle.value + cycle.value).slice(0, 4)}`)
 const cycleFormula = computed(() => `9 × ${n.value} = ${9 * n.value}`)
 
 /** 商的小数展示：0.2727… */
-const quotientDigits = computed(() => ['0', '.', ...`${cycle.value}${cycle.value}`.split(''), '…'])
+/** 过程态：一位一位地算，直到看出"同样的两位又出现" */
+const allDigits = computed(() => ['0', '.', ...`${cycle.value}${cycle.value}`.split(''), '…'])
+const shownDigits = ref(allDigits.value.length)
+const quotientDigits = computed(() => allDigits.value.slice(0, shownDigits.value))
+const digitsLeft = computed(() => allDigits.value.length - shownDigits.value)
+function nextDigit() {
+  if (digitsLeft.value <= 0) return
+  shownDigits.value += 1
+  playClick()
+}
+function resetDigits() {
+  shownDigits.value = 2
+  playClick()
+}
 const ARC_CHAR_W = 24
 const ARC_START_X = 40
 const arcPath = computed(() => {
@@ -93,6 +107,18 @@ const approxArea = computed(() => roundTo(exactArea.value, digits2.value))
 const approxAreaText = computed(() => approxArea.value.toFixed(digits2.value))
 const estimateArea = computed(() => Math.round(base.value) * Math.round(height.value))
 const exactAreaText = computed(() => String(Number(exactArea.value.toFixed(3))))
+
+/** 过程态：默认 true 保持"估算 + 精确"同屏；切到 false 时先只看估算，弱化精确值直条 */
+const revealExact = ref(true)
+function toggleExact() {
+  revealExact.value = !revealExact.value
+  playClick()
+}
+const pgramNote = computed(() =>
+  revealExact.value
+    ? `先估一估：把 ${toFixed2(base.value)} 和 ${toFixed2(height.value)} 都看成整数，${Math.round(base.value)} × ${Math.round(height.value)} = ${estimateArea.value} 平方分米，再和精确计算做对照`
+    : `现在只看估算：${Math.round(base.value)} × ${Math.round(height.value)} = ${estimateArea.value} 平方分米，精确值那一根先弱化，估完再回来对照`,
+)
 
 const BASE_K = 44
 const HEIGHT_K = 42
@@ -179,6 +205,19 @@ const bars = computed(() => {
             <text x="40" y="94" class="ca-lbl">循环节 {{ cycle }}</text>
             <text x="200" y="94" class="ca-lbl">{{ cycleFormula }}</text>
           </svg>
+          <div class="digit-steps">
+            <UButton size="sm" color="primary" :disabled="digitsLeft <= 0" @click="nextDigit">
+              再多算一位
+            </UButton>
+            <UButton size="sm" variant="outline" color="neutral" :disabled="shownDigits <= 2" @click="resetDigits">
+              重来
+            </UButton>
+            <span class="digit-note">
+              {{ digitsLeft > 0
+                ? `才算出 ${shownDigits - 2} 位小数，再算一位看数字有没有重复`
+                : `算到 "${cycle}${cycle}" 又出现了——余数重复，商就跟着重复，循环节就是 ${cycle}` }}
+            </span>
+          </div>
         </div>
 
         <div class="cycle-card">
@@ -240,7 +279,7 @@ const bars = computed(() => {
           </svg>
         </div>
 
-        <div class="pgram-card">
+        <div class="pgram-card" :class="{ 'hide-exact': !revealExact }">
           <h4 class="card-title">估算 vs 计算</h4>
           <svg class="pgram-bars" width="200" height="210" viewBox="0 0 200 210">
             <line x1="20" y1="170" x2="180" y2="170" stroke="var(--ui-border-accented)" stroke-width="2" />
@@ -257,12 +296,18 @@ const bars = computed(() => {
             >
               估算 {{ estimateArea }}
             </text>
-            <text :x="bars.exact.x + 23" :y="bars.exact.y - 8" text-anchor="middle" class="pg-lbl">
+            <text :x="bars.exact.x + 23" :y="bars.exact.y - 8" text-anchor="middle" class="pg-lbl exact-lbl">
               计算 {{ exactAreaText }}
             </text>
             <text x="59" y="190" text-anchor="middle" class="pg-sub">≈{{ Math.round(base) }}×{{ Math.round(height) }}</text>
             <text x="137" y="190" text-anchor="middle" class="pg-sub">{{ toFixed2(base) }}×{{ toFixed2(height) }}</text>
           </svg>
+          <div class="pgram-steps">
+            <UButton size="sm" variant="outline" color="neutral" @click="toggleExact">
+              {{ revealExact ? '先只看估算' : '再看精确计算' }}
+            </UButton>
+            <span class="pgram-note">{{ pgramNote }}</span>
+          </div>
         </div>
       </div>
       <p class="pgram-sum">
@@ -291,6 +336,18 @@ const bars = computed(() => {
 }
 
 /* ---------- 除以 11 的循环小数 ---------- */
+.digit-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.digit-note {
+  font-size: 0.74rem;
+  color: var(--ui-text-muted);
+  max-width: 20rem;
+}
 .cycle-grid {
   display: flex;
   flex-wrap: wrap;
@@ -466,5 +523,22 @@ const bars = computed(() => {
 }
 .bar.exact {
   fill: var(--ui-primary);
+}
+/* 过程态：先只看估算时弱化精确值直条与其标注 */
+.hide-exact .bar.exact,
+.hide-exact .exact-lbl {
+  opacity: 0.15;
+}
+.pgram-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 15rem;
+}
+.pgram-note {
+  font-size: 0.74rem;
+  color: var(--ui-text-muted);
 }
 </style>

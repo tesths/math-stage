@@ -5,6 +5,52 @@ import { computeC5 } from '@/lib/labs/exercises/c5'
 import { findLabById } from '@data'
 import { c5Exercises } from '@data/chapters/c5-exercises'
 
+describe('ExerciseC5Lab · 排布过程态（一行一行排，看边角料）', () => {
+  it('全部收回后逐个加行，排满时提示去尾原因', async () => {
+    const lab = findLabById('g6-c5-ex-circle-packing')!
+    const wrapper = mount(ExerciseC5Lab, { props: { lab, values: { L: 15, W: 8, d: 2 } } })
+    expect(wrapper.findAll('.pack-disc').length).toBe(28)
+    const back = wrapper.findAll('button').find((b) => b.text().includes('全部收回'))!
+    await back.trigger('click')
+    expect(wrapper.findAll('.pack-disc')).toHaveLength(0)
+    const row = wrapper.findAll('button').find((b) => b.text().includes('再排一行'))!
+    await row.trigger('click')
+    expect(wrapper.findAll('.pack-disc')).toHaveLength(7)
+    expect(wrapper.text()).toContain('已排 1 / 4 行（7 个）')
+    await row.trigger('click')
+    await row.trigger('click')
+    await row.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.pack-disc')).toHaveLength(28)
+    expect(wrapper.text()).toContain('都拼不出整圆')
+    expect(wrapper.text()).toContain('所以要"去尾"')
+  })
+})
+
+describe('ExerciseC5Lab · 滚动过程态（滚一圈 = 一个周长）', () => {
+  it('点「滚一圈」后按圈数累加路程，清零后归零', async () => {
+    const lab = findLabById('g6-c5-ex-wheel-roll')!
+    const wrapper = mount(ExerciseC5Lab, { props: { lab, values: { d: 70, n: 100, t: 10 } } })
+    // 70 厘米直径 → 周长 219.8 厘米
+    expect(wrapper.text()).toContain('C = 219.8 厘米')
+    expect(wrapper.text()).toContain('点「滚一圈」')
+    const btn = wrapper.findAll('button').find((b) => b.text().includes('滚一圈'))!
+    expect(btn).toBeDefined()
+    await btn.trigger('click')
+    await new Promise((r) => setTimeout(r, 1200))
+    await wrapper.vm.$nextTick()
+    // 滚 1 圈 = 219.8 厘米；量条 10 圈满格 → 10%
+    expect(wrapper.text()).toContain('已滚 1 / 10 圈 → 1 × 219.8 = 219.8 厘米')
+    expect(wrapper.find('.roll-fill').attributes('style')).toContain('10%')
+    // 清零
+    const reset = wrapper.findAll('button').find((b) => b.text().includes('清零'))!
+    await reset.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.roll-fill').attributes('style')).toContain('0%')
+    expect(wrapper.text()).toContain('点「滚一圈」')
+  })
+})
+
 describe('ExerciseC5Lab（五 圆 · 练习题）', () => {
   it('ex-c5-wheel-roll：默认参数渲染车轮 / 摆线 / 分段路程', () => {
     const lab = findLabById('g6-c5-ex-wheel-roll')!

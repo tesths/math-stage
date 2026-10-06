@@ -5,7 +5,8 @@
  */
 import { computed } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { toFixed2 } from '@/lib/engine/math'
+import { roundTo, fixedN, toFixed2 } from '@/lib/engine/math'
+import { roundLife } from '@/lib/labs/quantity'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -23,7 +24,22 @@ const inRect = (i: number) => i % 10 < cols.value && Math.floor(i / 10) < rows.v
 const mulBase = computed(() => props.values.base ?? 4.9)
 const mulFactor = computed(() => props.values.factor ?? 1.01)
 const mulProd = computed(() => mulBase.value * mulFactor.value)
-const mulCmp = computed(() => (mulFactor.value > 1 ? '>' : mulFactor.value < 1 ? '<' : '='))
+/**
+ * 书写顺序是「第一个乘数 ? 积」，所以符号方向要与乘数与 1 的大小关系相反：
+ * 乘数 > 1 → 积变大 → 第一个乘数 < 积；乘数 < 1 → 积变小 → 第一个乘数 > 积。
+ * 比较用十进制安全四舍五入后的值，避免 4.9×1.01 的显示值（4.95）与精确值（4.949）不一致。
+ */
+const mulBaseR = computed(() => roundTo(mulBase.value, 4))
+const mulFactorR = computed(() => roundTo(mulFactor.value, 4))
+const mulProdR = computed(() => roundTo(mulBaseR.value * mulFactorR.value, 4))
+const mulCmp = computed(() => (mulFactorR.value > 1 ? '<' : mulFactorR.value < 1 ? '>' : '='))
+const mulReason = computed(() =>
+  mulFactorR.value > 1
+    ? `另一个乘数 ${toFixed2(mulFactorR.value)} 大于 1，积比第一个乘数大`
+    : mulFactorR.value < 1
+      ? `另一个乘数 ${toFixed2(mulFactorR.value)} 小于 1，积比第一个乘数小`
+      : '另一个乘数等于 1，积与第一个乘数相等',
+)
 
 /* ---------- 一个数除以小数 ---------- */
 const divExamples = [
@@ -45,6 +61,10 @@ const divMove = computed(() => {
 const approxPrice = computed(() => props.values.price ?? 16.8)
 const approxCount = computed(() => props.values.count ?? 2.4)
 const approxDigits = computed(() => Math.round(props.values.digits ?? 1))
+/** 精确积（十进制安全）与保留位结果：toFixed 会在 0.35 这类半值处出错，统一走 fixedN */
+const approxExact = computed(() => roundTo(approxPrice.value * approxCount.value, 6))
+const approxShown = computed(() => fixedN(approxExact.value, approxDigits.value))
+const approxNext = computed(() => fixedN(approxExact.value, approxDigits.value + 1).slice(-1))
 
 /* ---------- 商的近似值 ---------- */
 const divSpeed = computed(() => props.values.speed ?? 30)
@@ -57,10 +77,18 @@ const divApproxDecision = computed(() => (Number(divApproxJudge.value) >= 5 ? '�
 /* ---------- 进一去尾 ---------- */
 const roundMethod = computed(() => Math.round(props.values.method ?? 0))
 const roundTotal = computed(() => props.values.total ?? 300)
-const roundQ = computed(() => roundTotal.value / 3.5)
-const roundResult = computed(() =>
-  roundMethod.value === 0 ? Math.floor(roundQ.value) : Math.ceil(roundQ.value),
-)
+/** 去尾法用「元/支」、进一法用「千克/个」，两种情境各用各的除数 */
+const roundLifeResult = computed(() => roundLife(roundTotal.value, roundMethod.value))
+const roundResult = computed(() => roundLifeResult.value.result)
+const roundExact = computed(() => roundLifeResult.value.quotient)
+const roundExplain = computed(() => {
+  const q = roundExact.value
+  const r = roundLifeResult.value
+  if (roundMethod.value === 0) {
+    return `${roundTotal.value} ÷ 3.5 = ${toFixed2(q)}，买到的支数必须是整数，用去尾法只能买 ${r.result} 支：${r.result} 支要 ${toFixed2(r.usedValue)} 元，再买 1 支要 ${toFixed2(r.nextValue)} 元，钱不够。`
+  }
+  return `${roundTotal.value} ÷ 2.5 = ${toFixed2(q)}，油要全部装下，用进一法至少需要 ${r.result} 个油壶：${r.result - 1} 个只能装 ${toFixed2(r.usedValue)} 千克，不够；${r.result} 个能装 ${toFixed2(r.nextValue)} 千克。`
+})
 </script>
 
 <template>
@@ -77,10 +105,14 @@ const roundResult = computed(() =>
           />
         </div>
         <div class="grid-label">
-          阴影部分 = {{ a }} × {{ b }} = {{ toFixed2(a * b) }}（{{ cols }} 列 × {{ rows }} 行 = 24 个小格，即 24/100）
+          阴影部分 = {{ toFixed2(a) }} × {{ toFixed2(b) }} = {{ fixedN(a * b, 2) }}（{{ cols }} 列 × {{ rows }} 行 =
+          {{ cols * rows }} 个小格，即 {{ cols * rows }}/100）
         </div>
       </div>
-      <p class="note">0.6 × 0.4 = 6/10 × 4/10 = (6×4)/100 = 0.24</p>
+      <p class="note">
+        {{ toFixed2(a) }} × {{ toFixed2(b) }} = {{ cols }}/10 × {{ rows }}/10 = ({{ cols }}×{{ rows }})/100 =
+        {{ fixedN(a * b, 2) }}
+      </p>
     </template>
 
     <!-- 积与因数比较 -->
@@ -90,9 +122,7 @@ const roundResult = computed(() =>
         <p class="cmp-line">
           {{ toFixed2(mulBase) }} <span class="cmp-op">{{ mulCmp }}</span> {{ toFixed2(mulProd) }}
         </p>
-        <p class="note">
-          {{ mulFactor > 1 ? '另一个乘数大于 1，积大于第一个乘数' : mulFactor < 1 ? '另一个乘数小于 1，积小于第一个乘数' : '另一个乘数等于 1，积等于第一个乘数' }}
-        </p>
+        <p class="note">{{ mulReason }}</p>
       </div>
     </template>
 
@@ -103,7 +133,8 @@ const roundResult = computed(() =>
           {{ toFixed2(approxPrice) }} × {{ toFixed2(approxCount) }} = {{ toFixed2(approxPrice * approxCount) }}
         </p>
         <p class="approx-result">
-          保留 {{ approxDigits }} 位小数 → {{ (approxPrice * approxCount).toFixed(approxDigits) }}
+          保留 {{ approxDigits }} 位小数 → {{ approxShown }}
+          <span class="note">（精确积 {{ fixedN(approxExact, 6) }}，看第 {{ approxDigits + 1 }} 位小数「{{ approxNext }}」）</span>
         </p>
         <div class="money-line">
           <span>💵 苹果单价 {{ toFixed2(approxPrice) }} 元/千克</span>
@@ -177,7 +208,7 @@ const roundResult = computed(() =>
           <span class="lb-quot">{{ Math.floor(divApproxRaw) }}.<span class="lb-extra">{{ divApproxKeep }}</span><span class="lb-cut">{{ divApproxJudge }}</span></span>
           <span class="lb-note">先除到小数点后第三位（<span class="lb-cut">淡色</span>），再四舍五入</span>
         </div>
-        <p class="approx-result">保留两位小数 → <b>{{ divApproxRaw.toFixed(2) }}</b> 米/分</p>
+        <p class="approx-result">保留两位小数 → <b>{{ fixedN(divApproxRaw, 2) }}</b> 米/分</p>
         <p class="note">看小数点后第三位：≥5 进 1，&lt;5 舍去</p>
       </div>
     </template>
@@ -185,14 +216,36 @@ const roundResult = computed(() =>
     <!-- 进一去尾 -->
     <template v-else-if="kind === 'round-life'">
       <div class="approx-card">
-        <p class="div-title">每支自动铅笔 3.5 元，{{ roundTotal }} 元最多买多少支？</p>
-        <p class="big-expr">{{ roundTotal }} ÷ 3.5 ≈ {{ toFixed2(roundQ) }}</p>
+        <p class="div-title">
+          {{ roundMethod === 0 ? `每支自动铅笔 3.5 元，${roundTotal} 元最多买多少支？` : `每个油壶最多装 2.5 千克油，${roundTotal} 千克油至少需要几个油壶？` }}
+        </p>
+        <p class="big-expr">
+          {{ roundTotal }} ÷ {{ roundMethod === 0 ? '3.5' : '2.5' }} = {{ toFixed2(roundExact) }}
+        </p>
+        <div class="approx-bars">
+          <div class="approx-row">
+            <span class="approx-row-text">
+              {{ roundMethod === 0
+                ? `${roundResult} 支用 ${toFixed2(roundLifeResult.usedValue)} 元（还剩 ${toFixed2(roundLifeResult.remainder)} 元）`
+                : `每个油壶装 2.5 千克，${roundResult - 1} 个只装 ${toFixed2(roundLifeResult.usedValue)} 千克` }}
+            </span>
+            <div class="approx-track">
+              <div class="approx-fill used" :style="{ width: `${Math.min(100, (roundLifeResult.usedValue / Math.max(roundTotal, 1)) * 100)}%` }" />
+            </div>
+          </div>
+          <div class="approx-row">
+            <span class="approx-row-text">
+              {{ roundMethod === 0 ? `一共带了 ${roundTotal} 元` : `要装的油一共 ${roundTotal} 千克（${roundResult} 个能装 ${toFixed2(roundLifeResult.nextValue)} 千克）` }}
+            </span>
+            <div class="approx-track">
+              <div class="approx-fill total" :style="{ width: `${Math.min(100, (roundTotal / Math.max(roundTotal, roundLifeResult.nextValue)) * 100)}%` }" />
+            </div>
+          </div>
+        </div>
         <p class="approx-result">
-          {{ roundMethod === 0 ? '去尾法（最多买）' : '进一法（至少需要）' }} → <b>{{ roundResult }}</b> 个
+          {{ roundMethod === 0 ? '去尾法（最多买）' : '进一法（至少需要）' }} → <b>{{ roundResult }}</b> {{ roundMethod === 0 ? '支' : '个' }}
         </p>
-        <p class="note">
-          {{ roundMethod === 0 ? '不够买 86 支，300 元最多只能买 85 支（去尾）' : '装油壶时多一点也要 1 个壶（进一）' }}
-        </p>
+        <p class="note">{{ roundExplain }}</p>
       </div>
     </template>
   </div>
@@ -239,6 +292,39 @@ const roundResult = computed(() =>
   text-align: center;
 }
 .compare-card,
+.approx-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+.approx-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+}
+.approx-row-text {
+  font-size: 0.76rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.approx-track {
+  height: 0.85rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  overflow: hidden;
+  background: var(--ui-bg-elevated, white);
+}
+.approx-fill {
+  height: 100%;
+}
+.approx-fill.used {
+  background: color-mix(in srgb, var(--ui-primary) 55%, white);
+}
+.approx-fill.total {
+  background: color-mix(in srgb, var(--ui-info, #38bdf8) 45%, white);
+}
 .approx-card,
 .div-card {
   border: 1px dashed var(--ui-border-accented);
@@ -246,8 +332,8 @@ const roundResult = computed(() =>
   background: var(--ui-bg-muted);
   padding: 1rem 1.4rem;
   text-align: center;
-  min-width: 16rem;
-  max-width: 31rem;
+  min-width: 22rem;
+  max-width: 34rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;

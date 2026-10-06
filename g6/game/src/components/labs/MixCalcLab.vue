@@ -5,6 +5,17 @@
 import { computed } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { toFixed2 } from '@/lib/engine/math'
+import {
+  FLOUR_PRICE,
+  RICE_PRICE,
+  SHOP_GOODS,
+  VERDICT_TEXT,
+  affordableVerdict,
+  estimateShop,
+  fracMix,
+  piecewiseFee,
+  type Verdict,
+} from '@/lib/labs/quantity'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -14,26 +25,27 @@ const kind = computed(() => props.lab.kind)
 const a = computed(() => Math.round(props.values.a ?? 2))
 const b = computed(() => Math.round(props.values.b ?? 3))
 const n = computed(() => Math.round(props.values.n ?? 18))
-const fa = computed(() => (a.value / (a.value + b.value)) * n.value)
-const fb = computed(() => (b.value / (a.value + b.value)) * n.value)
+const mix = computed(() => fracMix(a.value, b.value, n.value))
 
 /* ---------- 估算购物 ---------- */
 const budget = computed(() => props.values.budget ?? 100)
-const minLeft = computed(() => budget.value - 20 - 31 * 2)
-const maxLeft = computed(() => budget.value - 19 - 30 * 2)
-const goods = [
-  { name: '鸡蛋', price: 19.6, n: 1 },
-  { name: '牛奶', price: 30.4, n: 2 },
-  { name: '面粉', price: 16.8, n: 1 },
-  { name: '大米', price: 21.6, n: 1 },
-]
+const est = computed(() => estimateShop(budget.value, SHOP_GOODS))
+const goods = SHOP_GOODS
+const verdicts = computed<{ name: string; price: number; verdict: Verdict }[]>(() => [
+  { name: '面粉', price: FLOUR_PRICE, verdict: affordableVerdict(est.value, FLOUR_PRICE) },
+  { name: '大米', price: RICE_PRICE, verdict: affordableVerdict(est.value, RICE_PRICE) },
+])
+/** 花钱条：已花（估大/估小）与剩余 */
+const barPct = (v: number) => `${Math.max(0, Math.min(100, (v / budget.value) * 100))}%`
 
 /* ---------- 分段计费 ---------- */
 const km = computed(() => props.values.km ?? 5)
-const within = computed(() => km.value <= 3)
-const extra = computed(() => (within.value ? 0 : Math.ceil(km.value - 3)))
-const fee = computed(() => (within.value ? 10 : 10 + extra.value * 2.2))
+const pw = computed(() => piecewiseFee(km.value))
+const within = computed(() => pw.value.withinBase)
+const fee = computed(() => pw.value.fee)
 const MAX_KM = 20
+/** 费用条：起步价部分与超出部分各占多少（按元数比例） */
+const baseFeePct = computed(() => `${(pw.value.baseFee / Math.max(1, pw.value.fee)) * 100}%`)
 </script>
 
 <template>
@@ -46,20 +58,24 @@ const MAX_KM = 20
           <div class="rope-track">
             <div class="rope-fill" :style="{ width: `${(a / (a + b)) * 100}%` }" />
           </div>
-          <span class="rope-val">{{ a }}/{{ a + b }} × {{ n }} = {{ toFixed2(fa) }} 米</span>
+          <span class="rope-val">{{ mix.fraction1 }} × {{ n }} = {{ toFixed2(mix.each[0]) }} 米</span>
         </div>
         <div class="rope-row">
           <span class="rope-label">第二种（{{ b }}/{{ a + b }} 米/个）</span>
           <div class="rope-track">
             <div class="rope-fill alt" :style="{ width: `${(b / (a + b)) * 100}%` }" />
           </div>
-          <span class="rope-val">{{ b }}/{{ a + b }} × {{ n }} = {{ toFixed2(fb) }} 米</span>
+          <span class="rope-val">{{ mix.fraction2 }} × {{ n }} = {{ toFixed2(mix.each[1]) }} 米</span>
         </div>
       </div>
       <div class="methods">
-        <p class="method">解法一：{{ a }}/{{ a + b }}×{{ n }} + {{ b }}/{{ a + b }}×{{ n }} = {{ toFixed2(fa) }} + {{ toFixed2(fb) }} = <b>{{ n }} 米</b></p>
-        <p class="method alt">解法二：({{ a }}/{{ a + b }} + {{ b }}/{{ a + b }}) × {{ n }} = {{ toFixed2(a / (a + b) + b / (a + b)) }} × {{ n }} = <b>{{ n }} 米</b></p>
+        <p class="method">解法一（分别算）：{{ mix.method1 }} 米</p>
+        <p class="method alt">解法二（先合再乘）：{{ mix.method2 }} 米</p>
       </div>
+      <p class="verify-line">
+        ✓ 两种解法结果相同，都是 <b>{{ toFixed2(mix.total) }} 米</b>：{{ mix.fraction1 }} + {{ mix.fraction2 }} = 1（各做一个共用 1 米），
+        所以 ({{ mix.fraction1 }} + {{ mix.fraction2 }}) × {{ n }} = 1 × {{ n }}；乘法分配律对分数同样适用
+      </p>
     </template>
 
     <!-- 估算购物 -->
@@ -74,19 +90,34 @@ const MAX_KM = 20
         <div class="method-cards">
           <div class="method-card">
             <p class="method-title">估大法（看最少剩多少）</p>
-            <p class="method-expr">{{ budget }} - 20 - 31×2 = {{ toFixed2(minLeft) }} 元</p>
-            <p class="method-result">
-              {{ minLeft > 16.8 ? '✅ 最少剩的钱比 16.8 多，够买面粉' : '⚠️ 可能不够买面粉' }}
-            </p>
+            <p class="method-expr">{{ budget }} - 20 - 31×2 = {{ toFixed2(est.leftHigh) }} 元</p>
+            <div class="money-bar">
+              <span class="money-spent" :style="{ width: barPct(est.spendHigh) }">已花 {{ est.spendHigh }} 元</span>
+              <span class="money-left" :style="{ width: barPct(est.leftHigh) }">剩 {{ toFixed2(est.leftHigh) }}</span>
+            </div>
           </div>
           <div class="method-card alt">
             <p class="method-title">估小法（看最多剩多少）</p>
-            <p class="method-expr">{{ budget }} - 19 - 30×2 = {{ toFixed2(maxLeft) }} 元</p>
-            <p class="method-result">
-              {{ maxLeft < 21.6 ? '✅ 最多剩的钱比 21.6 少，不够买大米' : '⚠️ 可能够买大米' }}
+            <p class="method-expr">{{ budget }} - 19 - 30×2 = {{ toFixed2(est.leftLow) }} 元</p>
+            <div class="money-bar">
+              <span class="money-spent" :style="{ width: barPct(est.spendLow) }">已花 {{ est.spendLow }} 元</span>
+              <span class="money-left" :style="{ width: barPct(est.leftLow) }">剩 {{ toFixed2(est.leftLow) }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="verdict-cards">
+          <div v-for="v in verdicts" :key="v.name" class="verdict-card" :class="v.verdict">
+            <p class="verdict-name">{{ v.name }} {{ v.price }} 元</p>
+            <p class="verdict-text">{{ VERDICT_TEXT[v.verdict] }}</p>
+            <p class="verdict-why">
+              {{ v.verdict === 'definitely' ? `最少剩 ${toFixed2(est.leftHigh)} ≥ ${v.price}` : v.verdict === 'never' ? `最多剩 ${toFixed2(est.leftLow)} < ${v.price}` : `${toFixed2(est.leftLow)} ~ ${toFixed2(est.leftHigh)} 之间` }}
             </p>
           </div>
         </div>
+        <p class="verify-line">
+          ✓ 估大法得到<b>最少</b>剩 {{ toFixed2(est.leftHigh) }} 元 → 与面粉 {{ FLOUR_PRICE }} 元相比：{{ VERDICT_TEXT[verdicts[0]!.verdict] }}；
+          估小法得到<b>最多</b>剩 {{ toFixed2(est.leftLow) }} 元 → 与大米 {{ RICE_PRICE }} 元相比：{{ VERDICT_TEXT[verdicts[1]!.verdict] }}
+        </p>
       </div>
     </template>
 
@@ -103,10 +134,19 @@ const MAX_KM = 20
         </div>
         <div class="fee-box">
           <p class="method-expr">
-            {{ within ? '≤ 3 千米' : `超出 ${toFixed2(km - 3)} 千米 → ${extra} 千米` }}
+            {{ within ? `不超过 ${pw.baseKm} 千米，只收起步价` : `超出 ${toFixed2(km - pw.baseKm)} 千米 → 按 ${pw.extraKm} 千米计费` }}
           </p>
-          <p class="method-expr">车费 = 10 {{ within ? '' : `+ ${extra} × 2.2` }} = <b>{{ toFixed2(fee) }} 元</b></p>
+          <div class="fee-bar" aria-label="车费构成">
+            <div class="fee-part base" :style="{ width: baseFeePct }">起步价 10 元</div>
+            <div v-if="!within" class="fee-part extra" :style="{ width: `calc(100% - ${baseFeePct})` }">
+              超出 {{ pw.extraKm }}×2.2 = {{ toFixed2(pw.extraFee) }} 元
+            </div>
+          </div>
+          <p class="method-expr">车费 = 10 {{ within ? '' : `+ ${pw.extraKm} × 2.2` }} = <b>{{ toFixed2(fee) }} 元</b></p>
         </div>
+        <p class="verify-line">
+          ✓ {{ toFixed2(km) }} 千米：{{ within ? `${pw.baseKm} 千米内收起步价 10 元` : `起步价 10 元 + ${pw.extraKm} 千米 × 2.2 元 = ${toFixed2(fee)} 元` }}<template v-if="pw.roundedUp">（{{ toFixed2(km - pw.baseKm) }} 千米不足 1 千米，按 {{ pw.extraKm }} 千米计算）</template>
+        </p>
       </div>
     </template>
   </div>
@@ -121,6 +161,96 @@ const MAX_KM = 20
   min-height: 320px;
   justify-content: center;
   width: 100%;
+}
+.money-bar,
+.fee-bar {
+  display: flex;
+  width: 100%;
+  height: 1.5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+}
+.money-spent,
+.fee-part.base {
+  background: color-mix(in srgb, var(--ui-primary) 40%, white);
+  color: var(--ui-text-highlighted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.money-left {
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 35%, white);
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.fee-part.extra {
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 40%, white);
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.verdict-cards {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.verdict-card {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  padding: 0.35rem 0.7rem;
+  min-width: 9rem;
+  text-align: center;
+}
+.verdict-card.definitely {
+  border-color: #16a34a;
+  background: color-mix(in srgb, #16a34a 10%, transparent);
+}
+.verdict-card.never {
+  border-color: #dc2626;
+  background: color-mix(in srgb, #dc2626 10%, transparent);
+}
+.verdict-card.maybe {
+  border-color: var(--ui-warning, #f59e0b);
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 12%, transparent);
+}
+.verdict-name {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+}
+.verdict-text {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ui-text-highlighted);
+}
+.verdict-why {
+  font-size: 0.72rem;
+  color: var(--ui-text-muted);
+}
+.verify-line {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  text-align: center;
+  max-width: 44rem;
 }
 .rope-bars {
   display: flex;

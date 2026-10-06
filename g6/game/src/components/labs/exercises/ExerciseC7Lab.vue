@@ -4,9 +4,10 @@
  * ex-c7-route-path      数对画出行走路线（12×8 方格 · 分色路线 · 步行点 · 数对序列）
  * ex-c7-observer-point  两个观测点找家（打谷场正北 · 商店北偏西 · 射线交会 · 行走路线）
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { toFixed2 } from '@/lib/engine/math'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -74,12 +75,47 @@ const routeCorner = computed(() => ({ x: rCx(rXEnd.value), y: rCy(R_Y0) }))
 const routeEnd = computed(() => routePts.value[routePts.value.length - 1]!)
 const routeHPoints = computed(() => `${routeStart.value.x},${routeStart.value.y} ${routeCorner.value.x},${routeCorner.value.y}`)
 const routeVPoints = computed(() => `${routeCorner.value.x},${routeCorner.value.y} ${routeEnd.value.x},${routeEnd.value.y}`)
-const routePath = computed(
-  () => `M ${routeStart.value.x} ${routeStart.value.y} L ${routeCorner.value.x} ${routeCorner.value.y} L ${routeEnd.value.x} ${routeEnd.value.y}`,
-)
 const routeHLenPx = computed(() => `${rK.value * R_CELL}px`)
 const routeVLenPx = computed(() => `${rM.value * R_CELL}px`)
 const routeWalking = computed(() => rK.value + rM.value)
+
+/**
+ * 过程态：一格一格地走。
+ * 步数默认「全部走完」（= k + m），所以默认渲染与原来完全一致；
+ * 改起点/步数（滑块）时重新回到「走完」态，动作仍由两个按钮驱动。
+ */
+const rStep = ref(routeWalking.value)
+watch([rK, rM], () => {
+  rStep.value = routeWalking.value
+})
+const rWalked = computed(() => Math.min(routeWalking.value, Math.max(0, rStep.value)))
+const rWalkedEast = computed(() => Math.min(rWalked.value, rK.value))
+const rWalkedNorth = computed(() => Math.max(0, rWalked.value - rK.value))
+/** 当前棋子所在格：先沿行 R_Y0 向东走 k 格，再沿终点列向北走 m 格 */
+const rNowCol = computed(() => (rWalked.value <= rK.value ? rX0.value + rWalked.value : rXEnd.value))
+const rNowRow = computed(() => (rWalked.value <= rK.value ? R_Y0 : R_Y0 + rWalkedNorth.value))
+const rPieceX = computed(() => rCx(rNowCol.value))
+const rPieceY = computed(() => rCy(rNowRow.value))
+/** 随步数变化的说明：向东一格只改第一个数、向北一格只改第二个数 */
+const routeStepNote = computed(() => {
+  const pair = `（${rNowCol.value}，${rNowRow.value}）`
+  const hint = rWalked.value === 0
+    ? `还没出发，起点就是电影院 ${pair}`
+    : rWalkedNorth.value === 0
+      ? `刚向东走 1 格：第一个数 +1、第二个数不变 → ${pair}`
+      : `刚向北走 1 格：第二个数 +1、第一个数不变 → ${pair}`
+  return `向东走了 ${rWalkedEast.value} / ${rK.value} 格，向北走了 ${rWalkedNorth.value} / ${rM.value} 格，当前数对 ${pair}；${hint}。`
+})
+function routeNextStep() {
+  if (rWalked.value >= routeWalking.value) return
+  rStep.value = rWalked.value + 1
+  playClick()
+}
+function routeResetStep() {
+  if (rWalked.value === 0) return
+  rStep.value = 0
+  playClick()
+}
 
 /** 数对文字：水平段标在格点上方，竖直段标在格点左侧 */
 const routeLabels = computed(() =>
@@ -212,6 +248,49 @@ const oGapGrid = computed(() =>
 const oGapText = computed(() => toFixed2(oGapGrid.value))
 const oGapMeters = computed(() => Math.round(oGapGrid.value * O_U))
 
+/**
+ * 过程态：分三步说清“以谁为观测点”。
+ * 初值 2 = 最完整的一步（两处位置、同一排关系、行走路线都在），与既有渲染完全一致；
+ * 点一次往前走一步，走完回到第 0 步。
+ */
+const OBS_STEPS = ['只看商店的方向线', '拆成向北、向西两段', '和打谷场那处比较']
+const oStep = ref(2)
+/** 第 2 步起：揭出“向北 r·cos、向西 r·sin”的分解与晓雨家落点 */
+const oStepSplit = computed(() => oStep.value >= 1)
+/** 第 3 步起：再以打谷场为观测点，揭出两家位置关系与行走路线 */
+const oStepCompare = computed(() => oStep.value >= 2)
+function nextObsStep() {
+  oStep.value = (oStep.value + 1) % OBS_STEPS.length
+  playClick()
+}
+const oNextStepLabel = computed(() => OBS_STEPS[(oStep.value + 1) % OBS_STEPS.length] ?? OBS_STEPS[0]!)
+
+/** 分解出的两条直角边：从商店先向北 r·cos、再向西 r·sin，落点正是晓雨家 */
+const oNorthLegEnd = computed(() => ({ x: oShopPx.value.x, y: oHomeYPx.value.y }))
+const oNorthLegMidY = computed(() => (oShopPx.value.y + oHomeYPx.value.y) / 2)
+const oWestLegMidX = computed(() => (oShopPx.value.x + oHomeYPx.value.x) / 2)
+const oNorthLegText = computed(() => `向北 ${toFixed2(oNorth.value)} 格`)
+const oWestLegText = computed(() => `向西 ${toFixed2(oWest.value)} 格`)
+/** 两家东西向相差（不同排时要先向东走这么多）与南北向相差 */
+const oEastGrid = computed(() => oHomeY.value.x - oHomeL.value.x)
+const oRowDelta = computed(() => oHomeY.value.y - oHomeL.value.y)
+
+/** 随步数变化的说明：第 1 步只认方向、第 2 步拆出两段、第 3 步与打谷场那处比较 */
+const oStepNote = computed(() => {
+  const r = toFixed2(oR.value)
+  const north = toFixed2(oNorth.value)
+  const west = toFixed2(oWest.value)
+  if (oStep.value === 0) {
+    return `第 1 步：先只以商店为观测点——“北偏西 ${oAngle.value}°”画出的是一条方向线：方向有了，可 ${oDist.value} 米还没用上，晓雨家在这条射线上的哪一点还定不下来。`
+  }
+  if (oStep.value === 1) {
+    return `第 2 步：把 ${oDist.value} 米换成 ${r} 格再拆开——向北 ${r} × cos${oAngle.value}° = ${north} 格、向西 ${r} × sin${oAngle.value}° ≈ ${west} 格，两条直角边的落点 ${oHomeYText.value} 就是晓雨家。`
+  }
+  return oSameRow.value
+    ? `第 3 步：再以打谷场为观测点比一比——小琳家在正北 ${oDist2.value} 米（${toFixed2(oGridL.value)} 格），小琳家 ${oHomeLText.value}、晓雨家 ${oHomeYText.value} 在同一排上；从小琳家一直向东 ${oGapText.value} 格（约 ${oGapMeters.value} 米）就到晓雨家。`
+    : `第 3 步：再以打谷场为观测点比一比——小琳家 ${oHomeLText.value}、晓雨家 ${oHomeYText.value} 不在同一排；从小琳家先向东 ${toFixed2(oEastGrid.value)} 格，再向${oRowDelta.value > 0 ? '北' : '南'} ${toFixed2(Math.abs(oRowDelta.value))} 格就到晓雨家。`
+})
+
 const OBS_V_BOUNDS = Array.from({ length: O_COLS + 1 }, (_, i) => O_PAD_L + i * O_CELL)
 const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i * O_CELL)
 </script>
@@ -274,9 +353,7 @@ const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i *
           <text class="route-emoji" :x="routeEnd.x" :y="routeEnd.y - 26" text-anchor="middle">🏫</text>
           <text class="route-place" :x="routeEnd.x" :y="routeEnd.y - 38" text-anchor="middle">学校</text>
 
-          <circle class="route-walker" r="6">
-            <animateMotion :path="routePath" dur="3.2s" repeatCount="indefinite" />
-          </circle>
+          <circle class="route-walker" :cx="rPieceX" :cy="rPieceY" r="6" />
         </svg>
 
         <div class="route-panel">
@@ -290,6 +367,15 @@ const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i *
           <p class="route-sum">
             向东 {{ rK }} 格、向北 {{ rM }} 格，一共走 <b>{{ routeWalking }}</b> 格；终点数对（{{ rXEnd }}，{{ rYEnd }}）。
           </p>
+          <div class="route-steps">
+            <UButton size="sm" color="primary" :disabled="rWalked >= routeWalking" @click="routeNextStep">
+              走下一格
+            </UButton>
+            <UButton size="sm" variant="outline" color="neutral" :disabled="rWalked === 0" @click="routeResetStep">
+              回到起点
+            </UButton>
+          </div>
+          <p class="route-step-note">{{ routeStepNote }}</p>
         </div>
       </div>
     </template>
@@ -325,29 +411,56 @@ const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i *
           <line class="obs-scale" :x1="O_PAD_L" :y1="O_BOTTOM + 24" :x2="O_PAD_L + O_CELL" :y2="O_BOTTOM + 24" />
           <text class="obs-scale-lbl" :x="O_PAD_L + O_CELL + 8" :y="O_BOTTOM + 28">1 格 = 100 米</text>
 
-          <line class="obs-north-line" :x1="oGrainPx.x" :y1="oGrainPx.y" :x2="oHomeLPx.x" :y2="oHomeLPx.y" />
+          <line
+            v-if="oStepCompare" class="obs-north-line"
+            :x1="oGrainPx.x" :y1="oGrainPx.y" :x2="oHomeLPx.x" :y2="oHomeLPx.y"
+          />
           <text
-            class="obs-north-dist" :x="oHomeLPx.x - 8"
+            v-if="oStepCompare" class="obs-north-dist" :x="oHomeLPx.x - 8"
             :y="(oGrainPx.y + oHomeLPx.y) / 2 + 4" text-anchor="end"
           >正北 {{ oDist2 }} 米</text>
 
           <line class="obs-north-axis" :x1="oShopPx.x" :y1="oShopPx.y" :x2="oNorthAxisEnd.x" :y2="oNorthAxisEnd.y" />
-          <path class="obs-radius-arc" :d="oRadiusArc" fill="none" />
-          <line class="obs-ray" :x1="oShopPx.x" :y1="oShopPx.y" :x2="oRayEnd.x" :y2="oRayEnd.y" />
+          <path v-if="oStepSplit" class="obs-radius-arc" :d="oRadiusArc" fill="none" />
+          <line
+            class="obs-ray" :class="{ 'obs-hot': oStep === 0 }"
+            :x1="oShopPx.x" :y1="oShopPx.y" :x2="oRayEnd.x" :y2="oRayEnd.y"
+          />
           <path class="obs-angle-arc" :d="oAngleArc.d" fill="none" />
           <text class="obs-angle-lbl" :x="oAngleArc.label.x" :y="oAngleArc.label.y">{{ oAngle }}°</text>
 
+          <!-- 第 2 步：把北偏西方向拆成“先向北 r·cos、再向西 r·sin”两条直角边 -->
           <line
-            v-if="oSameRow" class="obs-same-row"
+            v-if="oStepSplit" class="obs-north-leg" :class="{ 'obs-hot': oStep === 1 }"
+            :x1="oShopPx.x" :y1="oShopPx.y" :x2="oNorthLegEnd.x" :y2="oNorthLegEnd.y"
+          />
+          <line
+            v-if="oStepSplit" class="obs-west-leg" :class="{ 'obs-hot': oStep === 1 }"
+            :x1="oNorthLegEnd.x" :y1="oNorthLegEnd.y" :x2="oHomeYPx.x" :y2="oHomeYPx.y"
+          />
+          <text
+            v-if="oStepSplit" class="obs-leg-lbl" :x="oShopPx.x + 6"
+            :y="oNorthLegMidY + 4"
+          >{{ oNorthLegText }}</text>
+          <text
+            v-if="oStepSplit" class="obs-leg-lbl" :x="oWestLegMidX"
+            :y="oHomeYPx.y - 8" text-anchor="middle"
+          >{{ oWestLegText }}</text>
+
+          <line
+            v-if="oSameRow && oStepCompare" class="obs-same-row"
             :x1="oHomeLPx.x" :y1="oHomeLPx.y" :x2="oHomeYPx.x" :y2="oHomeYPx.y"
           />
           <text
-            v-if="oSameRow" class="obs-same-row-lbl"
+            v-if="oSameRow && oStepCompare" class="obs-same-row-lbl"
             :x="(oHomeLPx.x + oHomeYPx.x) / 2" :y="oHomeLPx.y - 8" text-anchor="middle"
           >同一排</text>
 
-          <polyline class="obs-walk-route" :points="oWalkPoints" />
-          <circle class="obs-walker" r="5">
+          <polyline
+            v-if="oStepCompare" class="obs-walk-route" :class="{ 'obs-hot': oStep === 2 }"
+            :points="oWalkPoints"
+          />
+          <circle v-if="oStepCompare" class="obs-walker" r="5">
             <animateMotion :path="oWalkPath" dur="4.4s" repeatCount="indefinite" />
           </circle>
 
@@ -356,20 +469,37 @@ const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i *
           <text class="obs-emoji" :x="oShopPx.x" :y="oShopPx.y - 14" text-anchor="middle">🏪</text>
           <text class="obs-place" :x="oShopPx.x" :y="oShopPx.y + 24" text-anchor="middle">商店</text>
 
-          <text class="obs-emoji" :x="oHomeLPx.x" :y="oHomeLPx.y - 12" text-anchor="middle">🏠</text>
-          <text class="obs-home-lbl" :x="oHomeLPx.x" :y="oHomeLPx.y + 24" text-anchor="middle">小琳家{{ oHomeLText }}</text>
-          <text class="obs-emoji" :x="oHomeYPx.x" :y="oHomeYPx.y - 12" text-anchor="middle">🏠</text>
-          <text class="obs-home-lbl" :x="oHomeYPx.x" :y="oHomeYPx.y + 24" text-anchor="middle">晓雨家{{ oHomeYText }}</text>
+          <text
+            v-if="oStepCompare" class="obs-emoji" :x="oHomeLPx.x" :y="oHomeLPx.y - 12"
+            text-anchor="middle"
+          >🏠</text>
+          <text
+            v-if="oStepCompare" class="obs-home-lbl" :x="oHomeLPx.x" :y="oHomeLPx.y + 24"
+            text-anchor="middle"
+          >小琳家{{ oHomeLText }}</text>
+          <text
+            v-if="oStepSplit" class="obs-emoji" :x="oHomeYPx.x" :y="oHomeYPx.y - 12"
+            text-anchor="middle"
+          >🏠</text>
+          <text
+            v-if="oStepSplit" class="obs-home-lbl" :x="oHomeYPx.x" :y="oHomeYPx.y + 24"
+            text-anchor="middle"
+          >晓雨家{{ oHomeYText }}</text>
         </svg>
 
         <p class="obs-sum">
-          小琳家 = 打谷场正北 {{ oDist2 }} 米 → {{ oHomeLText }}；晓雨家 = 商店北偏西 {{ oAngle }}° {{ oDist }} 米
-          → {{ oHomeYText }}。
+          小琳家 = 打谷场正北 {{ oDist2 }} 米<template v-if="oStepCompare"> → {{ oHomeLText }}</template>；
+          晓雨家 = 商店北偏西 {{ oAngle }}° {{ oDist }} 米<template v-if="oStepSplit"> → {{ oHomeYText }}</template>。
         </p>
-        <p class="obs-walk-sum">
+        <p v-if="oStepCompare" class="obs-walk-sum">
           行走路线：向南到街道 → 沿街向东到商店 → 沿北偏西 {{ oAngle }}° 方向走 {{ oDist }} 米；两家相隔约
           <b>{{ oGapText }}</b> 格（约 {{ oGapMeters }} 米）。
         </p>
+
+        <div class="obs-steps">
+          <UButton size="sm" color="primary" @click="nextObsStep">下一步：{{ oNextStepLabel }}</UButton>
+          <span class="obs-step-note">{{ oStepNote }}</span>
+        </div>
       </div>
     </template>
   </div>
@@ -506,6 +636,20 @@ const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i *
   color: var(--ui-primary);
   font-size: 1.05rem;
 }
+.route-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
+}
+.route-step-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ui-text-toned);
+  text-align: center;
+  max-width: 36rem;
+}
 
 /* ---------- 两个观测点找家 ---------- */
 .obs-grid {
@@ -574,6 +718,24 @@ const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i *
   font-weight: 800;
   fill: var(--ui-primary);
 }
+/* 第 2 步的分解两段：向北 r·cos、向西 r·sin */
+.obs-north-leg,
+.obs-west-leg {
+  stroke: #b45309;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.obs-north-leg {
+  stroke-dasharray: 8 3;
+}
+.obs-west-leg {
+  stroke-dasharray: 3 3;
+}
+.obs-leg-lbl {
+  font-size: 11px;
+  font-weight: 800;
+  fill: #b45309;
+}
 .obs-same-row {
   stroke: #b45309;
   stroke-width: 1.6;
@@ -622,5 +784,28 @@ const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i *
 .obs-walk-sum b {
   color: var(--ui-primary);
   font-size: 1.02rem;
+}
+.obs-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: center;
+  max-width: 44rem;
+}
+.obs-step-note {
+  font-size: 0.85rem;
+  color: var(--ui-text-toned);
+  text-align: center;
+}
+/* 放在最后：与 .obs-ray/.obs-north-leg/.obs-west-leg/.obs-walk-route 同权重，靠顺序生效 */
+.obs-hot {
+  stroke-width: 4.2;
+  animation: obs-pulse 1.1s ease-in-out infinite;
+}
+@keyframes obs-pulse {
+  50% {
+    opacity: 0.4;
+  }
 }
 </style>

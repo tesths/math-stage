@@ -139,6 +139,17 @@ npm run build        # 构建（配合 BASE_URL=/g6/ 静态导出）
   `props.values.x`，一律先 `computed(() => props.values.x ?? 默认值)` 再引用，
   并用空参数挂载测试覆盖兜底分支（见 `test/component/labs.test.ts`、`exercises` 各测试）。
 
+## 可视化质量与回归证据
+
+- 纯几何抽到 `game/src/lib/labs/circle.ts`：等分圆上下一一交错拼成的图形，宽 = n·R·sin(π/n)、高 = R，
+  n·sin(π/n) → π；滚圆一周前进 2πR、轮上一点轨迹是摆线。由 `test/unit/circle-geometry.test.ts` 断言。
+- 十进制安全的四舍五入 `roundHalfUp` / `fixedN`（`lib/engine/math.ts`）：`(0.7×0.5).toFixed(1)` 会给出 0.3，
+  正确值是 0.4；`test/unit/decimal-regression.test.ts` 对 7220 个可达组合与 BigInt 参考实现逐一比对，
+  并保证组件显示值与 compute 文案同源。
+- 截图回归：`node scripts/visual-shots.mjs --base http://localhost:3106 --grade g6 --all-labs`。
+- 逐题改动清单：[`docs/example-visual-improvements.md`](../docs/example-visual-improvements.md)；
+  逐 Lab 数学审查（含坐标复算与行号）：[`docs/audit/`](../docs/audit/)。
+
 ## 新增一个例题 Lab
 
 1. 在 `g6/data/upper/chapters/cN.ts` 加一条 `LabDef`（含 params 滑块定义、formula、可选 fixed 常量）。

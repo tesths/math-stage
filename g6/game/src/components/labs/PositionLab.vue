@@ -23,9 +23,12 @@ const dir = computed(() => Math.round(props.values.dir ?? 0))
 const DIRS = ['北偏东', '北偏西', '南偏东', '南偏西']
 const baseName = computed(() => (dir.value <= 1 ? '正北' : '正南'))
 const sideName = computed(() => (dir.value % 2 === 0 ? '东' : '西'))
-const CX = 170
-const CY = 230
-const S = 22
+const CX = 190
+const CY = 215
+const S = 20
+/** 角度弧的 sweep：北偏东 / 南偏西 顺时针（1），北偏西 / 南偏东 逆时针（0） */
+const SWEEP = [1, 0, 0, 1]
+const COMPASS_R = 168
 const marker = computed(() => {
   const rad = (angle.value * Math.PI) / 180
   let x = 0
@@ -60,6 +63,8 @@ const angleLabelY = computed(() => CY + (dir.value <= 1 ? -1 : 1) * dist.value *
       <div class="seat-block">
         <div class="seat-grid">
           <div class="seat-head">
+            <!-- 与左侧行号等宽的空位：没有它列号会逐列错位（第 8 列偏近 90px） -->
+            <span class="seat-label spacer" aria-hidden="true" />
             <span
               v-for="c in COLS"
               :key="'h' + c"
@@ -90,18 +95,18 @@ const angleLabelY = computed(() => CY + (dir.value <= 1 ? -1 : 1) * dist.value *
     <!-- 方向 + 距离 -->
     <template v-else>
       <div class="map-block">
-        <svg :width="340" :height="420" viewBox="0 0 340 420">
-          <circle :cx="CX" :cy="CY" r="176" fill="none" stroke="var(--ui-border-accented)" stroke-width="1" stroke-dasharray="4 4" />
-          <line :x1="CX" :y1="CY - 176" :x2="CX" :y2="CY + 176" stroke="var(--ui-border-accented)" stroke-width="1" stroke-dasharray="4 4" />
-          <line :x1="CX - 176" :y1="CY" :x2="CX + 176" :y2="CY" stroke="var(--ui-border-accented)" stroke-width="1" stroke-dasharray="4 4" />
-          <text :x="CX" :y="CY - 185" text-anchor="middle" class="t-lbl north">北</text>
-          <text :x="CX" :y="CY + 200" text-anchor="middle" class="t-lbl">南</text>
-          <text :x="CX + 190" :y="CY + 5" text-anchor="middle" class="t-lbl">东</text>
-          <text :x="CX - 190" :y="CY + 5" text-anchor="middle" class="t-lbl">西</text>
+        <svg :width="380" :height="460" viewBox="0 0 380 460">
+          <circle :cx="CX" :cy="CY" :r="COMPASS_R" fill="none" stroke="var(--ui-border-accented)" stroke-width="1" stroke-dasharray="4 4" />
+          <line :x1="CX" :y1="CY - COMPASS_R" :x2="CX" :y2="CY + COMPASS_R" stroke="var(--ui-border-accented)" stroke-width="1" stroke-dasharray="4 4" />
+          <line :x1="CX - COMPASS_R" :y1="CY" :x2="CX + COMPASS_R" :y2="CY" stroke="var(--ui-border-accented)" stroke-width="1" stroke-dasharray="4 4" />
+          <text :x="CX" :y="CY - COMPASS_R - 8" text-anchor="middle" class="t-lbl north">北</text>
+          <text :x="CX" :y="CY + COMPASS_R + 22" text-anchor="middle" class="t-lbl">南</text>
+          <text :x="CX + COMPASS_R + 16" :y="CY + 5" text-anchor="middle" class="t-lbl">东</text>
+          <text :x="CX - COMPASS_R - 16" :y="CY + 5" text-anchor="middle" class="t-lbl">西</text>
           <line class="base-ray" :x1="CX" :y1="CY" :x2="baseEnd.x" :y2="baseEnd.y" stroke="var(--ui-border-accented)" stroke-width="1.5" stroke-dasharray="3 3" />
           <line class="target-ray" :x1="CX" :y1="CY" :x2="marker.x" :y2="marker.y" stroke="var(--ui-primary)" stroke-width="2.5" />
           <path
-            :d="`M ${CX} ${CY} L ${baseEnd.x} ${baseEnd.y} A ${dist * S} ${dist * S} 0 0 ${dir % 2} ${marker.x} ${marker.y} Z`"
+            :d="`M ${CX} ${CY} L ${baseEnd.x} ${baseEnd.y} A ${dist * S} ${dist * S} 0 0 ${SWEEP[dir]} ${marker.x} ${marker.y} Z`"
             fill="color-mix(in srgb, var(--ui-primary) 20%, transparent)"
             stroke="var(--ui-primary)"
             stroke-width="1"
@@ -165,6 +170,7 @@ const angleLabelY = computed(() => CY + (dir.value <= 1 ? -1 : 1) * dist.value *
 }
 .seat-label {
   width: 1.1rem;
+  flex: 0 0 1.1rem;
   font-size: 0.75rem;
   color: var(--ui-text-muted);
   text-align: center;

@@ -64,6 +64,45 @@ export function toFixedN(v: number, digits: number): string {
   return s
 }
 
+/**
+ * 保留 N 位小数的「四舍五入」近似值。
+ *
+ * 直接对二进制浮点数做 `Math.round(v * 10**d) / 10**d` 或 `v.toFixed(d)` 会在半值处出错：
+ * `(0.7 * 0.5).toFixed(1) === '0.3'`（应为 0.4，因为 0.35 的二进制值是 0.34999…）。
+ * 这里先把数值的最短十进制表示拆成整数位与小数位，再用整数运算四舍五入。
+ */
+export function roundHalfUp(v: number, digits = 0): number {
+  if (!Number.isFinite(v)) return v
+  const d = Math.max(0, Math.min(15, Math.round(digits)))
+  const s = String(v)
+  if (s.includes('e') || s.includes('E')) {
+    const f = 10 ** d
+    return Math.round(v * f) / f
+  }
+  let [intPart = '0', fracPart = ''] = s.split('.')
+  let sign = 1
+  if (intPart.startsWith('-')) {
+    sign = -1
+    intPart = intPart.slice(1)
+  }
+  if (fracPart.length <= d) return v
+  const keep = fracPart.slice(0, d)
+  const rest = fracPart.slice(d)
+  let scaled = BigInt((intPart + keep).replace(/^0+(?=\d)/, '') || '0')
+  if (rest[0]! >= '5') scaled += 1n
+  return (sign * Number(scaled)) / 10 ** d
+}
+
+/** 十进制安全的定点格式化：保留 d 位小数（四舍五入） */
+export function fixedN(v: number, digits: number): string {
+  const d = Math.max(0, Math.round(digits))
+  const r = roundHalfUp(v, d)
+  const scaled = Math.round(Math.abs(r) * 10 ** d)
+  const body = String(scaled).padStart(d + 1, '0')
+  const text = d === 0 ? body : `${body.slice(0, -d)}.${body.slice(-d)}`
+  return r < 0 ? `-${text}` : text
+}
+
 /** 最大公因数 */
 export function gcd(a: number, b: number): number {
   while (b) [a, b] = [b, a % b]
@@ -93,10 +132,9 @@ export function fromBinary(bin: string): number {
   return bin.split('').reduce((acc, ch) => acc * 2 + Number(ch), 0)
 }
 
-/** 保留 N 位小数的四舍五入近似值 */
+/** 保留 N 位小数的四舍五入近似值（十进制安全） */
 export function roundTo(v: number, digits: number): number {
-  const f = 10 ** digits
-  return Math.round(v * f) / f
+  return roundHalfUp(v, digits)
 }
 
 /** 判定一个数是否为有限小数（用于进制/近似值展示） */

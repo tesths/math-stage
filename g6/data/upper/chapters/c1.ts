@@ -29,7 +29,7 @@ export const c1Labs: LabDef[] = [
     kind: 'mul-compare',
     params: [
       { key: 'base', label: '第一个乘数', min: 0.5, max: 9.5, step: 0.1, default: 4.9 },
-      { key: 'factor', label: '另一个乘数', min: 0.1, max: 3, step: 0.1, default: 1.01 },
+      { key: 'factor', label: '另一个乘数', min: 0.5, max: 1.5, step: 0.01, default: 1.01 },
     ],
     formula: '积 = 第一个乘数 × 另一个乘数',
     tip: '另一个乘数大于 1，积大于第一个乘数；等于 1，积相等；小于 1，积小于第一个乘数。',

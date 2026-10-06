@@ -1,7 +1,28 @@
 import type { LabKind, ParamValues } from '@data/schema/lab'
 import type { LabResult, LabStep } from './types'
-import { toBinary, toFixed2, simplifyRatio, roundTo } from '@/lib/engine/math'
+import { toBinary, toFixed2, simplifyRatio, roundTo, fixedN } from '@/lib/engine/math'
 import { computeExerciseLab, isExerciseKind } from './exercises'
+import { fractionCount, fractionDecimal, fractionText, snapUpToMultiple, unitFractionSum } from './fractions'
+import {
+  FLOUR_PRICE,
+  roundLife,
+  segmentMore,
+  RICE_PRICE,
+  SHOP_GOODS,
+  VERDICT_TEXT,
+  affordableVerdict,
+  estimateShop,
+  fracMix,
+  piecewiseFee,
+} from './quantity'
+import {
+  binaryDivisionSteps,
+  binaryReading,
+  carryBoundary,
+  comparePair,
+  opExample,
+  placeExample,
+} from './numberSys'
 
 export type { LabStep, LabResult } from './types'
 
@@ -14,6 +35,13 @@ export { fmt }
 
 const PI = 3.14
 
+/** 三值结论的理由说明（避免"一定不够"后面还跟着"就一定够"） */
+function verdictWhy(v: 'definitely' | 'never' | 'maybe'): string {
+  if (v === 'definitely') return '（最少剩的都比它多，就一定够）'
+  if (v === 'never') return '（最多剩的都比它少，就一定不够）'
+  return '（剩下的钱在它上下，无法确定）'
+}
+
 export function computeLab(kind: LabKind, p: ParamValues): LabResult {
   // 练习题 Lab（练习一…练习十四）由独立模块分派；其余为 33 种例题 kind
   if (isExerciseKind(kind)) return computeExerciseLab(kind, p)
@@ -22,16 +50,21 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
     case 'mul-decimal': {
       const a = p.a ?? 0
       const b = p.b ?? 0
-      const int = Math.round(a * 10) * Math.round(b * 10)
-      const total = a * b
+      const ia = Math.round(a * 10)
+      const ib = Math.round(b * 10)
+      const cells = ia * ib
+      const total = roundTo((ia * ib) / 100, 2)
       return {
         value: total,
         text: `${fmt(a)} × ${fmt(b)} = ${fmt(total)}`,
         steps: [
-          { expr: `0.6 × 0.4 两个因数各 ×10`, result: `${Math.round(a * 10)} × ${Math.round(b * 10)} = ${int}` },
-          { expr: `积再 ÷100（两位小数）`, result: `${int} ÷ 100 = ${fmt(total)}` },
+          {
+            expr: `${fmt(a)} 和 ${fmt(b)} 各 ×10 变成整数`,
+            result: `${ia} × ${ib} = ${cells}（也就是 ${cells} 个小格）`,
+          },
+          { expr: `积再 ÷100（两个因数一共两位小数）`, result: `${cells} ÷ 100 = ${fmt(total)}` },
         ],
-        conclusion: `先按整数乘法算 6×4=24，再看两个因数一共有两位小数，积就是两位小数 0.24。`,
+        conclusion: `先按整数乘法算 ${ia}×${ib}=${cells}，两个因数一共有两位小数，所以积是两位小数 ${fmt(total)}；图上阴影部分就是 ${cells} 个 0.01。`,
       }
     }
     case 'mul-compare': {
@@ -54,16 +87,21 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const price = p.price ?? 0
       const count = p.count ?? 0
       const digits = Math.round(p.digits ?? 1)
-      const exact = price * count
+      const exact = roundTo(price * count, 6)
       const approx = roundTo(exact, digits)
+      const shown = fixedN(approx, digits)
+      const nextDigit = Number(fixedN(exact, digits + 1).slice(-1))
       return {
         value: approx,
-        text: `${fmt(price)} × ${fmt(count)} ≈ ${approx.toFixed(digits)}`,
+        text: `${fmt(price)} × ${fmt(count)} ≈ ${shown}`,
         steps: [
           { expr: `总价 = 单价 × 数量`, result: `${fmt(price)} × ${fmt(count)} = ${fmt(exact)}` },
-          { expr: `按"四舍五入"保留 ${digits} 位小数`, result: `${approx.toFixed(digits)}` },
+          {
+            expr: `看第 ${digits + 1} 位小数「${nextDigit}」${nextDigit >= 5 ? '≥5，向保留位进 1' : '<5，直接舍去'}`,
+            result: `保留 ${digits} 位小数 → ${shown}`,
+          },
         ],
-        conclusion: `购买 ${fmt(count)} 千克苹果要付约 ${approx.toFixed(digits)} 元。`,
+        conclusion: `购买 ${fmt(count)} 千克苹果要付约 ${shown} 元。`,
       }
     }
     case 'div-decimal': {
@@ -88,36 +126,52 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const metersPerHour = speed * 1000
       const perMin = metersPerHour / 60
       const approx = roundTo(perMin, 2)
+      const shown = fixedN(approx, 2)
       return {
         value: approx,
-        text: `${speed} 千米/时 ≈ ${approx.toFixed(2)} 米/分`,
+        text: `${speed} 千米/时 ≈ ${shown} 米/分`,
         steps: [
           { expr: `${speed} 千米 = ${speed * 1000} 米`, result: `${metersPerHour} 米/时` },
           { expr: `1 时 = 60 分`, result: `${metersPerHour} ÷ 60 = ${fmt(perMin)}` },
-          { expr: `保留两位小数（四舍五入）`, result: `${approx.toFixed(2)} 米/分` },
+          { expr: `保留两位小数（四舍五入）`, result: `${shown} 米/分` },
         ],
-        conclusion: `求商的近似值，先算出比需要保留的位数多一位的商，再按"四舍五入"写出结果：${speed} 千米/时 ≈ ${approx.toFixed(2)} 米/分。`,
+        conclusion: `求商的近似值，先算出比需要保留的位数多一位的商，再按"四舍五入"写出结果：${speed} 千米/时 ≈ ${shown} 米/分。`,
       }
     }
     case 'round-life': {
+      // 两种情境各用各的：去尾法 = 用钱买铅笔（求"最多买几支"），
+      // 进一法 = 用油壶装油（求"至少需要几个"）。原来进一法也套用铅笔情境，
+      // 会出现「300 元至少需要 86 个」这种说不通的话。
       const method = Math.round(p.method ?? 0)
       const total = p.total ?? 0
-      const price = 3.5
-      const q = total / price
-      const whole = Math.floor(q)
-      const result = method === 0 ? whole : Math.ceil(q)
-      const what = method === 0 ? '最多可以买' : '至少需要'
+      const r = roundLife(total, method)
+      if (r.mode === 'floor') {
+        return {
+          value: r.result,
+          text: `${total} 元最多买 ${r.result} 支自动铅笔`,
+          steps: [
+            { expr: `总价 ÷ 单价：${total} ÷ ${fmt(r.unit)}`, result: `商是 ${fmt(r.quotient)}，不是整数` },
+            { expr: `去尾法：只取整数部分`, result: `${r.result} 支` },
+            {
+              expr: `验算：${r.result} 支要多少钱`,
+              result: `${fmt(r.unit)} × ${r.result} = ${fmt(r.usedValue)} 元（剩 ${fmt(r.remainder)} 元，不够再买 1 支）`,
+            },
+          ],
+          conclusion: `求"最多可以买多少支"，支数必须是整数且钱不能超：用去尾法，${total} 元最多买 ${r.result} 支自动铅笔（${r.result} 支用 ${fmt(r.usedValue)} 元，再买 1 支要 ${fmt(r.nextValue)} 元 > ${total} 元）。`,
+        }
+      }
       return {
-        value: result,
-        text: `${total} 元，${what} ${result} 个`,
+        value: r.result,
+        text: `${total} 千克油至少需要 ${r.result} 个油壶`,
         steps: [
-          { expr: `${total} ÷ ${fmt(price)} = ${fmt(q)}`, result: `商约 ${fmt(q)}` },
-          { expr: method === 0 ? '去尾法（取整数部分）' : '进一法（整数部分 + 1）', result: `${result} 个` },
+          { expr: `总油量 ÷ 每个油壶装的油：${total} ÷ ${fmt(r.unit)}`, result: `商是 ${fmt(r.quotient)}，不是整数` },
+          { expr: `进一法：整数部分再加 1`, result: `${r.result} 个` },
+          {
+            expr: `验算：${r.result - 1} 个装不下、${r.result} 个装得下`,
+            result: `${fmt(r.unit)} × ${r.result - 1} = ${fmt(r.usedValue)} < ${total}；${fmt(r.unit)} × ${r.result} = ${fmt(r.nextValue)} ≥ ${total}`,
+          },
         ],
-        conclusion:
-          method === 0
-            ? `求"最多可以买多少支"用去尾法，300 元最多买 ${result} 支自动铅笔。`
-            : `求"至少需要几个"用进一法，${total} 元至少准备 ${result} 个油壶。`,
+        conclusion: `求"至少需要准备几个"，要保证够装：用进一法，${total} 千克油至少需要 ${r.result} 个油壶（${r.result - 1} 个只能装 ${fmt(r.usedValue)} 千克，不够；${r.result} 个能装 ${fmt(r.nextValue)} 千克）。`,
       }
     }
 
@@ -126,180 +180,189 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const a = p.a ?? 0
       const b = p.b ?? 0
       const n = p.n ?? 0
-      const m1 = (a / (a + b)) * n
-      const m2 = (b / (a + b)) * n
+      const m = fracMix(a, b, n)
       return {
-        value: n,
-        text: `一共用彩绳 ${fmt(n)} 米`,
+        value: m.total,
+        text: `一共用彩绳 ${fmt(m.total)} 米`,
         steps: [
-          { expr: `解法一：分别算两种中国结`, result: `${fmt(m1)} + ${fmt(m2)} = ${fmt(n)} 米` },
-          { expr: `解法二：先算各做一个共用彩绳`, result: `${fmt(a / (a + b) + b / (a + b))} × ${fmt(n)} = ${fmt(n)} 米` },
+          { expr: `解法一：先分别算两种中国结各用多少米`, result: m.method1 },
+          { expr: `解法二：先算各做一个共用的米数（两个分率的和是 1）`, result: m.method2 },
         ],
-        conclusion: `分数四则混合运算的运算顺序与整数相同，整数的运算律（乘法分配律）对分数同样适用，两种解法结果一样。`,
+        conclusion: `两种解法结果相同（${fmt(m.total)} 米）：分数四则混合运算的顺序与整数相同，乘法分配律对分数同样适用。`,
       }
     }
     case 'estimate-shop': {
       const budget = p.budget ?? 0
-      const minLeft = budget - 20 - 31 * 2
-      const maxLeft = budget - 19 - 30 * 2
-      const flourOk = minLeft > 16.8
-      const riceNo = maxLeft < 21.6
+      const est = estimateShop(budget, SHOP_GOODS)
+      const flour = affordableVerdict(est, FLOUR_PRICE)
+      const rice = affordableVerdict(est, RICE_PRICE)
       return {
-        value: minLeft,
-        text: `估大法最少剩 ${fmt(minLeft)} 元，估小法最多剩 ${fmt(maxLeft)} 元`,
+        value: est.leftHigh,
+        text: `估大法最少剩 ${fmt(est.leftHigh)} 元，估小法最多剩 ${fmt(est.leftLow)} 元`,
         steps: [
-          { expr: `估大法：19.6<20，30.4<31`, result: `${budget} - 20 - 31×2 = ${fmt(minLeft)} 元` },
-          { expr: `估小法：19.6>19，30.4>30`, result: `${budget} - 19 - 30×2 = ${fmt(maxLeft)} 元` },
-          { expr: `最少剩的钱与面粉 16.8 元比`, result: flourOk ? `${fmt(minLeft)} > 16.8，够买面粉` : `${fmt(minLeft)} ≤ 16.8，不一定够买面粉` },
-          { expr: `最多剩的钱与大米 21.6 元比`, result: riceNo ? `${fmt(maxLeft)} < 21.6，不够买大米` : `${fmt(maxLeft)} ≥ 21.6，可能够买大米` },
+          { expr: `估大法：19.6 看作 20，30.4 看作 31`, result: `${fmt(budget)} - 20 - 31×2 = ${fmt(est.leftHigh)} 元` },
+          { expr: `估小法：19.6 看作 19，30.4 看作 30`, result: `${fmt(budget)} - 19 - 30×2 = ${fmt(est.leftLow)} 元` },
+          {
+            expr: `最少剩 ${fmt(est.leftHigh)} 元与面粉 ${FLOUR_PRICE} 元比`,
+            result: `${VERDICT_TEXT[flour]}买面粉${verdictWhy(flour)}`,
+          },
+          {
+            expr: `最多剩 ${fmt(est.leftLow)} 元与大米 ${RICE_PRICE} 元比`,
+            result: `${VERDICT_TEXT[rice]}买大米${verdictWhy(rice)}`,
+          },
         ],
-        conclusion: `要判断"够不够"时把价钱估大（估大法）看最少剩多少，把价钱估小（估小法）看最多剩多少，这样结论才可靠。`,
+        conclusion: `估大法看"最少剩多少"，估小法看"最多剩多少"：最少剩的够就一定够，最多剩的都不够就一定不够，剩下的情况无法确定。`,
       }
     }
     case 'segment': {
       const total = p.total ?? 0
       const fn = p.fn ?? 0
       const fd = p.fd ?? 0
-      const boys = (total * fn) / fd
-      const girls = total - boys
+      const boysCount = fractionCount(total, fn, fd)
+      const boys = Math.round(boysCount.value * 100) / 100
+      const girls = Math.round((total - boys) * 100) / 100
+      const steps: LabStep[] = [
+        { expr: `男运动员 = 总人数 × ${fn}/${fd}`, result: `${total} × ${fn}/${fd} = ${fmt(boys)} 人` },
+        { expr: `女运动员 = 总人数 - 男运动员`, result: `${total} - ${fmt(boys)} = ${fmt(girls)} 人` },
+        { expr: `或：女占 1 - ${fn}/${fd} = ${fractionText(fd - fn, fd)}`, result: `${total} × ${fractionText(fd - fn, fd)} = ${fmt(girls)} 人` },
+      ]
+      if (!boysCount.integral) {
+        steps.push({
+          expr: `注意实际意义：人数必须是整数`,
+          result: `${total} 不是 ${fd} 的倍数，算出 ${fmt(boysCount.value)} 人；把总人数调成 ${fd} 的倍数（如 ${snapUpToMultiple(total, fd)} 人）才合适`,
+        })
+      }
       return {
         value: girls,
-        text: `${total} 人，女运动员 ${fmt(girls)} 人`,
-        steps: [
-          { expr: `男运动员 = 总人数 × ${fn}/${fd}`, result: `${total} × ${fn}/${fd} = ${fmt(boys)} 人` },
-          { expr: `女运动员 = 总人数 - 男运动员`, result: `${total} - ${fmt(boys)} = ${fmt(girls)} 人` },
-          { expr: `或：女占 1 - ${fn}/${fd} = ${fmt((fd - fn) / fd)}`, result: `${total} × ${fmt((fd - fn) / fd)} = ${fmt(girls)} 人` },
-        ],
-        conclusion: `已知总人数和男运动员占的几分之几，先求男运动员人数，再用总人数减去；或直接求女生所占的分率再乘总人数。`,
+        text: `${total} 人，女运动员 ${fmt(girls)} 人${boysCount.integral ? '' : '（人数需为整数）'}`,
+        steps,
+        conclusion: boysCount.integral
+          ? `已知总人数和男运动员占的几分之几，先求男运动员人数，再用总人数减去；或直接求女生所占的分率再乘总人数。`
+          : `人数必须是整数：${total} 人分成 ${fd} 份分不尽，把总人数调成 ${fd} 的倍数（如 ${snapUpToMultiple(total, fd)} 人）再算。`,
       }
     }
     case 'segment-more': {
-      const base = p.base ?? 0
-      const fn = p.fn ?? 0
-      const fd = p.fd ?? 0
-      const mode = Math.round(p.mode ?? 0)
-      const delta = (base * fn) / fd
-      const result = mode === 0 ? base + delta : base - delta
+      const m = segmentMore(p.base ?? 0, p.fn ?? 0, p.fd ?? 0, Math.round(p.mode ?? 0))
+      const steps: LabStep[] = [
+        {
+          expr: m.increase ? `增加的部分 = 原来 × ${m.fraction}` : `减少的部分 = 原来 × ${m.fraction}`,
+          result: `${fmt(m.base)} × ${m.fraction} = ${fmt(m.delta)} 天`,
+        },
+        {
+          expr: m.increase ? `结果 = 原来 + 增加的部分` : `结果 = 原来 - 减少的部分`,
+          result: `${m.increase ? '+' : '-'} ${fmt(m.delta)} → ${fmt(m.result)} 天`,
+        },
+        {
+          expr: `或：结果 = 原来 × (1 ${m.increase ? '+' : '-'} ${m.fraction})`,
+          result: `${fmt(m.base)} × ${fmt(1 + (m.increase ? 1 : -1) * (m.delta / (m.base || 1)))} = ${fmt(m.result)} 天`,
+        },
+      ]
+      if (!m.integral) {
+        steps.push({ expr: '注意实际意义', result: `天数可以是小数，但要注意题意是否需要取整` })
+      }
       return {
-        value: result,
-        text: `结果 = ${fmt(result)} 天`,
-        steps: [
-          { expr: mode === 0 ? `增加的部分 = 原来 × ${fn}/${fd}` : `减少的部分 = 原来 × ${fn}/${fd}`, result: `${base} × ${fn}/${fd} = ${fmt(delta)} 天` },
-          { expr: mode === 0 ? `结果 = 原来 + 增加的部分` : `结果 = 原来 - 减少的部分`, result: `${fmt(result)} 天` },
-          { expr: `或：结果 = 原来 × (1 ${mode === 0 ? '+' : '-'} ${fn}/${fd})`, result: `${base} × ${fmt(1 + (mode === 0 ? fn / fd : -fn / fd))} = ${fmt(result)} 天` },
-        ],
-        conclusion: mode === 0 ? `水仙花的花期比风信子长 ${fn}/${fd}：14 + 4 = 18 天。` : `结果比原来少 ${fn}/${fd}：${fmt(base - delta)} 天。`,
+        value: m.result,
+        text: `结果 = ${fmt(m.result)} 天`,
+        steps,
+        conclusion: m.increase
+          ? `比原来多 ${m.fraction}：先算多出的部分 ${fmt(m.delta)} 天，再加上原来的 ${fmt(m.base)} 天，得 ${fmt(m.result)} 天；也可以 ${fmt(m.base)} × (1 + ${m.fraction}) = ${fmt(m.result)} 天。`
+          : `比原来少 ${m.fraction}：先算少掉的部分 ${fmt(m.delta)} 天，再从原来的 ${fmt(m.base)} 天里减去，得 ${fmt(m.result)} 天。`,
       }
     }
     case 'work-together': {
       const a = p.a ?? 0
       const b = p.b ?? 0
-      const rate = 1 / a + 1 / b
-      const hours = 1 / rate
+      const [rn, rd] = unitFractionSum(a, b)
+      const rateText = fractionText(rn, rd)
+      const hours = fractionDecimal(rd, rn, 2)
+      const hoursFrac = fractionText(rd, rn)
+      const exact = hours.exact || rd === 1
       return {
-        value: hours,
-        text: `一起做约 ${fmt(hours)} 小时完成`,
+        value: hours.value,
+        text: `一起做${exact ? '' : '约'} ${hours.text} 小时完成（= ${hoursFrac} 小时）`,
         steps: [
-          { expr: `志杰每小时完成 1/${a}`, result: `爸爸每小时完成 1/${b}` },
-          { expr: `一起每小时完成 1/${a} + 1/${b}`, result: `${fmt(rate)}` },
-          { expr: `合作时间 = 1 ÷ (1/${a} + 1/${b})`, result: `${fmt(hours)} 小时` },
+          { expr: `志杰每小时完成 1/${a}`, result: `爸爸每小时完成 1/${b}（把总工作量看作 1）` },
+          { expr: `一起每小时完成 1/${a} + 1/${b} = ${a + b}/${a * b}`, result: `化成最简分数 = ${rateText}` },
+          { expr: `合作时间 = 1 ÷ ${rateText}`, result: `${hoursFrac} 小时${exact ? '' : ` ≈ ${hours.text} 小时`}` },
         ],
-        conclusion: `把总工作量看作 1：1/6 + 1/3 = 1/2，两人一起 2 小时完成。`,
+        conclusion: exact
+          ? `把总工作量看作 1：1/${a} + 1/${b} = ${rateText}，两人一起 ${hoursFrac} 小时完成。`
+          : `把总工作量看作 1：1/${a} + 1/${b} = ${rateText}，合作时间 ${hoursFrac} ≈ ${hours.text} 小时（除不尽，用约等号）。`,
       }
     }
     case 'piecewise': {
       const km = p.km ?? 0
-      const within = km <= 3
-      const extra = within ? 0 : Math.ceil(km - 3)
-      const fee = within ? 10 : 10 + extra * 2.2
+      const r = piecewiseFee(km)
+      const steps: LabStep[] = [{ expr: `起步价（不超过 ${r.baseKm} 千米）`, result: `${fmt(r.baseFee)} 元` }]
+      if (r.withinBase) {
+        steps.push({ expr: `没有超出起步价千米数`, result: `车费 ${fmt(r.fee)} 元` })
+      } else {
+        steps.push({
+          expr: `超出 ${fmt(km - r.baseKm)} 千米${r.roundedUp ? '（不足 1 千米按 1 千米计算）' : ''}`,
+          result: `按 ${r.extraKm} 千米计费`,
+        })
+        steps.push({ expr: `超出部分费用 = ${r.extraKm} × 2.2`, result: `${fmt(r.extraFee)} 元` })
+        steps.push({ expr: `合计 = ${fmt(r.baseFee)} + ${fmt(r.extraFee)}`, result: `${fmt(r.fee)} 元` })
+      }
       return {
-        value: fee,
-        text: `${fmt(km)} 千米车费 ${fmt(fee)} 元`,
-        steps: [
-          { expr: `起步价（3 千米内）`, result: `10 元` },
-          { expr: `超出 ${fmt(km - 3)} 千米（不足 1 千米按 1 千米计）`, result: `${extra} 千米` },
-          { expr: `超出部分费用 = ${extra} × 2.2`, result: `${fmt(extra * 2.2)} 元` },
-          { expr: `合计 = 10 + 超出部分`, result: `${fmt(fee)} 元` },
-        ],
-        conclusion: `分段计费：先收起步价 10 元，再按超出部分每千米 2.2 元计算，两段费用相加。`,
+        value: r.fee,
+        text: `${fmt(km)} 千米车费 ${fmt(r.fee)} 元`,
+        steps,
+        conclusion: r.withinBase
+          ? `不超过 ${r.baseKm} 千米都收起步价 ${fmt(r.baseFee)} 元，所以 ${fmt(km)} 千米的车费是 ${fmt(r.fee)} 元。`
+          : `分段计费：起步价 ${fmt(r.baseFee)} 元（含 ${r.baseKm} 千米）＋ 超出 ${r.extraKm} 千米 × 2.2 元 = ${fmt(r.fee)} 元${r.roundedUp ? '；不足 1 千米按 1 千米计算' : ''}。`,
       }
     }
 
     /* ============ 三 数与运算的再认识 ============ */
     case 'place-value': {
-      const nums: { v: number; parts: string[]; unit: string }[] = [
-        { v: 231, parts: ['2 个百', '3 个十', '1 个一'], unit: '231 = 2×100 + 3×10 + 1×1' },
-        { v: 2000, parts: ['2 个千'], unit: '2000 = 2×1000' },
-        { v: 3.36, parts: ['3 个一', '3 个十分之一', '6 个百分之一'], unit: '3.36 = 3×1 + 3×0.1 + 6×0.01' },
-        { v: 4.05, parts: ['4 个一', '5 个百分之一'], unit: '4.05 = 4×1 + 5×0.01' },
-        { v: 0.24, parts: ['2 个十分之一', '4 个百分之一'], unit: '0.24 = 2×0.1 + 4×0.01' },
-      ]
-      const n = nums[Math.round(p.sel ?? 0) % nums.length]!
+      // 与组件共用同一份数据与拆位逻辑（原来两边各写一份，容易图上与算式不一致）
+      const ex = placeExample(p.sel ?? 0)
       return {
-        value: n.v,
-        text: `${fmt(n.v)} = ${n.parts.join(' + ')}`,
-        steps: [{ expr: `数位与计数单位`, result: n.parts.join(' + ') }],
-        conclusion: `整数、分数和小数都是用计数单位计数的，由若干个计数单位组成；相邻计数单位之间的进率都是 10。`,
+        value: ex.v,
+        text: ex.text,
+        steps: [
+          { expr: `按数位拆开`, result: ex.powText },
+          { expr: `相邻计数单位的进率`, result: '10 个一 = 1 个十，10 个十 = 1 个百，10 个十分之一 = 1 个一' },
+        ],
+        conclusion: `整数、分数和小数都是用计数单位计数的：${ex.text}；相邻两个计数单位之间的进率都是 10。`,
       }
     }
     case 'compare-unit': {
-      const pairs = [
-        { a: '1000', b: '923', how: '1000 是 10 个百，923 不足 10 个百' },
-        { a: '3.34', b: '3.4', how: '3.34 是 33.4 个 0.1，3.4 是 34 个 0.1' },
-        { a: '4.7', b: '4.05', how: '47 个 0.1 > 40.5 个 0.1' },
-        { a: '2/3', b: '3/5', how: '通分后 10/15 > 9/15（分数单位相同）' },
-        { a: '0.78', b: '0.87', how: '78 个 0.01 < 87 个 0.01' },
-      ]
-      const pr = pairs[Math.round(p.sel ?? 0) % pairs.length]!
-      const gt = Number(pr.a) > Number(pr.b) || pr.a === '2/3'
+      const pr = comparePair(p.sel ?? 0)
       return {
-        value: gt ? 1 : 0,
-        text: `${pr.a} ${gt ? '>' : '<'} ${pr.b}`,
+        value: pr.gt ? 1 : 0,
+        text: `${pr.a} ${pr.gt ? '>' : '<'} ${pr.b}`,
         steps: [
           { expr: `比较相同计数单位的个数`, result: pr.how },
-          { expr: `结论`, result: `${pr.a} ${gt ? '>' : '<'} ${pr.b}` },
+          { expr: `结论`, result: `${pr.a} ${pr.gt ? '>' : '<'} ${pr.b}` },
         ],
-        conclusion: `比较数的大小，就是比较相同计数单位的个数；分数、小数的大小比较都可以转化为整数的大小比较。`,
+        conclusion: `比较数的大小，就是比较相同计数单位的个数；分数、小数的大小比较都可以转化（通分或统一计数单位）成整数的大小比较。`,
       }
     }
     case 'op-consistency': {
-      const ops = [
-        { expr: '20 × 3', how: '2 个十 × 3 = 6 个十 = 60', ans: 60 },
-        { expr: '2/5 × 3', how: '(1/5 × 2) × 3 = 1/5 × 6 = 6/5', ans: 6 / 5 },
-        { expr: '1200 ÷ 3', how: '12 个百 ÷ 3 = 4 个百 = 400', ans: 400 },
-        { expr: '1200 ÷ 400', how: '12 个百 ÷ 4 个百 = 12 ÷ 4 = 3', ans: 3 },
-        { expr: '135 + 24', how: '1 个百 + 3 个十 + 5 个一，与 2 个十 + 4 个一相加', ans: 159 },
-        { expr: '3.4 + 1.25', how: '34 个 0.1 + 125 个 0.01（统一计数单位）', ans: 4.65 },
-      ]
-      const op = ops[Math.round(p.sel ?? 0) % ops.length]!
+      const op = opExample(p.sel ?? 0)
       return {
-        value: op.ans,
-        text: `${op.expr} = ${fmt(op.ans)}`,
+        value: op.value,
+        text: `${op.expr} = ${fmt(op.value)}`,
         steps: [
-          { expr: `计数单位 × 计数单位的个数`, result: op.how },
-          { expr: `结果`, result: `${op.expr} = ${fmt(op.ans)}` },
+          { expr: `换成计数单位来说`, result: op.how },
+          { expr: `结果`, result: `${op.expr} = ${op.ans}` },
         ],
-        conclusion: `四则运算本质上都是把相同计数单位的个数相加（减、乘、除）；乘法中积的计数单位是两因数计数单位的乘积。`,
+        conclusion: `四则运算本质上都是把相同计数单位的个数相加（减、乘、除）：${op.how}，所以 ${op.expr} = ${op.ans}。`,
       }
     }
     case 'binary': {
       const dec = Math.round(p.dec ?? 0)
       const bin = toBinary(dec)
-      const steps: LabStep[] = []
-      let v = dec
-      if (v === 0) {
-        steps.push({ expr: '0 ÷ 2', result: '商 0 余 0' })
-      }
-      while (v > 0) {
-        steps.push({ expr: `${v} ÷ 2`, result: `商 ${Math.floor(v / 2)} 余 ${v % 2}` })
-        v = Math.floor(v / 2)
-      }
+      const steps: LabStep[] = binaryDivisionSteps(dec)
       steps.push({ expr: '余数倒序排列', result: `${dec} = (${bin})₂` })
+      const boundary = carryBoundary(dec)
       return {
         value: dec,
         text: `十进制 ${dec} = 二进制（${bin}）₂`,
         steps,
-        conclusion: `二进制按"满二进一"的规则计数，十进制数 ${dec} 用二进制表示是（${bin}）₂，读作"${bin.split('').join('')}"。`,
+        conclusion: `二进制按"满二进一"计数：${boundary.from} 是（${boundary.fromBin}）₂，再加 1 就满二进一变成（${boundary.toBin}）₂。十进制 ${dec} 用二进制表示是（${bin}）₂，读作"${binaryReading(bin)}"。`,
       }
     }
 
@@ -392,16 +455,25 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const a = p.a ?? 0
       const b = p.b ?? 0
       const c = p.c ?? 0
-      const x = (a * c) / b
+      // 用最简分数表示，除不尽时用约等号（原来一律写 "="，37.5 之外的取值会不成立）
+      const frac = fractionDecimal(a * c, b, 2)
+      const x = frac.value
+      const eq = frac.exact ? '=' : '≈'
+      const fracText = fractionText(a * c, b)
       return {
         value: x,
-        text: `应加入 ${fmt(x)} 克糖`,
+        text: `应加入 ${eq} ${fmt(x)} 克糖`,
         steps: [
           { expr: `列出比例 ${fmt(a)}:${fmt(b)} = x:${fmt(c)}`, result: `糖与水质量比相同` },
           { expr: `外项积 = 内项积：${fmt(b)}x = ${fmt(a)} × ${fmt(c)}`, result: `${fmt(b)}x = ${fmt(a * c)}` },
-          { expr: `x = ${fmt(a)} × ${fmt(c)} ÷ ${fmt(b)}`, result: `${fmt(x)} 克` },
+          {
+            expr: `x = ${fmt(a)} × ${fmt(c)} ÷ ${fmt(b)}`,
+            result: frac.exact ? `${fmt(x)} 克` : `${fracText} ${eq} ${fmt(x)} 克（除不尽）`,
+          },
         ],
-        conclusion: `根据比例的基本性质列出方程，解比例求出应加入 ${fmt(x)} 克糖。`,
+        conclusion: frac.exact
+          ? `根据比例的基本性质列出方程：${fmt(b)}x = ${fmt(a * c)}，x = ${fmt(x)}，所以应加入 ${fmt(x)} 克糖。`
+          : `根据比例的基本性质列出方程：${fmt(b)}x = ${fmt(a * c)}，x = ${fracText} ${eq} ${fmt(x)} 克（除不尽，用约等号）。`,
       }
     }
     case 'golden-ratio': {
@@ -523,17 +595,47 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
     }
     case 'map-scale': {
       const scaleDen = p.scaleDen ?? 0
+      const ask = Math.round(p.ask ?? 0)
       const cm = p.cm ?? 0
+      const actualM = p.actualM ?? 0
+      if (ask === 1) {
+        // 已知实际距离，求图上距离
+        const actualCm = actualM * 100
+        const mapCm = roundTo(actualCm / scaleDen, 2)
+        return {
+          value: mapCm,
+          text: `图上距离 ${fmt(mapCm)} 厘米`,
+          steps: [
+            { expr: `先统一单位：${fmt(actualM)} 米 = ${fmt(actualCm)} 厘米`, result: `${fmt(actualCm)} 厘米` },
+            { expr: `图上距离 = 实际距离 ÷ 比例尺分母`, result: `${fmt(actualCm)} ÷ ${fmt(scaleDen)} = ${fmt(mapCm)} 厘米` },
+          ],
+          conclusion: `实际 ${fmt(actualM)} 米，按 1:${fmt(scaleDen)} 画在图上就是 ${fmt(mapCm)} 厘米。`,
+        }
+      }
+      if (ask === 2) {
+        // 已知图上距离与实际距离，求比例尺
+        const actualCm = actualM * 100
+        const ratio = roundTo(actualCm / cm, 2)
+        return {
+          value: ratio,
+          text: `比例尺 1:${fmt(ratio)}`,
+          steps: [
+            { expr: `先统一单位：${fmt(actualM)} 米 = ${fmt(actualCm)} 厘米`, result: `${fmt(actualCm)} 厘米` },
+            { expr: `图上距离 : 实际距离 = ${fmt(cm)} : ${fmt(actualCm)}`, result: `前项化成 1 → 1 : ${fmt(ratio)}` },
+          ],
+          conclusion: `图上 ${fmt(cm)} 厘米表示实际 ${fmt(actualM)} 米，这幅图的比例尺是 1:${fmt(ratio)}。`,
+        }
+      }
       const actualCm = cm * scaleDen
-      const actualM = actualCm / 100
+      const outM = actualCm / 100
       return {
-        value: actualM,
-        text: `实际距离 ${fmt(actualM)} 米`,
+        value: outM,
+        text: `实际距离 ${fmt(outM)} 米`,
         steps: [
           { expr: `实际距离 = 图上距离 × 比例尺分母`, result: `${fmt(cm)} × ${fmt(scaleDen)} = ${fmt(actualCm)} 厘米` },
-          { expr: `厘米 → 米`, result: `${fmt(actualCm)} ÷ 100 = ${fmt(actualM)} 米` },
+          { expr: `厘米 → 米`, result: `${fmt(actualCm)} ÷ 100 = ${fmt(outM)} 米` },
         ],
-        conclusion: `比例尺 ${fmt(scaleDen)} 分之一（1:${fmt(scaleDen)}）表示图上 1 厘米相当于实际 ${fmt(scaleDen / 100)} 米。`,
+        conclusion: `比例尺 1:${fmt(scaleDen)} 表示图上 1 厘米相当于实际 ${fmt(scaleDen / 100)} 米；图上 ${fmt(cm)} 厘米就是实际 ${fmt(outM)} 米。`,
       }
     }
 

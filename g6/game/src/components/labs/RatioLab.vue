@@ -18,7 +18,8 @@ const rb = computed(() => Math.round(props.values.b ?? 2))
 const w = computed(() => Math.round(props.values.w ?? 90))
 const h = computed(() => Math.round(props.values.h ?? 54))
 const ratioVal = computed(() => w.value / h.value)
-const [sn, sd] = computed(() => simplifyRatio(w.value, h.value)).value
+/** 必须用 computed 保存化简结果：写成 `const [sn, sd] = computed(...).value` 会在 setup 期就取快照，拖动后不再更新 */
+const simp = computed(() => simplifyRatio(w.value, h.value))
 
 /* ---------- 化简比 ---------- */
 const SIMPLIFY_EXAMPLES = [
@@ -50,6 +51,22 @@ const distributeLedger = computed(() => [
   { label: `糯米粉 ${da.value} 份`, value: `${toFixed2(partA.value)} 克` },
   { label: `鼠曲草浆 ${db.value} 份`, value: `${toFixed2(partB.value)} 克` },
 ])
+/**
+ * 自检：显示出来的"每份 × 份数"必须等于显示出来的"部分"。
+ * 早期实现里 166.67 × 2 会写成 333.33（各算各的四舍五入），屏幕上的算式不成立。
+ */
+const distributeCheck = computed(() => {
+  const rp = Math.round(per.value * 100) / 100
+  const ra = Math.round(partA.value * 100) / 100
+  const rb = Math.round(partB.value * 100) / 100
+  const exact = Math.abs(rp * da.value - ra) < 0.005 && Math.abs(rp * db.value - rb) < 0.005
+  return {
+    exact,
+    text: exact
+      ? `✓ ${rp} × ${da.value} = ${ra}，${rp} × ${db.value} = ${rb}，${ra} + ${rb} = ${total.value} 克`
+      : `✓ 每份除不尽（${total.value} ÷ ${da.value + db.value}），所以用"总数 × 份数占的几分之几"算更准：${total.value} × ${da.value}/${da.value + db.value} = ${ra}，${total.value} × ${db.value}/${da.value + db.value} = ${rb}，合计 ${ra + rb} 克`,
+  }
+})
 
 /* ---------- 比例的基本性质 ---------- */
 const pa = computed(() => Math.round(props.values.a ?? 4))
@@ -70,8 +87,10 @@ const sx = computed(() => (sa.value * sc.value) / sb.value)
 const gw = computed(() => props.values.w ?? 200)
 const gl = computed(() => gw.value / 0.618)
 const gtotal = computed(() => gw.value + gl.value)
-const H = 60
 const RATIO = 0.618
+/** 画出的黄金长方形：高度 = 宽度 × 0.618，宽度受限时高度同步受限，比例始终是 1.618:1 */
+const goldW = computed(() => Math.min(gl.value, 320))
+const goldH = computed(() => goldW.value * RATIO)
 </script>
 
 <template>
@@ -106,7 +125,7 @@ const RATIO = 0.618
           <span class="rect-ht">{{ h }}</span>
         </div>
         <p class="ratio-big">
-          {{ w }} : {{ h }} = <b>{{ toFixed2(ratioVal) }}</b>（比值 {{ sn }}:{{ sd }}）
+          {{ w }} : {{ h }} = <b>{{ toFixed2(ratioVal) }}</b>（化简比 {{ simp[0] }}:{{ simp[1] }}）
         </p>
         <p class="note">长 ÷ 宽 = 比值；比值相等的长方形形状相同</p>
       </div>
@@ -168,6 +187,7 @@ const RATIO = 0.618
           <br />
           鼠曲草浆 = {{ toFixed2(per) }} × {{ db }} = <b>{{ toFixed2(partB) }} 克</b>
         </p>
+        <p class="dist-check">{{ distributeCheck.text }}</p>
       </div>
     </template>
 
@@ -179,17 +199,27 @@ const RATIO = 0.618
         </p>
         <div class="cross-wrap">
           <div class="cross-diagram">
-            <div class="cross-num outer">{{ pa }}</div>
-            <div class="cross-mid">外项</div>
-            <div class="cross-num inner">{{ pb }}</div>
-            <div class="cross-num inner">{{ pc }}</div>
-            <div class="cross-mid">内项</div>
-            <div class="cross-num outer">{{ pd }}</div>
+            <div class="cross-term">
+              <span class="cross-tag outer">外项</span>
+              <span class="cross-num outer">{{ pa }}</span>
+            </div>
+            <span class="cross-sep">:</span>
+            <div class="cross-term">
+              <span class="cross-tag inner">内项</span>
+              <span class="cross-num inner">{{ pb }}</span>
+            </div>
+            <span class="cross-sep">=</span>
+            <div class="cross-term">
+              <span class="cross-tag inner">内项</span>
+              <span class="cross-num inner">{{ pc }}</span>
+            </div>
+            <span class="cross-sep">:</span>
+            <div class="cross-term">
+              <span class="cross-tag outer">外项</span>
+              <span class="cross-num outer">{{ pd }}</span>
+            </div>
           </div>
-          <svg viewBox="0 0 220 90" class="cross-lines">
-            <line x1="22" y1="20" x2="198" y2="72" class="xl outer" />
-            <line x1="198" y1="20" x2="22" y2="72" class="xl inner" />
-          </svg>
+          <p class="cross-hint">交叉相乘：外项 {{ pa }} × {{ pd }}，内项 {{ pb }} × {{ pc }}</p>
         </div>
         <p class="sim-step">
           外项积：{{ pa }} × {{ pd }} = {{ outerProd }}
@@ -226,7 +256,7 @@ const RATIO = 0.618
     <!-- 黄金比 -->
     <template v-else>
       <div class="card-block">
-        <div class="gold-rect" :style="{ width: `${Math.min(gl, 320)}px`, height: `${H}px` }">
+        <div class="gold-rect" :style="{ width: `${goldW}px`, height: `${goldH}px` }">
           <div class="gold-line" :style="{ left: `${RATIO * 100}%` }" />
           <span class="gold-leb">{{ toFixed2(gl) }}</span>
         </div>
@@ -375,6 +405,15 @@ const RATIO = 0.618
 }
 .sim-flow,
 .solve-flow,
+.dist-check {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+  text-align: center;
+}
 .ledger-row {
   display: flex;
   flex-wrap: wrap;
@@ -462,13 +501,13 @@ const RATIO = 0.618
   color: var(--ui-text-muted);
   text-align: right;
 }
+/* 每格宽度固定：两行格子一样宽，行长就真实反映化简后的比（2 组 : 3 组） */
 .gb-track {
   display: flex;
   gap: 2px;
-  flex: 1;
 }
 .gb-cell {
-  flex: 1;
+  width: 2.1rem;
   height: 1.4rem;
   border-radius: 0.3rem;
   display: flex;
@@ -513,11 +552,37 @@ const RATIO = 0.618
   stroke: var(--ui-primary);
 }
 .cross-diagram {
-  display: grid;
-  grid-template-columns: auto auto auto;
-  grid-template-rows: auto auto;
-  gap: 0.4rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.cross-term {
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 0.2rem;
+}
+.cross-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--ui-text-muted);
+}
+.cross-tag.outer {
+  color: #92400e;
+}
+.cross-sep {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--ui-text-toned);
+  padding-bottom: 0.35rem;
+}
+.cross-hint {
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  font-weight: 700;
 }
 .cross-num {
   width: 3rem;

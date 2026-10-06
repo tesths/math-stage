@@ -30,9 +30,11 @@ export const c6Labs: LabDef[] = [
     kind: 'map-scale',
     params: [
       { key: 'scaleDen', label: '比例尺分母', min: 500, max: 10000, step: 500, default: 1000 },
+      { key: 'ask', label: '求什么', min: 0, max: 2, step: 1, default: 0, unit: '0求实际距离 1求图上距离 2求比例尺' },
       { key: 'cm', label: '图上距离', min: 1, max: 10, step: 0.5, default: 5, unit: '厘米' },
+      { key: 'actualM', label: '实际距离', min: 100, max: 5000, step: 100, default: 1000, unit: '米' },
     ],
-    formula: '实际距离 = 图上距离 × 比例尺分母（厘米 → 米 ÷100）',
-    tip: '图上距离 : 实际距离 = 比例尺；比例尺 1:8000 说明实际距离是图上距离的 8000 倍。',
+    formula: '实际距离 = 图上距离 × 比例尺分母（厘米 → 米 ÷100）；图上距离 = 实际距离 ÷ 比例尺分母',
+    tip: '图上距离 : 实际距离 = 比例尺。「1:1000」表示图上 1 厘米相当于实际 10 米；反过来已知实际距离和比例尺，也能求图上距离。',
   },
 ]

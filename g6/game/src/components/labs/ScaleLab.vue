@@ -4,7 +4,7 @@
  */
 import { computed } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { toFixed2 } from '@/lib/engine/math'
+import { roundTo, toFixed2 } from '@/lib/engine/math'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -17,6 +17,10 @@ const shape = computed(() => Math.round(props.values.shape ?? 0))
 const f = computed(() => n.value / d.value)
 const cell = 16
 const isBigger = computed(() => n.value > d.value)
+const isSame = computed(() => n.value === d.value)
+const scaleWord = computed(() => (isSame.value ? '不变' : isBigger.value ? '放大' : '缩小'))
+/** 边的倍数 f → 面积的倍数 f²（课本练习十二第 6 题） */
+const areaFactor = computed(() => (f.value * f.value))
 
 const SHAPES = [
   {
@@ -54,9 +58,19 @@ const sH = computed(() => Math.ceil((heightLen.value * f.value + 12) / 16))
 /* ---------- 比例尺 ---------- */
 const scaleDen = computed(() => Math.round(props.values.scaleDen ?? 1000))
 const cm = computed(() => props.values.cm ?? 5)
+const actualMInput = computed(() => props.values.actualM ?? 1000)
+/** 0 求实际距离 / 1 求图上距离 / 2 求比例尺 */
+const ask = computed(() => Math.min(2, Math.max(0, Math.round(props.values.ask ?? 0))))
 const actualM = computed(() => (cm.value * scaleDen.value) / 100)
 const perM = computed(() => scaleDen.value / 100)
-const barPx = computed(() => Math.min(cm.value * 34, 320))
+/** 求图上距离：实际距离（米）→ 厘米 ÷ 比例尺分母 */
+const mapCmFromActual = computed(() => roundTo((actualMInput.value * 100) / scaleDen.value, 2))
+/** 求比例尺：实际厘米 ÷ 图上厘米 */
+const denFromInputs = computed(() => roundTo((actualMInput.value * 100) / cm.value, 2))
+/** 图上距离（三种问法下当前要画多长） */
+const shownCm = computed(() => (ask.value === 1 ? mapCmFromActual.value : cm.value))
+const barPx = computed(() => Math.min(Math.max(shownCm.value, 0.2) * 34, 320))
+const askLabel = computed(() => ['求实际距离', '求图上距离', '求比例尺'][ask.value]!)
 </script>
 
 <template>
@@ -64,7 +78,7 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
     <!-- 图形的放大与缩小 -->
     <template v-if="kind === 'scale-shape'">
       <p class="scale-title">
-        {{ current.name }} 按 <b>{{ n }}:{{ d }}</b> 的比{{ isBigger ? '放大' : '缩小' }}（每边 ×{{ toFixed2(f) }}）
+        {{ current.name }} 按 <b>{{ n }}:{{ d }}</b> 的比{{ scaleWord }}（每边 ×{{ toFixed2(f) }}，面积 ×{{ toFixed2(areaFactor) }}）
       </p>
       <div class="ratio-strip" aria-label="对应边比例说明">
         <span>原图 1 格</span>
@@ -118,11 +132,11 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
     <template v-else>
       <div class="map-block">
         <p class="scale-title">
-          比例尺 <b>1:{{ scaleDen }}</b>，图上距离 {{ toFixed2(cm) }} 厘米
+          比例尺 <b>1:{{ scaleDen }}</b>（图上 1 厘米 ←→ 实际 {{ perM }} 米）· {{ askLabel }}
         </p>
         <div class="ruler">
           <div class="ruler-bar" :style="{ width: `${barPx}px` }">
-            <span class="ruler-val">{{ toFixed2(cm) }} 厘米</span>
+            <span class="ruler-val">{{ toFixed2(shownCm) }} 厘米</span>
           </div>
         </div>
         <div class="legend">
@@ -130,16 +144,48 @@ const barPx = computed(() => Math.min(cm.value * 34, 320))
           <span class="legend-eq">＝</span>
           <span class="legend-unit">实际 {{ perM }} 米</span>
         </div>
-        <div class="unit-flow" aria-label="比例尺单位换算流程">
-          <span>图上 {{ toFixed2(cm) }} 厘米</span>
-          <b>× {{ scaleDen }}</b>
-          <span>{{ toFixed2(cm * scaleDen) }} 厘米</span>
-          <b>÷ 100</b>
-          <span>{{ toFixed2(actualM) }} 米</span>
-        </div>
-        <p class="res-line">
-          实际距离 = {{ toFixed2(cm) }} × {{ scaleDen }} = {{ toFixed2(cm * scaleDen) }} 厘米 = <b>{{ toFixed2(actualM) }} 米</b>
-        </p>
+
+        <!-- 求实际距离 -->
+        <template v-if="ask === 0">
+          <div class="unit-flow" aria-label="比例尺单位换算流程">
+            <span>图上 {{ toFixed2(cm) }} 厘米</span>
+            <b>× {{ scaleDen }}</b>
+            <span>{{ toFixed2(cm * scaleDen) }} 厘米</span>
+            <b>÷ 100</b>
+            <span>{{ toFixed2(actualM) }} 米</span>
+          </div>
+          <p class="res-line">
+            实际距离 = {{ toFixed2(cm) }} × {{ scaleDen }} = {{ toFixed2(cm * scaleDen) }} 厘米 = <b>{{ toFixed2(actualM) }} 米</b>
+          </p>
+        </template>
+
+        <!-- 求图上距离 -->
+        <template v-else-if="ask === 1">
+          <div class="unit-flow" aria-label="求图上距离流程">
+            <span>实际 {{ toFixed2(actualMInput) }} 米</span>
+            <b>× 100</b>
+            <span>{{ toFixed2(actualMInput * 100) }} 厘米</span>
+            <b>÷ {{ scaleDen }}</b>
+            <span>{{ toFixed2(mapCmFromActual) }} 厘米</span>
+          </div>
+          <p class="res-line">
+            图上距离 = {{ toFixed2(actualMInput * 100) }} ÷ {{ scaleDen }} = <b>{{ toFixed2(mapCmFromActual) }} 厘米</b>
+          </p>
+        </template>
+
+        <!-- 求比例尺 -->
+        <template v-else>
+          <div class="unit-flow" aria-label="求比例尺流程">
+            <span>图上 {{ toFixed2(cm) }} 厘米</span>
+            <b>:</b>
+            <span>实际 {{ toFixed2(actualMInput * 100) }} 厘米</span>
+            <b>前项化 1</b>
+            <span>1 : {{ toFixed2(denFromInputs) }}</span>
+          </div>
+          <p class="res-line">
+            比例尺 = {{ toFixed2(cm) }} : {{ toFixed2(actualMInput * 100) }} = <b>1 : {{ toFixed2(denFromInputs) }}</b>
+          </p>
+        </template>
       </div>
     </template>
   </div>

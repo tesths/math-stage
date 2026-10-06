@@ -2,11 +2,18 @@
 /**
  * 练习题 Lab（四 比和比例）：
  * - ex-c4-cube-ratio      棱长比·面积比·体积比（等轴测正方体 + 底面积方格 + 三枚比徽章）
- * - ex-c4-football-ratio  足球皮·按比分黑白（按 a:b 分段的份数横条 + 三枚步骤卡）
+ * - ex-c4-football-ratio  足球皮·按比分黑白（按 a:b 分段的份数横条 + 步骤卡）
+ *
+ * 过程态：
+ * - cube：初值停在第 2 步（三个比全显示，与既有渲染一致），点按钮逐步回到「只看棱长比」，
+ *   再一步一步揭开「底面积比 = 棱长比²」与「体积比 = 棱长比³」，图形随之出现 / 高亮。
+ * - football：初值停在第 2 步（块数、步骤卡、合计齐全），点按钮回到「先求 1 份」，
+ *   再揭开黑白块数，最后露出「合计 = 总数」的校验。
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { simplifyRatio, toFixed2 } from '@/lib/engine/math'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -23,6 +30,32 @@ const cubeRatios = computed(() => {
   const [aa, ab] = simplifyRatio(cA.value ** 2, cB.value ** 2)
   const [va, vb] = simplifyRatio(cA.value ** 3, cB.value ** 3)
   return { edge: `${ra}:${rb}`, area: `${aa}:${ab}`, vol: `${va}:${vb}` }
+})
+
+/* ---------- 过程态：分步揭示 棱长比 → 底面积比（平方）→ 体积比（立方） ---------- */
+/**
+ * 初值 2 = 最完整的一步，与既有渲染完全一致；点一次往前走一步，走完回到第 0 步。
+ * 第 0 步只看棱长（立体图），第 1 步才揭开底面积方格，第 2 步才揭开体积比。
+ */
+const CUBE_STEPS = ['棱长比', '底面积比（棱长比²）', '体积比（棱长比³）']
+const cubeStep = ref(2)
+const showArea = computed(() => cubeStep.value >= 1)
+const showVol = computed(() => cubeStep.value >= 2)
+function nextCubeStep() {
+  cubeStep.value = (cubeStep.value + 1) % CUBE_STEPS.length
+  playClick()
+}
+const nextCubeLabel = computed(() => CUBE_STEPS[(cubeStep.value + 1) % CUBE_STEPS.length] ?? CUBE_STEPS[0]!)
+const cubeStepNote = computed(() => {
+  const A = cA.value
+  const B = cB.value
+  if (cubeStep.value === 0) {
+    return `第 1 步：先看棱长比——小 ${A} 厘米 : 大 ${B} 厘米 = ${cubeRatios.value.edge}`
+  }
+  if (cubeStep.value === 1) {
+    return `第 2 步：底面积比 = 棱长比²——${A}²:${B}² = ${A * A}:${B * B} = ${cubeRatios.value.area}，正好是 ${cubeRatios.value.edge} 的平方`
+  }
+  return `第 3 步：体积比 = 棱长比³——${A}³:${B}³ = ${A * A * A}:${B * B * B} = ${cubeRatios.value.vol}，正好是 ${cubeRatios.value.edge} 的立方`
 })
 
 /** 等轴测正方体：正面正方形 + 顶面/右侧面平行四边形；棱长线性缩放并封顶 */
@@ -68,14 +101,38 @@ const fPer = computed(() => Math.round(props.values.per ?? 4))
 const fTotal = computed(() => fPer.value * fParts.value)
 const fBlack = computed(() => fPer.value * fA.value)
 const fWhite = computed(() => fPer.value * fB.value)
+
+/* ---------- 过程态：先求 1 份 → 再分别乘份数 → 合计 = 总数 ---------- */
+/**
+ * 初值 2 = 最完整的一步，与既有渲染完全一致；点一次往前走一步，走完回到第 0 步。
+ * 第 0 步只留“总份数 / 每份”和量条上的一格格；第 1 步揭开黑白块数；第 2 步揭开合计校验。
+ */
+const FOOT_STEPS = ['先求 1 份', '再分别乘份数', '合计等于总数']
+const footStep = ref(2)
+const showBlocks = computed(() => footStep.value >= 1)
+const showSum = computed(() => footStep.value >= 2)
+function nextFootStep() {
+  footStep.value = (footStep.value + 1) % FOOT_STEPS.length
+  playClick()
+}
+const nextFootLabel = computed(() => FOOT_STEPS[(footStep.value + 1) % FOOT_STEPS.length] ?? FOOT_STEPS[0]!)
+const footStepNote = computed(() => {
+  if (footStep.value === 0) {
+    return `第 1 步：先求 1 份——${fA.value} + ${fB.value} = ${fParts.value} 份，每份 ${toFixed2(fPer.value)} 块（量条上被分成 ${fParts.value} 小格）`
+  }
+  if (footStep.value === 1) {
+    return `第 2 步：再分别乘份数——黑色 ${toFixed2(fPer.value)} × ${fA.value} = ${toFixed2(fBlack.value)} 块，白色 ${toFixed2(fPer.value)} × ${fB.value} = ${toFixed2(fWhite.value)} 块`
+  }
+  return `第 3 步：合计 = 总数——${toFixed2(fBlack.value)} + ${toFixed2(fWhite.value)} = ${fTotal.value} 块，和每份 × 总份数算出的总数一样`
+})
 </script>
 
 <template>
   <div class="ex-c4-wrap">
     <!-- 棱长比·面积比·体积比 -->
     <template v-if="kind === 'ex-c4-cube-ratio'">
-      <div class="ex-c4-cube">
-        <div class="ex-c4-cube-stage">
+      <div class="ex-c4-cube" :class="'c4-cube-step-' + cubeStep">
+        <div class="ex-c4-cube-stage" :class="{ 'c4-on': showVol }">
           <svg class="ex-c4-cube-svg" width="300" height="190" viewBox="0 0 300 190">
             <polygon :points="smallCube.topFace" class="c4-face top" />
             <polygon :points="smallCube.sideFace" class="c4-face side" />
@@ -102,7 +159,7 @@ const fWhite = computed(() => fPer.value * fB.value)
           </svg>
         </div>
 
-        <div class="ex-c4-base-stage">
+        <div v-if="showArea" class="ex-c4-base-stage c4-on">
           <svg class="ex-c4-base-svg" width="300" height="200" viewBox="0 0 300 200">
             <rect
               class="c4-base"
@@ -164,68 +221,81 @@ const fWhite = computed(() => fPer.value * fB.value)
         </div>
 
         <div class="ex-c4-badges">
-          <div class="ex-c4-badge edge">
+          <div class="ex-c4-badge edge" :class="{ on: cubeStep === 0 }">
             <small>棱长比</small>
             <b>{{ cubeRatios.edge }}</b>
           </div>
-          <div class="ex-c4-badge area power">
+          <div v-if="showArea" class="ex-c4-badge area power" :class="{ on: cubeStep === 1 }">
             <small>底面积比</small>
             <b>{{ cubeRatios.area }}</b>
             <span class="ex-c4-power-tag">= 棱长比的平方</span>
           </div>
-          <div class="ex-c4-badge vol power">
+          <div v-if="showVol" class="ex-c4-badge vol power">
             <small>体积比</small>
             <b>{{ cubeRatios.vol }}</b>
             <span class="ex-c4-power-tag">= 棱长比的立方</span>
           </div>
         </div>
       </div>
+      <div class="ex-c4-cube-steps">
+        <UButton size="sm" variant="outline" color="neutral" @click="nextCubeStep">
+          下一步：{{ nextCubeLabel }}
+        </UButton>
+        <span class="ex-c4-cube-note">{{ cubeStepNote }}</span>
+      </div>
       <p class="ex-c4-cube-sum">
-        棱长比 {{ cA }}:{{ cB }} = <b>{{ cubeRatios.edge }}</b>；底面积比
-        {{ cA * cA }}:{{ cB * cB }} = <b>{{ cubeRatios.area }}</b>（平方）；体积比
-        {{ cA * cA * cA }}:{{ cB * cB * cB }} = <b>{{ cubeRatios.vol }}</b>（立方）
+        棱长比 {{ cA }}:{{ cB }} = <b>{{ cubeRatios.edge }}</b><template v-if="showArea">；底面积比
+        {{ cA * cA }}:{{ cB * cB }} = <b>{{ cubeRatios.area }}</b>（平方）</template><template v-if="showVol">；体积比
+        {{ cA * cA * cA }}:{{ cB * cB * cB }} = <b>{{ cubeRatios.vol }}</b>（立方）</template>
       </p>
     </template>
 
     <!-- 足球皮·按比分黑白 -->
     <template v-else-if="kind === 'ex-c4-football-ratio'">
-      <div class="ex-c4-foot">
+      <div class="ex-c4-foot" :class="'c4-foot-step-' + footStep">
         <div class="ex-c4-bar">
-          <div class="ex-c4-seg dark" :style="{ flexGrow: fA }">
+          <div class="ex-c4-seg dark" :class="{ on: showBlocks }" :style="{ flexGrow: fA }">
             <div class="ex-c4-cells">
               <span v-for="i in fA" :key="'d' + i" class="ex-c4-per">{{ toFixed2(fPer) }}</span>
             </div>
-            <div class="ex-c4-block dark">黑色皮 {{ toFixed2(fBlack) }} 块</div>
+            <div v-if="showBlocks" class="ex-c4-block dark">黑色皮 {{ toFixed2(fBlack) }} 块</div>
           </div>
-          <div class="ex-c4-seg light" :style="{ flexGrow: fB }">
+          <div class="ex-c4-seg light" :class="{ on: showBlocks }" :style="{ flexGrow: fB }">
             <div class="ex-c4-cells">
               <span v-for="i in fB" :key="'l' + i" class="ex-c4-per">{{ toFixed2(fPer) }}</span>
             </div>
-            <div class="ex-c4-block light">白色皮 {{ toFixed2(fWhite) }} 块</div>
+            <div v-if="showBlocks" class="ex-c4-block light">白色皮 {{ toFixed2(fWhite) }} 块</div>
           </div>
         </div>
 
         <div class="ex-c4-steps">
-          <div class="ex-c4-step">
+          <div class="ex-c4-step" :class="{ on: footStep === 0 }">
             <small>总份数</small>
             <b>{{ fA }} + {{ fB }} = {{ fParts }} 份</b>
           </div>
-          <div class="ex-c4-step">
+          <div class="ex-c4-step" :class="{ on: footStep === 0 }">
             <small>每份</small>
             <b>{{ fPer }} 块</b>
           </div>
-          <div class="ex-c4-step">
+          <div v-if="showBlocks" class="ex-c4-step">
             <small>总块数</small>
             <b>{{ fPer }} × {{ fParts }} = {{ fTotal }} 块</b>
           </div>
-          <div class="ex-c4-step wide">
+          <div v-if="showBlocks" class="ex-c4-step wide">
             <small>各多少块</small>
             <b>黑色 {{ toFixed2(fPer) }} × {{ fA }} = {{ toFixed2(fBlack) }} 块</b>
             <b>白色 {{ toFixed2(fPer) }} × {{ fB }} = {{ toFixed2(fWhite) }} 块</b>
           </div>
         </div>
+
+        <div class="ex-c4-foot-steps">
+          <UButton size="sm" variant="outline" color="neutral" @click="nextFootStep">
+            下一步：{{ nextFootLabel }}
+          </UButton>
+          <span class="ex-c4-foot-note">{{ footStepNote }}</span>
+        </div>
       </div>
-      <p class="ex-c4-foot-sum">
+      <p v-if="showSum" class="ex-c4-foot-sum">
         黑色皮和白色皮块数的比是 {{ fA }}:{{ fB }}，共 {{ fParts }} 份、每份
         {{ fPer }} 块，一共 {{ fTotal }} 块：黑色皮 <b>{{ toFixed2(fBlack) }} 块</b>、白色皮
         <b>{{ toFixed2(fWhite) }} 块</b>，{{ toFixed2(fBlack) }} + {{ toFixed2(fWhite) }} = {{ fTotal }} 块。
@@ -267,6 +337,11 @@ const fWhite = computed(() => fPer.value * fB.value)
 .ex-c4-base-svg {
   max-width: 100%;
   height: auto;
+}
+/* 过程态高亮：当前这一步对应的图形/卡片描边点亮 */
+.c4-on {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-primary) 22%, transparent);
 }
 .c4-face {
   stroke: var(--ui-primary);
@@ -332,6 +407,26 @@ const fWhite = computed(() => fPer.value * fB.value)
   font-size: 0.68rem;
   font-weight: 700;
   color: #b45309;
+}
+.ex-c4-badge.on {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 16%, transparent);
+}
+.ex-c4-cube-steps,
+.ex-c4-foot-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 44rem;
+}
+.ex-c4-cube-note,
+.ex-c4-foot-note {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ui-text-toned);
 }
 .ex-c4-cube-sum,
 .ex-c4-foot-sum {
@@ -433,5 +528,14 @@ const fWhite = computed(() => fPer.value * fB.value)
   font-size: 0.86rem;
   font-family: ui-monospace, monospace;
   color: var(--ui-text-highlighted);
+}
+/* 过程态：当前这一步对应的卡片 / 量条段落点亮 */
+.ex-c4-step.on {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.ex-c4-seg.on .ex-c4-block {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 1px;
 }
 </style>

@@ -24,8 +24,11 @@ export const c5Labs: LabDef[] = [
     prompt:
       '由一条弧和经过这条弧两端的两条半径围成的图形是扇形。顶点在圆心的角是圆心角。在同一个圆中，圆心角越大，扇形越大。',
     kind: 'sector',
-    params: [{ key: 'angle', label: '圆心角', min: 30, max: 360, step: 15, default: 90, unit: '°' }],
-    formula: '扇形占圆的比例 = 圆心角 ÷ 360°',
+    params: [
+      { key: 'angle', label: '圆心角', min: 15, max: 360, step: 15, default: 90, unit: '°' },
+      { key: 'r', label: '半径', min: 2, max: 10, step: 1, default: 6, unit: '厘米' },
+    ],
+    formula: '扇形占圆的比例 = 圆心角 ÷ 360°；弧长 = 2πr × 圆心角/360；面积 = πr² × 圆心角/360',
     tip: '圆心角越大，它所对的弧越长，扇形越大；圆心角 90° 的扇形是圆的四分之一。',
   },
   {
@@ -52,7 +55,7 @@ export const c5Labs: LabDef[] = [
     kind: 'circle-area',
     params: [
       { key: 'r', label: '半径', min: 1, max: 20, step: 1, default: 5, unit: '米' },
-      { key: 'slices', label: '平均分的份数', min: 4, max: 32, step: 4, default: 8 },
+      { key: 'slices', label: '平均分的份数', min: 4, max: 64, step: 4, default: 8 },
     ],
     formula: 'S = π × r × r = 3.14 × 半径²',
     tip: '平均分的份数越多，拼成的图形越接近长方形；圆的面积 = 长方形面积 = πr × r = πr²。',
@@ -80,9 +83,9 @@ export const c5Labs: LabDef[] = [
     source: '试一试',
     title: '组合图形的面积 · 窗户',
     prompt:
-      '一扇窗户由一个正方形和一个半圆形组合而成。正方形的边长是 2 米，求这扇窗户的面积。把组合图形分割成学过的图形分别求面积再相加。',
+      '一扇窗户由一个正方形和一个半圆形组合而成。正方形的边长是 1.8 米，求这扇窗户的面积。把组合图形分割成学过的图形分别求面积再相加。',
     kind: 'circle-composite',
-    params: [{ key: 'side', label: '正方形边长', min: 2, max: 10, step: 1, default: 2, unit: '米' }],
+    params: [{ key: 'side', label: '正方形边长', min: 1, max: 10, step: 0.1, default: 1.8, unit: '米' }],
     formula: 'S = 正方形面积 + 半圆面积 = side² + π×(side÷2)²÷2',
     tip: '半圆的直径等于正方形的边长，半径 = side ÷ 2；先算正方形面积，再算半圆面积，最后相加。',
   },

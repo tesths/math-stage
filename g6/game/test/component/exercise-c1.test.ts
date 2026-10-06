@@ -4,6 +4,32 @@ import ExerciseC1Lab from '@/components/labs/exercises/ExerciseC1Lab.vue'
 import { findLabById } from '@data'
 import { c1Exercises } from '@data/chapters/c1-exercises'
 
+describe('ExerciseC1Lab · 过程态：一位一位算出循环节', () => {
+  it('重来后只显示整数位，再算一位就多一个数字，算到重复就能看出循环节', async () => {
+    const lab = findLabById('g6-c1-ex-div11-cycle')!
+    const wrapper = mount(ExerciseC1Lab, { props: { lab, values: { n: 3, digits: 2 } } })
+    // 默认完整显示（0 . 2 7 2 7 … 共 7 个字符）
+    expect(wrapper.findAll('.ca-digit')).toHaveLength(7)
+    const reset = wrapper.findAll('button').find((b) => b.text().includes('重来'))!
+    await reset.trigger('click')
+    expect(wrapper.findAll('.ca-digit')).toHaveLength(2)
+    expect(wrapper.text()).toContain('才算出 0 位小数')
+    const step = wrapper.findAll('button').find((b) => b.text().includes('再多算一位'))!
+    await step.trigger('click')
+    await step.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.ca-digit')).toHaveLength(4)
+    expect(wrapper.text()).toContain('才算出 2 位小数')
+    // 一直算到 "27" 第二次出现 → 提示循环节
+    await step.trigger('click')
+    await step.trigger('click')
+    await step.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.ca-digit')).toHaveLength(7)
+    expect(wrapper.text()).toContain('循环节就是 27')
+  })
+})
+
 describe('ExerciseC1Lab：一单元练习题', () => {
   it('ex-c1-div11-cycle 渲染长除法 / 循环节弧 / 规律表', () => {
     const lab = findLabById('g6-c1-ex-div11-cycle')!
@@ -79,6 +105,36 @@ describe('ExerciseC1Lab：一单元练习题', () => {
     const points = maxW.find('.pgram-svg polygon').attributes('points')!
     expect(points).toContain('301,64')
     expect(maxW.text()).toContain('15')
+  })
+
+  it('ex-c1-pgram-area 过程态：先只看估算，再揭示精确计算', async () => {
+    const lab = findLabById('g6-c1-ex-pgram-area')!
+    const wrapper = mount(ExerciseC1Lab, {
+      props: { lab, values: { base: 3.2, height: 1.84, digits: 1 } },
+    })
+    // 初始态：估算与精确同屏，卡片未弱化，按钮提示可以切换
+    const toggle = wrapper.findAll('button').find((b) => b.text().includes('先只看估算'))!
+    expect(toggle).toBeTruthy()
+    expect(wrapper.find('.pgram-card.hide-exact').exists()).toBe(false)
+    expect(wrapper.find('.bar.exact').exists()).toBe(true)
+    expect(wrapper.text()).toContain('先估一估')
+    expect(wrapper.text()).toContain('3 × 2 = 6')
+
+    // 切到"只看估算"：卡片加 hide-exact，精确值直条被弱化，文案随之变化
+    await toggle.trigger('click')
+    expect(wrapper.find('.pgram-card.hide-exact').exists()).toBe(true)
+    expect(wrapper.text()).toContain('现在只看估算')
+    expect(wrapper.text()).not.toContain('先估一估')
+    const back = wrapper.findAll('button').find((b) => b.text().includes('再看精确计算'))!
+    expect(back).toBeTruthy()
+    // 精确值直条仍在 DOM 里，只是视觉弱化（学生仍能对照读数）
+    expect(wrapper.find('.bar.exact').exists()).toBe(true)
+
+    // 再点一次回到精确态
+    await back.trigger('click')
+    expect(wrapper.find('.pgram-card.hide-exact').exists()).toBe(false)
+    expect(wrapper.text()).toContain('先估一估')
+    expect(wrapper.findAll('button').some((b) => b.text().includes('先只看估算'))).toBe(true)
   })
 
   it('全部练习题 Lab 用空参数挂载不抛错（覆盖 ?? 兜底分支）', () => {

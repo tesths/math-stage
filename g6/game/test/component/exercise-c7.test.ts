@@ -60,6 +60,41 @@ describe('ExerciseC7Lab（七 确定位置 · 练习题）', () => {
     expect(Math.max(...ys)).toBeLessThan(398) // R_H
   })
 
+  it('ex-c7-route-path：一格一格走，棋子与当前数对随步数联动', async () => {
+    const lab = findLabById('g6-c7-ex-route-path')!
+    const wrapper = mount(ExerciseC7Lab, { props: { lab, values: { x0: 6, k: 3, m: 2 } } })
+
+    const nextBtn = wrapper.findAll('button').find((b) => b.text().includes('走下一格'))
+    const resetBtn = wrapper.findAll('button').find((b) => b.text().includes('回到起点'))
+    expect(nextBtn).toBeTruthy()
+    expect(resetBtn).toBeTruthy()
+
+    const pts = wrapper.findAll('.route-pt')
+    const walker = wrapper.find('.route-walker')
+    const note = () => wrapper.find('.route-step-note').text()
+
+    // 初始态 = 全部走完：棋子停在终点（9，4）
+    expect(Number(walker.attributes('cx'))).toBe(Number(pts[pts.length - 1]!.attributes('cx')))
+    expect(Number(walker.attributes('cy'))).toBe(Number(pts[pts.length - 1]!.attributes('cy')))
+    expect(note()).toContain('向东走了 3 / 3 格')
+    expect(note()).toContain('（9，4）')
+
+    // 回到起点：棋子回到（6，2），文案回到 0 / 3
+    await resetBtn!.trigger('click')
+    expect(Number(walker.attributes('cx'))).toBe(Number(pts[0]!.attributes('cx')))
+    expect(Number(walker.attributes('cy'))).toBe(Number(pts[0]!.attributes('cy')))
+    expect(note()).toContain('0 / 3')
+    expect(note()).toContain('（6，2）')
+
+    // 走下一格（向东）：第一个数 +1、第二个数不变 →（7，2）
+    await nextBtn!.trigger('click')
+    expect(note()).toContain('1 / 3')
+    expect(note()).toContain('（7，2）')
+    expect(note()).toContain('第一个数 +1、第二个数不变')
+    expect(Number(walker.attributes('cx'))).toBe(Number(pts[1]!.attributes('cx')))
+    expect(Number(walker.attributes('cy'))).toBe(Number(pts[1]!.attributes('cy')))
+  })
+
   it('ex-c7-observer-point：默认参数画出射线、定位圆弧与同一排行走路线', () => {
     const lab = findLabById('g6-c7-ex-observer-point')!
     const wrapper = mount(ExerciseC7Lab, { props: { lab, values: { angle: 60, dist: 400, dist2: 200 } } })
@@ -115,6 +150,70 @@ describe('ExerciseC7Lab（七 确定位置 · 练习题）', () => {
       expect(y).toBeGreaterThanOrEqual(0)
       expect(y).toBeLessThanOrEqual(404) // O_H
     }
+  })
+
+  it('ex-c7-observer-point 过程态：分三步说清“以谁为观测点”与位置分解', async () => {
+    const lab = findLabById('g6-c7-ex-observer-point')!
+    const wrapper = mount(ExerciseC7Lab, { props: { lab, values: { angle: 60, dist: 400, dist2: 200 } } })
+
+    const btn = wrapper.findAll('button').find((b) => b.text().includes('下一步：只看商店的方向线'))
+    expect(btn).toBeTruthy()
+
+    // 初始态 = 最完整的一步：两处位置、同一排高亮、分解线段、行走路线都在
+    expect(wrapper.find('.obs-step-note').text()).toContain('第 3 步')
+    expect(wrapper.findAll('.obs-home-lbl')).toHaveLength(2)
+    expect(wrapper.find('.obs-same-row').exists()).toBe(true)
+    expect(wrapper.find('.obs-walk-route').exists()).toBe(true)
+    expect(wrapper.find('.obs-walk-route').classes()).toContain('obs-hot')
+    expect(wrapper.find('.obs-ray').classes()).not.toContain('obs-hot')
+
+    // 分解两段：向北 4×cos60° = 2 格（80px）、向西 4×sin60° ≈ 3.46 格（138.56px）
+    const northLeg = wrapper.find('.obs-north-leg')
+    const westLeg = wrapper.find('.obs-west-leg')
+    expect(northLeg.exists()).toBe(true)
+    expect(Number(northLeg.attributes('y1')) - Number(northLeg.attributes('y2'))).toBeCloseTo(80, 2)
+    expect(Number(westLeg.attributes('x1')) - Number(westLeg.attributes('x2'))).toBeCloseTo(138.56, 2)
+
+    // 第 1 步：只留商店的北偏西方向线，另一处（打谷场）与落点全部收起，方向线高亮
+    await btn!.trigger('click')
+    expect(wrapper.find('.obs-step-note').text()).toContain('第 1 步')
+    expect(wrapper.find('.obs-ray').exists()).toBe(true)
+    expect(wrapper.find('.obs-ray').classes()).toContain('obs-hot')
+    expect(wrapper.find('.obs-angle-lbl').text()).toBe('60°')
+    expect(wrapper.find('.obs-north-leg').exists()).toBe(false)
+    expect(wrapper.find('.obs-west-leg').exists()).toBe(false)
+    expect(wrapper.find('.obs-radius-arc').exists()).toBe(false)
+    expect(wrapper.findAll('.obs-home-lbl')).toHaveLength(0)
+    expect(wrapper.find('.obs-north-line').exists()).toBe(false)
+    expect(wrapper.find('.obs-same-row').exists()).toBe(false)
+    expect(wrapper.find('.obs-walk-route').exists()).toBe(false)
+    expect(wrapper.find('.obs-sum').text()).not.toContain('（5.54，5）')
+    expect(wrapper.findAll('button').some((b) => b.text().includes('下一步：拆成向北、向西两段'))).toBe(true)
+
+    // 第 2 步：揭出向北/向西的分解与晓雨家落点，但还没和打谷场那处比
+    await btn!.trigger('click')
+    expect(wrapper.find('.obs-step-note').text()).toContain('第 2 步')
+    expect(wrapper.find('.obs-step-note').text()).toContain('cos60°')
+    expect(wrapper.find('.obs-north-leg').classes()).toContain('obs-hot')
+    expect(wrapper.find('.obs-west-leg').classes()).toContain('obs-hot')
+    expect(wrapper.find('.obs-radius-arc').exists()).toBe(true)
+    expect(wrapper.findAll('.obs-home-lbl')).toHaveLength(1)
+    expect(wrapper.find('.obs-home-lbl').text()).toContain('晓雨家')
+    expect(wrapper.find('.obs-sum').text()).toContain('（5.54，5）')
+    expect(wrapper.find('.obs-north-line').exists()).toBe(false)
+    expect(wrapper.find('.obs-same-row').exists()).toBe(false)
+    expect(wrapper.find('.obs-walk-route').exists()).toBe(false)
+    expect(wrapper.findAll('button').some((b) => b.text().includes('下一步：和打谷场那处比较'))).toBe(true)
+
+    // 第 3 步：点回初始态，揭示与打谷场观测的位置关系（同一排 · 向东 1.54 格）
+    await btn!.trigger('click')
+    expect(wrapper.find('.obs-step-note').text()).toContain('第 3 步')
+    expect(wrapper.find('.obs-step-note').text()).toContain('同一排')
+    expect(wrapper.find('.obs-step-note').text()).toContain('向东 1.54 格')
+    expect(wrapper.find('.obs-same-row').exists()).toBe(true)
+    expect(wrapper.findAll('.obs-home-lbl')).toHaveLength(2)
+    expect(wrapper.find('.obs-walk-route').exists()).toBe(true)
+    expect(wrapper.find('.obs-walk-route').classes()).toContain('obs-hot')
   })
 
   it('c7 全部练习题 lab 用空参数挂载不抛错且文本非空', () => {

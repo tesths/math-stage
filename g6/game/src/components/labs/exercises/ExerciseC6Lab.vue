@@ -4,9 +4,10 @@
  * ex-c6-scale-area  放大缩小后的面积倍数（方格纸对比 + 面积对比条）
  * ex-c6-two-maps    两种比例尺的图纸对比（图纸卡片 + 同一段实际距离 + 改画流程）
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { toFixed2 } from '@/lib/engine/math'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -26,6 +27,12 @@ const TRAP_BIG_X = 190
 /** 面积对比条：1 格² = 6px，并封顶避免越出 viewBox */
 const AREA_PX = 6
 const MAX_BAR = 430
+/** 逐级放大的阶梯柱：柱宽 / 间距 / 满格高度 / 基线 y */
+const STEP_X0 = 30
+const STEP_W = 74
+const STEP_GAP = 18
+const STEP_H = 66
+const STEP_BASE = 104
 
 const a = computed(() => props.values.a ?? 2)
 const n = computed(() => Math.round(props.values.n ?? 3))
@@ -41,13 +48,54 @@ const trapArea = computed(() => ((trapTop.value + trapBottom.value) * trapHeight
 const fracDen = computed(() => d.value * d.value)
 const trapScaled = computed(() => trapArea.value / fracDen.value)
 
+/* ---------- 过程态：一格一格地放大，看边长 ×k 时面积变 k² 倍 ---------- */
+/** 当前放大级数：1 = 还是原图那么大，n = 放大到位；初值用大数哨兵 → 取到 n（最完整态，随 n 变化） */
+const growLevel = ref(99)
+const stepK = computed(() => Math.min(Math.max(1, growLevel.value), n.value))
+/** 放大到第 k 级时：直角边、面积、面积倍数、面积条宽度 */
+const stepLeg = computed(() => a.value * stepK.value)
+const stepArea = computed(() => (a.value * a.value * stepK.value * stepK.value) / 2)
+const stepTimes = computed(() => stepK.value * stepK.value)
+const stepBarScaled = computed(() => Math.min(stepArea.value * AREA_PX, MAX_BAR))
+const stepAtFull = computed(() => stepK.value >= n.value)
+const stepAtFirst = computed(() => stepK.value <= 1)
+function growOnce() {
+  if (stepAtFull.value) return
+  growLevel.value = stepK.value + 1
+  playClick()
+}
+function backToFirst() {
+  growLevel.value = 1
+  playClick()
+}
+/** 阶梯柱：第 k 级柱高按 k²/n² 归一，逐级标出 1²、2² … n² 格 */
+const stepCols = computed(() =>
+  Array.from({ length: n.value }, (_, i) => {
+    const k = i + 1
+    const h = (k * k * STEP_H) / (n.value * n.value)
+    return {
+      k,
+      x: STEP_X0 + i * (STEP_W + STEP_GAP),
+      y: STEP_BASE - h,
+      w: STEP_W,
+      h,
+      current: k === stepK.value,
+    }
+  }),
+)
+const stepNote = computed(() =>
+  stepAtFull.value
+    ? `最完整态：边长 ${toFixed2(a.value)} 格 × ${n.value} = ${toFixed2(stepLeg.value)} 格，面积由 ${toFixed2(triArea.value)} 格² 变成 ${toFixed2(stepArea.value)} 格²——边长 ×${n.value}，面积就 ×${n.value}² = ${stepTimes.value} 倍`
+    : `第 ${stepK.value} 级：边长 ×${stepK.value} → ${toFixed2(stepLeg.value)} 格，面积 ${toFixed2(stepArea.value)} 格²，是原图的 ${stepK.value} × ${stepK.value} = ${stepTimes.value} 倍；再点「再放大 1 倍」看下一级`,
+)
+
 /** 直角在左下的等腰直角三角形：两直角边沿格线 */
 const triOrigPath = computed(
   () =>
     `M ${TRI_ORIG_X} ${GROUND_Y} L ${TRI_ORIG_X + a.value * CELL} ${GROUND_Y} L ${TRI_ORIG_X} ${GROUND_Y - a.value * CELL} Z`,
 )
 const triScaledPath = computed(() => {
-  const leg = a.value * n.value * CELL
+  const leg = stepLeg.value * CELL
   return `M ${TRI_BIG_X} ${GROUND_Y} L ${TRI_BIG_X + leg} ${GROUND_Y} L ${TRI_BIG_X} ${GROUND_Y - leg} Z`
 })
 /** 放大图上叠原图虚线轮廓（与原图同尺寸，锚在同一左下角） */
@@ -72,7 +120,6 @@ const trapScaledPath = computed(() => {
 })
 
 const barOrig = computed(() => Math.min(triArea.value * AREA_PX, MAX_BAR))
-const barScaled = computed(() => Math.min(scaledArea.value * AREA_PX, MAX_BAR))
 const barTrap = computed(() => Math.min(trapArea.value * AREA_PX, MAX_BAR))
 const barTrapScaled = computed(() => Math.min(trapScaled.value * AREA_PX, MAX_BAR))
 
@@ -97,6 +144,24 @@ const newCm = computed(() => (cm.value * denB.value) / denA.value)
 const segK = computed(() => Math.min(1, MAX_SEG / (Math.max(newCm.value, cm.value) * SEG_PX_PER_CM)))
 const segAPx = computed(() => newCm.value * SEG_PX_PER_CM * segK.value)
 const segBPx = computed(() => cm.value * SEG_PX_PER_CM * segK.value)
+
+/* ---------- 过程态：先算「图上 × 分母 ÷ 100」，再揭示换画到 A 图 ---------- */
+/** 1 = 只揭示第 1 步（算出实际距离）；2 = 再揭示第 2 步（换画到 A 图）；初值取最完整的第 2 步 */
+const revealStep = ref(2)
+const showStep2 = computed(() => revealStep.value >= 2)
+function onlyStep1() {
+  revealStep.value = 1
+  playClick()
+}
+function showBothSteps() {
+  revealStep.value = 2
+  playClick()
+}
+const tmStepNote = computed(() =>
+  showStep2.value
+    ? `两步都亮着：B 图 ${toFixed2(cm.value)} 厘米 × ${denB.value} ÷ 100 = ${toFixed2(actualCmM.value)} 米（实际距离）；同一段实际距离换画到 A 图：${toFixed2(actualCmCm.value)} ÷ ${denA.value} = ${toFixed2(newCm.value)} 厘米`
+    : `第 1 步：B 图 ${toFixed2(cm.value)} 厘米 × ${denB.value} = ${toFixed2(actualCmCm.value)} 厘米，÷ 100 = ${toFixed2(actualCmM.value)} 米——这就是两幅图共同表示的实际距离；第 2 步再点「揭示第 2 步」，看它画到 A 图上有多长`,
+)
 </script>
 
 <template>
@@ -105,6 +170,15 @@ const segBPx = computed(() => cm.value * SEG_PX_PER_CM * segK.value)
     <template v-if="kind === 'ex-c6-scale-area'">
       <div class="sa-stage">
         <span class="sa-badge">面积是原来的 {{ times }} 倍 · 缩小后是 1/{{ fracDen }}</span>
+
+        <!-- 过程态：一级一级地放大，看边长 ×k 时面积格子变 k² 倍 -->
+        <div class="sa-steps">
+          <UButton size="sm" color="primary" :disabled="stepAtFull" @click="growOnce">再放大 1 倍</UButton>
+          <UButton size="sm" variant="outline" color="neutral" :disabled="stepAtFirst" @click="backToFirst">
+            回到 1×
+          </UButton>
+          <span class="sa-step-note">{{ stepNote }}</span>
+        </div>
 
         <!-- 第一行：等腰直角三角形 + 放大图 + 面积对比 -->
         <svg class="sa-svg-tri" width="840" height="210" viewBox="0 0 840 210">
@@ -115,18 +189,46 @@ const segBPx = computed(() => cm.value * SEG_PX_PER_CM * segK.value)
           </defs>
           <rect class="sa-grid" x="16" y="20" width="360" height="158" fill="url(#ex-c6-grid-tri)" />
           <path class="sa-tri-orig" :d="triOrigPath" />
-          <path class="sa-tri-scaled" :d="triScaledPath" />
+          <path class="sa-tri-scaled" :class="{ 'is-origin-step': stepAtFirst }" :d="triScaledPath" />
           <path class="sa-tri-ghost" :d="triGhostPath" />
           <text class="sa-cap" :x="TRI_ORIG_X" :y="GROUND_Y + 22">原图（直角边 {{ toFixed2(a) }} 格）</text>
-          <text class="sa-cap" :x="TRI_BIG_X" :y="GROUND_Y + 22">放大后（按 {{ n }}:1）</text>
+          <text class="sa-cap" :x="TRI_BIG_X" :y="GROUND_Y + 22">放大后（边长 ×{{ stepK }}，按 {{ stepK }}:1）</text>
           <text class="sa-arrow" x="150" :y="110">→</text>
 
           <text class="sa-bar-title" x="400" y="40">面积对比（1 格² = 6px）</text>
           <text class="sa-bar-lbl" x="400" y="72">原图 a²/2 = {{ toFixed2(triArea) }} 格²</text>
           <rect class="sa-bar-orig" x="400" y="78" :width="barOrig" height="16" rx="3" />
-          <text class="sa-bar-lbl" x="400" y="124">放大后 a²n²/2 = {{ toFixed2(scaledArea) }} 格²</text>
-          <rect class="sa-bar-scaled" x="400" y="130" :width="barScaled" height="16" rx="3" />
-          <text class="sa-bar-note" x="400" y="178">面积倍数 = n × n = {{ n }} × {{ n }} = {{ times }}</text>
+          <text class="sa-bar-lbl" x="400" y="124">现在（边长 ×{{ stepK }}）= {{ toFixed2(stepArea) }} 格²</text>
+          <rect class="sa-bar-scaled" x="400" y="130" :width="stepBarScaled" height="16" rx="3" />
+          <text class="sa-bar-note" x="400" y="178">面积倍数 = {{ stepK }} × {{ stepK }} = {{ stepTimes }}</text>
+        </svg>
+
+        <!-- 过程态阶梯：边长 1 倍 / 2 倍 / 3 倍 … 对应面积格子 1、4、9 … -->
+        <svg class="sa-svg-step" width="840" height="140" viewBox="0 0 840 140">
+          <text class="sa-step-title" x="30" y="16">一级一级看：边长 ×k，面积格子就是 k × k 倍</text>
+          <line class="sa-step-axis" x1="24" :y1="STEP_BASE" x2="400" :y2="STEP_BASE" />
+          <g v-for="col in stepCols" :key="col.k" class="sa-step-group">
+            <rect
+              class="sa-step-col"
+              :class="{ 'is-current': col.current }"
+              :x="col.x"
+              :y="col.y"
+              :width="col.w"
+              :height="col.h"
+              rx="3"
+            />
+            <text
+              class="sa-step-lbl"
+              :class="{ 'is-current': col.current }"
+              :x="col.x + col.w / 2"
+              :y="col.y - 6"
+              text-anchor="middle"
+            >{{ col.k }}² = {{ col.k * col.k }}</text>
+            <text class="sa-step-lbl2" :x="col.x + col.w / 2" y="124" text-anchor="middle">边长 ×{{ col.k }}</text>
+          </g>
+          <text class="sa-step-now" x="470" y="46">原图面积 {{ toFixed2(triArea) }} 格²</text>
+          <text class="sa-step-now" x="470" y="72">现在面积 {{ toFixed2(stepArea) }} 格²</text>
+          <text class="sa-step-now primary" x="470" y="102">面积格子数 ×{{ stepTimes }}（边长 ×{{ stepK }}）</text>
         </svg>
 
         <!-- 第二行：直角梯形 + 缩小图 + 面积对比 -->
@@ -164,7 +266,7 @@ const segBPx = computed(() => cm.value * SEG_PX_PER_CM * segK.value)
 
     <!-- 两种比例尺的图纸对比 -->
     <template v-else-if="kind === 'ex-c6-two-maps'">
-      <div class="tm-stage">
+      <div class="tm-stage" :class="{ 'tm-step-one': !showStep2 }">
         <div class="tm-cards">
           <div class="tm-card tm-card-a">
             <span class="tm-card-title">图纸 A · 比例尺 1:{{ denA }}</span>
@@ -199,9 +301,12 @@ const segBPx = computed(() => cm.value * SEG_PX_PER_CM * segK.value)
           <text class="tm-actual-lbl2" x="235" y="86" text-anchor="middle">◀ 实际距离相同 ▶</text>
           <line class="tm-lead" x1="40" y1="34" x2="40" y2="106" />
 
-          <line class="tm-seg-a-cmp" x1="40" y1="34" :x2="40 + segAPx" y2="34" />
-          <circle class="tm-end-dot" :cx="40 + segAPx" cy="34" r="3" />
-          <text class="tm-seg-lbl" x="52" y="22">A 图画 {{ toFixed2(newCm) }} 厘米</text>
+          <g v-if="showStep2" class="tm-a-seg">
+            <line class="tm-seg-a-cmp" x1="40" y1="34" :x2="40 + segAPx" y2="34" />
+            <circle class="tm-end-dot" :cx="40 + segAPx" cy="34" r="3" />
+            <text class="tm-seg-lbl" x="52" y="22">A 图画 {{ toFixed2(newCm) }} 厘米</text>
+          </g>
+          <text v-else class="tm-seg-hint" x="52" y="22">A 图先空着：把这段实际距离记住，下一步再换算</text>
 
           <line class="tm-seg-b-cmp" x1="40" y1="106" :x2="40 + segBPx" y2="106" />
           <circle class="tm-end-dot" :cx="40 + segBPx" cy="106" r="3" />
@@ -212,15 +317,29 @@ const segBPx = computed(() => cm.value * SEG_PX_PER_CM * segK.value)
           <span class="tm-flow-chip">B 图 {{ toFixed2(cm) }} 厘米</span>
           <b class="tm-flow-op">× {{ denB }}</b>
           <span class="tm-flow-chip">{{ toFixed2(actualCmCm) }} 厘米</span>
-          <b class="tm-flow-op">÷ {{ denA }}</b>
-          <span class="tm-flow-chip primary">A 图 {{ toFixed2(newCm) }} 厘米</span>
+          <b class="tm-flow-op">÷ 100</b>
+          <span class="tm-flow-chip">{{ toFixed2(actualCmM) }} 米</span>
+          <template v-if="showStep2">
+            <b class="tm-flow-op">÷ {{ denA }}</b>
+            <span class="tm-flow-chip primary">A 图 {{ toFixed2(newCm) }} 厘米</span>
+          </template>
+        </div>
+
+        <!-- 过程态：先把 B 图换成实际距离，再揭示换画到 A 图 -->
+        <div class="tm-steps">
+          <UButton size="sm" color="primary" :disabled="!showStep2" @click="onlyStep1">先只看第 1 步</UButton>
+          <UButton size="sm" variant="outline" color="neutral" :disabled="showStep2" @click="showBothSteps">
+            揭示第 2 步
+          </UButton>
+          <span class="tm-step-note">{{ tmStepNote }}</span>
         </div>
       </div>
 
       <p class="tm-sum">
         A 图：{{ toFixed2(cmA) }} × {{ denA }} = {{ toFixed2(actualACm) }} 厘米 = <b>{{ toFixed2(actualAM) }} 米</b>；B 图：{{ toFixed2(cmA) }} ×
-        {{ denB }} = {{ toFixed2(actualBCm) }} 厘米 = <b>{{ toFixed2(actualBM) }} 米</b>；改画到 A 图：{{ toFixed2(cm) }} × {{ denB }} ÷
-        {{ denA }} = <b>{{ toFixed2(newCm) }} 厘米</b>
+        {{ denB }} = {{ toFixed2(actualBCm) }} 厘米 = <b>{{ toFixed2(actualBM) }} 米</b><template v-if="showStep2"
+          >；改画到 A 图：{{ toFixed2(cm) }} × {{ denB }} ÷ {{ denA }} = <b>{{ toFixed2(newCm) }} 厘米</b></template
+        >
       </p>
     </template>
   </div>
@@ -257,10 +376,69 @@ const segBPx = computed(() => cm.value * SEG_PX_PER_CM * segK.value)
 }
 .sa-svg-tri,
 .sa-svg-trap,
+.sa-svg-step,
 .tm-compare,
 .tm-ruler {
   max-width: 100%;
   height: auto;
+}
+
+/* ---------- 过程态：一级一级放大 ---------- */
+.sa-steps,
+.tm-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+.sa-step-note,
+.tm-step-note {
+  font-size: 0.76rem;
+  color: var(--ui-text-muted);
+  max-width: 30rem;
+  font-family: ui-monospace, monospace;
+}
+.sa-step-title {
+  font-size: 11px;
+  font-weight: 800;
+  fill: var(--ui-text-toned);
+}
+.sa-step-axis {
+  stroke: var(--ui-border-accented);
+  stroke-width: 2;
+}
+.sa-step-col {
+  fill: color-mix(in srgb, var(--ui-primary) 22%, white);
+  stroke: var(--ui-primary);
+  stroke-width: 1.5;
+  transition: height 0.25s, y 0.25s;
+}
+.sa-step-col.is-current {
+  fill: var(--ui-primary);
+}
+.sa-step-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ui-text-muted);
+}
+.sa-step-lbl.is-current {
+  fill: #b45309;
+  font-weight: 800;
+}
+.sa-step-lbl2 {
+  font-size: 10px;
+  fill: var(--ui-text-muted);
+}
+.sa-step-now {
+  font-size: 11px;
+  fill: var(--ui-text-toned);
+  font-family: ui-monospace, monospace;
+}
+.sa-step-now.primary {
+  font-weight: 800;
+  fill: var(--ui-primary);
 }
 
 /* ---------- 方格纸与图形 ---------- */
@@ -365,6 +543,12 @@ const segBPx = computed(() => cm.value * SEG_PX_PER_CM * segK.value)
   font-size: 10px;
   font-weight: 700;
   fill: var(--ui-text-toned);
+}
+.tm-seg-hint {
+  font-size: 10px;
+  font-weight: 700;
+  fill: #b45309;
+  font-style: italic;
 }
 .tm-end-dot {
   fill: #b45309;

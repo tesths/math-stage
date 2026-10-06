@@ -5,104 +5,39 @@
 import { computed } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { toBinary, toFixed2 } from '@/lib/engine/math'
+import {
+  CARRY_DEMO,
+  binaryBits,
+  binaryDivisionSteps,
+  binaryReading,
+  carryBoundary,
+  comparePair,
+  opExample,
+  placeExample,
+} from '@/lib/labs/numberSys'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
 const kind = computed(() => props.lab.kind)
 
-/* ---------- 数位与计数单位 ---------- */
-const PLACE_NUMS = [
-  {
-    v: 231,
-    label: '231',
-    rows: [
-      { unit: '百', val: 2, pow: 100 },
-      { unit: '十', val: 3, pow: 10 },
-      { unit: '一', val: 1, pow: 1 },
-    ],
-  },
-  {
-    v: 2000,
-    label: '2000',
-    rows: [
-      { unit: '千', val: 2, pow: 1000 },
-      { unit: '百', val: 0, pow: 100 },
-      { unit: '十', val: 0, pow: 10 },
-      { unit: '一', val: 0, pow: 1 },
-    ],
-  },
-  {
-    v: 3.36,
-    label: '3.36',
-    rows: [
-      { unit: '一', val: 3, pow: 1 },
-      { unit: '十分之一', val: 3, pow: 0.1 },
-      { unit: '百分之一', val: 6, pow: 0.01 },
-    ],
-  },
-  {
-    v: 4.05,
-    label: '4.05',
-    rows: [
-      { unit: '一', val: 4, pow: 1 },
-      { unit: '十分之一', val: 0, pow: 0.1 },
-      { unit: '百分之一', val: 5, pow: 0.01 },
-    ],
-  },
-  {
-    v: 0.24,
-    label: '0.24',
-    rows: [
-      { unit: '十分之一', val: 2, pow: 0.1 },
-      { unit: '百分之一', val: 4, pow: 0.01 },
-    ],
-  },
-]
-const place = computed(() => PLACE_NUMS[Math.round(props.values.sel ?? 0) % PLACE_NUMS.length]!)
+/* ---------- 数位与计数单位（与 compute 共用同一份数据） ---------- */
+const place = computed(() => placeExample(props.values.sel ?? 0))
 const beads = (n: number) => Array.from({ length: Math.min(n, 12) }, (_, i) => i)
 
 /* ---------- 数的大小比较 ---------- */
-const COMPARE_PAIRS = [
-  { a: '1000', b: '923', gt: true, how: '1000 是 10 个百，923 不足 10 个百' },
-  { a: '3.34', b: '3.4', gt: false, how: '3.34 = 33.4 个 0.1，3.4 = 34 个 0.1' },
-  { a: '4.7', b: '4.05', gt: true, how: '47 个 0.1 > 40.5 个 0.1' },
-  { a: '2/3', b: '3/5', gt: true, how: '通分后 10/15 > 9/15' },
-  { a: '0.78', b: '0.87', gt: false, how: '78 个 0.01 < 87 个 0.01' },
-]
-const pair = computed(() => COMPARE_PAIRS[Math.round(props.values.sel ?? 0) % COMPARE_PAIRS.length]!)
+const pair = computed(() => comparePair(props.values.sel ?? 0))
 
 /* ---------- 运算意义一致性 ---------- */
-const OP_EXAMPLES = [
-  { expr: '20 × 3', how: '2 个十 × 3 = 6 个十 = 60', ans: '60', unit: '个十', n: 6 },
-  { expr: '2/5 × 3', how: '(1/5 × 2) × 3 = 1/5 × 6 = 6/5', ans: '6/5', unit: '1/5', n: 6 },
-  { expr: '1200 ÷ 3', how: '12 个百 ÷ 3 = 4 个百 = 400', ans: '400', unit: '个百', n: 4 },
-  { expr: '1200 ÷ 400', how: '12 个百 ÷ 4 个百 = 12 ÷ 4 = 3', ans: '3', unit: '（同计数单位直接比个数）', n: 3 },
-  { expr: '135 + 24', how: '1 个百 + 3 个十 + 5 个一，加上 2 个十 + 4 个一', ans: '159', unit: '个一（从低到高进位）', n: 9 },
-  { expr: '3.4 + 1.25', how: '34 个 0.1 + 125 个 0.01', ans: '4.65', unit: '0.01', n: 465 },
-]
-const op = computed(() => OP_EXAMPLES[Math.round(props.values.sel ?? 0) % OP_EXAMPLES.length]!)
+const op = computed(() => opExample(props.values.sel ?? 0))
 
 /* ---------- 二进制的秘密 ---------- */
 const dec = computed(() => Math.round(props.values.dec ?? 5))
 const bin = computed(() => toBinary(dec.value))
-const bits = computed(() => {
-  const padded = bin.value.padStart(5, '0')
-  return padded.split('').map((ch, i) => ({
-    bit: Number(ch),
-    weight: 2 ** (4 - i),
-    count: Number(ch) * 2 ** (4 - i),
-  }))
-})
-const binarySteps = computed(() => {
-  const steps: { expr: string; result: string }[] = []
-  let v = dec.value
-  if (v === 0) steps.push({ expr: '0 ÷ 2', result: '商 0 余 0' })
-  while (v > 0) {
-    steps.push({ expr: `${v} ÷ 2`, result: `商 ${Math.floor(v / 2)} 余 ${v % 2}` })
-    v = Math.floor(v / 2)
-  }
-  return steps
-})
+/** 位权按实际位数算（原来写死 5 位，位数一多就会标错权重） */
+const bits = computed(() => binaryBits(dec.value))
+const binarySteps = computed(() => binaryDivisionSteps(dec.value))
+const reading = computed(() => binaryReading(bin.value))
+const boundary = computed(() => carryBoundary(dec.value))
 </script>
 
 <template>
@@ -119,8 +54,14 @@ const binarySteps = computed(() => {
           <span class="pv-pow">{{ r.val }} × {{ toFixed2(r.pow) }}</span>
         </div>
       </div>
-      <p class="note">
-        {{ place.label }} = {{ place.rows.filter((r) => r.val > 0).map((r) => `${r.val} 个${r.unit}`).join(' + ') }}
+      <p class="note">{{ place.powText }}</p>
+      <div class="carry-strip" aria-label="相邻计数单位的进率">
+        <span v-for="d in CARRY_DEMO.slice(0, 4)" :key="d.low" class="carry-chip">
+          {{ d.lowCount }} 个{{ d.low }} = 1 个{{ d.high }}
+        </span>
+      </div>
+      <p class="verify-line">
+        ✓ {{ place.text }}；最高位是{{ place.rows[0]!.unit }}，最低位是{{ place.rows[place.rows.length - 1]!.unit }}，相邻计数单位的进率都是 10
       </p>
     </template>
 
@@ -183,7 +124,19 @@ const binarySteps = computed(() => {
           {{ s.expr }} → {{ s.result }}
         </p>
       </div>
-      <p class="note">二进制按"满二进一"的规则计数，余数倒序排列就是二进制数</p>
+      <div class="carry-live" aria-label="满二进一的现场">
+        <span class="carry-live-title">满二进一的现场（当前数附近）</span>
+        <span class="carry-live-row">
+          {{ boundary.from }} = （{{ boundary.fromBin }}）₂
+          <b>＋1</b>
+          {{ boundary.to }} = （{{ boundary.toBin }}）₂
+          <em>位不够就向前进一位</em>
+        </span>
+      </div>
+      <p class="verify-line">
+        ✓ 十进制 {{ dec }} = 二进制（{{ bin }}）₂，读作"{{ reading }}"（二进制要逐位读，不能读成几十几）
+      </p>
+      <p class="note">二进制的位权从右往左是 1、2、4、8…，每一位上的数只能是 0 或 1，满 2 就向前进一位</p>
     </template>
   </div>
 </template>
@@ -197,6 +150,58 @@ const binarySteps = computed(() => {
   min-height: 320px;
   justify-content: center;
   width: 100%;
+}
+.carry-strip,
+.carry-live {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+  align-items: center;
+}
+.carry-live {
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.carry-live-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--ui-text-muted);
+}
+.carry-live-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.95rem;
+  color: var(--ui-text-highlighted);
+}
+.carry-live-row b {
+  color: var(--ui-warning, #f59e0b);
+}
+.carry-live-row em {
+  font-style: normal;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+.carry-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.76rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.verify-line {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  text-align: center;
+  max-width: 44rem;
 }
 .pv-num {
   font-size: 1.5rem;

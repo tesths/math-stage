@@ -28,7 +28,7 @@ export const c7Labs: LabDef[] = [
       '浮雷 2 在舰艇的北偏东 30° 方向 2 千米处。要确定物体的位置，除了方向和角度，还必须知道距离。拖动滑块改变角度、方向与距离。',
     kind: 'direction',
     params: [
-      { key: 'angle', label: '偏转角度', min: 0, max: 60, step: 5, default: 30, unit: '°' },
+      { key: 'angle', label: '偏转角度', min: 0, max: 75, step: 5, default: 30, unit: '°' },
       { key: 'dist', label: '距离', min: 1, max: 8, step: 1, default: 3, unit: '千米' },
       { key: 'dir', label: '方向', min: 0, max: 3, step: 1, default: 0, unit: '0北偏东 1北偏西 2南偏东 3南偏西' },
     ],

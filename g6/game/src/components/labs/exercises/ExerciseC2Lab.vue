@@ -3,9 +3,10 @@
  * 二 混合运算与数量关系（三）练习题 Lab：
  *   既喜欢跳舞又唱歌（集合重叠）/ 一筐鸡蛋卖多少元（筐重抵消）
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { toFixed2 } from '@/lib/engine/math'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -29,6 +30,21 @@ const overlapX = computed(() => singLeft.value)
 const overlapW = computed(() => danceRight.value - singLeft.value)
 const overlapMid = computed(() => (singLeft.value + danceRight.value) / 2)
 
+/**
+ * 过程态：默认 true，与既有渲染完全一致（重叠区照常显示）。
+ * 切到 false（“先看两条长条”）时只弱化重叠区与重叠结论，先让学生看两条各自超出全班的部分。
+ */
+const revealOverlap = ref(true)
+function toggleOverlap() {
+  revealOverlap.value = !revealOverlap.value
+  playClick()
+}
+const overlapNote = computed(() =>
+  revealOverlap.value
+    ? `两条长条都摆好了：跳舞 ${toFixed2(dance.value)} 人、唱歌 ${toFixed2(sing.value)} 人各自都超出全班 ${toFixed2(total.value)} 人，超出的部分正好被数了两遍`
+    : `先看两条长条：跳舞 ${toFixed2(dance.value)} 人、唱歌 ${toFixed2(sing.value)} 人——两条都超出了全班 ${toFixed2(total.value)} 人，先看清这里，再点“揭示重叠部分”`,
+)
+
 /* ---------- 一筐鸡蛋卖多少元：上下堆叠条 ---------- */
 const EGG_X = 20
 const PX_PER_KG = 40
@@ -47,6 +63,36 @@ const afterW = computed(() => after.value * PX_PER_KG)
 /** 一半鸡蛋的分界竖线：正好落在下条鸡蛋段右端 */
 const dividerX = computed(() => EGG_X + afterW.value)
 const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
+
+/**
+ * 过程态：一筐鸡蛋分三步看——
+ *   0 先看两次称重（连筐重 / 卖出一半后连筐重）；
+ *   1 揭示“两次相减，筐重正好抵消 → 得到一半鸡蛋”；
+ *   2 揭示“×2 得全部 → ×单价得总价”。
+ * 初值取最完整的一步（2），保证既有渲染与既有测试完全不变；到最后一步按钮循环回第 0 步。
+ */
+const EGG_LAST_STEP = 2
+const eggStep = ref(EGG_LAST_STEP)
+function nextEggStep() {
+  eggStep.value = eggStep.value >= EGG_LAST_STEP ? 0 : eggStep.value + 1
+  playClick()
+}
+const eggButtonText = computed(() =>
+  eggStep.value === 0
+    ? '下一步：相减抵消筐重'
+    : eggStep.value === 1
+      ? '下一步：×2 得全部、求总价'
+      : '重看：先看两次称重',
+)
+const eggNote = computed(() => {
+  if (eggStep.value === 0) {
+    return `先看两次称重：连筐重 ${toFixed2(withEggs.value)} 千克、卖出一半后连筐重 ${toFixed2(after.value)} 千克——两次都装着同一个筐`
+  }
+  if (eggStep.value === 1) {
+    return `两次相减，筐重正好抵消：${toFixed2(withEggs.value)} − ${toFixed2(after.value)} = ${toFixed2(half.value)} 千克，这就是一半鸡蛋`
+  }
+  return `两次称重都含筐重，筐重相减正好抵消 · 一半 ×2 = 全部 ${toFixed2(eggs.value)} 千克，再 × 单价 ${toFixed2(price.value)} 元 = ${toFixed2(revenue.value)} 元`
+})
 </script>
 
 <template>
@@ -54,7 +100,13 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
     <!-- 既喜欢跳舞又唱歌 -->
     <template v-if="kind === 'ex-c2-overlap-club'">
       <div class="ex-c2-svg-box">
-        <svg class="ex-c2-overlap-svg" width="660" height="300" viewBox="0 0 660 300">
+        <svg
+          class="ex-c2-overlap-svg"
+          :class="{ 'hide-overlap': !revealOverlap }"
+          width="660"
+          height="300"
+          viewBox="0 0 660 300"
+        >
           <defs>
             <pattern
               id="ex-c2-hatch"
@@ -108,8 +160,18 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
             marker-start="url(#ex-c2-ov-l)"
             marker-end="url(#ex-c2-ov-r)"
           />
-          <line :x1="overlapX" y1="196" :x2="overlapX" y2="220" stroke="#0369a1" stroke-width="1.2" stroke-dasharray="3 3" />
           <line
+            class="overlap-guide"
+            :x1="overlapX"
+            y1="196"
+            :x2="overlapX"
+            y2="220"
+            stroke="#0369a1"
+            stroke-width="1.2"
+            stroke-dasharray="3 3"
+          />
+          <line
+            class="overlap-guide"
             :x1="overlapX + overlapW"
             y1="196"
             :x2="overlapX + overlapW"
@@ -118,11 +180,19 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
             stroke-width="1.2"
             stroke-dasharray="3 3"
           />
-          <text class="ex-lbl sky" :x="overlapMid" y="240" text-anchor="middle">重叠 {{ toFixed2(overlap) }} 人</text>
+          <text class="ex-lbl sky overlap-label" :x="overlapMid" y="240" text-anchor="middle">
+            重叠 {{ toFixed2(overlap) }} 人
+          </text>
         </svg>
       </div>
+      <div class="ex-c2-steps">
+        <UButton size="sm" variant="outline" color="neutral" @click="toggleOverlap">
+          {{ revealOverlap ? '先看两条长条' : '揭示重叠部分' }}
+        </UButton>
+        <span class="ex-c2-step-note">{{ overlapNote }}</span>
+      </div>
       <p class="ex-c2-note">两部分相加，把“两样都喜欢”的人算了两遍</p>
-      <p class="ex-c2-res">
+      <p class="ex-c2-res" :class="{ 'hide-overlap': !revealOverlap }">
         重叠 = {{ toFixed2(dance) }} + {{ toFixed2(sing) }} − {{ total }} = <b>{{ toFixed2(overlap) }} 人</b>
       </p>
     </template>
@@ -130,7 +200,13 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
     <!-- 一筐鸡蛋卖多少元 -->
     <template v-else>
       <div class="ex-c2-svg-box">
-        <svg class="ex-c2-egg-svg" width="660" height="300" viewBox="0 0 660 300">
+        <svg
+          class="ex-c2-egg-svg"
+          :class="`egg-step-${eggStep}`"
+          width="660"
+          height="300"
+          viewBox="0 0 660 300"
+        >
           <defs>
             <marker id="ex-c2-eg-l" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto">
               <polygon points="8 0, 0 4, 8 8" fill="#b45309" />
@@ -141,12 +217,31 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
           </defs>
 
           <!-- 上条：连筐重 = 筐 + 全部鸡蛋 -->
-          <rect class="crate-seg" :x="EGG_X" y="50" :width="crateW" height="44" rx="4" />
-          <rect class="egg-seg" :x="EGG_X + crateW" y="50" :width="eggsW" height="44" rx="4" />
-          <text class="ex-lbl" :x="EGG_X + fullW + 8" y="77">连筐重 {{ toFixed2(withEggs) }} 千克</text>
+          <rect
+            class="crate-seg"
+            :class="{ 'cancel-focus': eggStep === 1 }"
+            :x="EGG_X"
+            y="50"
+            :width="crateW"
+            height="44"
+            rx="4"
+          />
+          <rect
+            class="egg-seg"
+            :class="{ 'all-focus': eggStep === 2 }"
+            :x="EGG_X + crateW"
+            y="50"
+            :width="eggsW"
+            height="44"
+            rx="4"
+          />
+          <text class="ex-lbl" :class="{ 'weigh-focus': eggStep === 0 }" :x="EGG_X + fullW + 8" y="77">
+            连筐重 {{ toFixed2(withEggs) }} 千克
+          </text>
 
-          <!-- 一半鸡蛋的分界竖线：平分上条鸡蛋段 -->
+          <!-- 第 1 步起揭示：一半鸡蛋的分界竖线（平分上条鸡蛋段） -->
           <line
+            v-if="eggStep >= 1"
             class="half-divider"
             :x1="dividerX"
             y1="50"
@@ -156,20 +251,51 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
             stroke-width="1.5"
             stroke-dasharray="5 4"
           />
-          <text class="ex-lbl sky" :x="EGG_X + crateW + eggsW / 4" y="77" text-anchor="middle">
+          <text
+            v-if="eggStep >= 1"
+            class="ex-lbl sky"
+            :x="EGG_X + crateW + eggsW / 4"
+            y="77"
+            text-anchor="middle"
+          >
             {{ toFixed2(half) }} 千克
           </text>
-          <text class="ex-lbl sky" :x="EGG_X + crateW + eggsW * 0.75" y="77" text-anchor="middle">
+          <text
+            v-if="eggStep >= 1"
+            class="ex-lbl sky"
+            :x="EGG_X + crateW + eggsW * 0.75"
+            y="77"
+            text-anchor="middle"
+          >
             {{ toFixed2(half) }} 千克
           </text>
 
           <!-- 下条：卖出一半后连筐重 = 筐 + 一半鸡蛋 -->
-          <rect class="crate-seg" :x="EGG_X" y="170" :width="crateW" height="44" rx="4" />
-          <rect class="egg-seg half" :x="EGG_X + crateW" y="170" :width="halfW" height="44" rx="4" />
-          <text class="ex-lbl" :x="EGG_X + afterW + 8" y="197">卖出一半后连筐重 {{ toFixed2(after) }} 千克</text>
+          <rect
+            class="crate-seg"
+            :class="{ 'cancel-focus': eggStep === 1 }"
+            :x="EGG_X"
+            y="170"
+            :width="crateW"
+            height="44"
+            rx="4"
+          />
+          <rect
+            class="egg-seg half"
+            :class="{ 'all-focus': eggStep === 2 }"
+            :x="EGG_X + crateW"
+            y="170"
+            :width="halfW"
+            height="44"
+            rx="4"
+          />
+          <text class="ex-lbl" :class="{ 'weigh-focus': eggStep === 0 }" :x="EGG_X + afterW + 8" y="197">
+            卖出一半后连筐重 {{ toFixed2(after) }} 千克
+          </text>
 
-          <!-- 两右端相差 = 一半鸡蛋 -->
+          <!-- 第 1 步起揭示：两右端相差 = 一半鸡蛋 -->
           <line
+            v-if="eggStep >= 1"
             class="diff-arrow"
             :x1="dividerX"
             y1="140"
@@ -180,16 +306,26 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
             marker-start="url(#ex-c2-eg-l)"
             marker-end="url(#ex-c2-eg-r)"
           />
-          <text class="ex-lbl amber" :x="diffMid" y="132" text-anchor="middle">
+          <text v-if="eggStep >= 1" class="ex-lbl amber" :x="diffMid" y="132" text-anchor="middle">
             相差 {{ toFixed2(half) }} 千克 = 一半鸡蛋
           </text>
         </svg>
       </div>
-      <p class="ex-c2-note">两次称重都含筐重，筐重相减正好抵消</p>
-      <p class="ex-c2-res">
-        {{ toFixed2(withEggs) }} − {{ toFixed2(after) }} = {{ toFixed2(half) }} 千克（一半）· 全部
-        {{ toFixed2(eggs) }} 千克 · {{ toFixed2(eggs) }} × {{ toFixed2(price) }} =
-        <b>{{ toFixed2(revenue) }} 元</b>
+      <div class="ex-c2-steps egg-steps">
+        <UButton size="sm" variant="outline" color="neutral" @click="nextEggStep">
+          {{ eggButtonText }}
+        </UButton>
+        <span class="ex-c2-step-note egg-step-note">{{ eggNote }}</span>
+      </div>
+      <p class="ex-c2-note">
+        {{ eggStep === 0 ? '先只比较两次称重的读数：两次都含同一个筐' : '两次称重都含筐重，筐重相减正好抵消' }}
+      </p>
+      <p v-if="eggStep >= 1" class="ex-c2-res">
+        {{ toFixed2(withEggs) }} − {{ toFixed2(after) }} = {{ toFixed2(half) }} 千克（一半）
+        <span v-if="eggStep >= 2">
+          · 全部 {{ toFixed2(eggs) }} 千克 · {{ toFixed2(eggs) }} × {{ toFixed2(price) }} =
+          <b>{{ toFixed2(revenue) }} 元</b>
+        </span>
       </p>
     </template>
   </div>
@@ -245,6 +381,30 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
 .overlap-mark {
   pointer-events: none;
 }
+/* 过程态：先看两条长条时，弱化重叠区（斜线、双箭头、虚线引线）与重叠量标注 */
+.ex-c2-overlap-svg.hide-overlap .overlap-mark,
+.ex-c2-overlap-svg.hide-overlap .overlap-arrow,
+.ex-c2-overlap-svg.hide-overlap .overlap-guide,
+.ex-c2-overlap-svg.hide-overlap .overlap-label {
+  opacity: 0.12;
+}
+/* 过程态：重叠结论（32 + 36 − 48 = 20 人）也一并弱化，文字仍在 DOM 里可对照 */
+.ex-c2-res.hide-overlap {
+  opacity: 0.25;
+}
+.ex-c2-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 30rem;
+}
+.ex-c2-step-note {
+  font-size: 0.76rem;
+  color: var(--ui-text-muted);
+  text-align: center;
+}
 .crate-seg {
   fill: #b45309;
   transition: width 0.3s ease;
@@ -255,6 +415,24 @@ const diffMid = computed(() => (dividerX.value + EGG_X + fullW.value) / 2)
 }
 .egg-seg.half {
   fill: color-mix(in srgb, #f59e0b 55%, white);
+}
+/* 过程态高亮：第 0 步看重两次称重读数，第 1 步看重被抵消的筐段，第 2 步看重鸡蛋与总价 */
+.ex-lbl.weigh-focus {
+  fill: var(--ui-primary);
+}
+.crate-seg.cancel-focus {
+  stroke: #0369a1;
+  stroke-width: 2.5;
+}
+.egg-seg.all-focus {
+  stroke: var(--ui-primary);
+  stroke-width: 2.5;
+}
+.egg-steps {
+  max-width: 34rem;
+}
+.egg-step-note {
+  font-variant-numeric: tabular-nums;
 }
 .ex-c2-note {
   font-size: 0.85rem;

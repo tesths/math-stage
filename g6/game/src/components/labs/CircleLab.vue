@@ -1,10 +1,19 @@
 <script setup lang="ts">
 /**
  * 圆 Lab：认识圆 / 扇形 / 圆的周长 / 圆的面积 / 环形面积 / 组合图形
+ *
+ * 三处关键改进（对齐 Mathigon 的「一个滑块控制离散化程度」与课本的「滚圆/等分剪拼」）：
+ * - 圆的面积：等分份数 4→64 逐个重画，上下一一交错拼成图形，实时显示
+ *   长 = n·sin(π/n)·r（n 越大越接近 πr）、宽 = r，把「极限」摆到学生眼前。
+ * - 圆的周长：圆沿直线真正滚动一周（摆线轨迹），前进距离恰好等于周长，图上 C÷d = π。
+ * - 环形面积：内外圆共用同一比例尺，环宽与外圆面积占比都与真实值一致。
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { animate } from 'animejs'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { toFixed2 } from '@/lib/engine/math'
+import { fixedN, roundTo, toFixed2 } from '@/lib/engine/math'
+import { approxLengthInR, cycloidPath, rollDistance, rollPoint, sectorPath, wedgeLayout } from '@/lib/labs/circle'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -17,17 +26,23 @@ const crPx = computed(() => cr.value * 16)
 const cd = computed(() => cr.value * 2)
 const CX = 170
 const CY = 120
-const extraRadii = computed(() => {
-  return [30, -45].map((deg) => {
+/** 三条半径（含竖直向上的一条）与它们到圆周的端点 */
+const radiusDirs = [-90, 30, 210]
+const radiusEnds = computed(() =>
+  radiusDirs.map((deg) => {
     const rad = (deg * Math.PI) / 180
     return { x: CX + crPx.value * Math.cos(rad), y: CY + crPx.value * Math.sin(rad) }
-  })
-})
+  }),
+)
 
 /* ---------- 扇形 ---------- */
-const angle = computed(() => Math.round(props.values.angle ?? 90))
-const sr = 100
+const angle = computed(() => Math.max(0, Math.round(props.values.angle ?? 90)))
+const sectorR = computed(() => Math.max(1, Math.round(props.values.r ?? 6)))
+const sr = 96
+/** 圆心角 360° 时整圆都是扇形，用圆代替扇形路径（SVG 弧在 360° 会退化） */
+const isFullCircle = computed(() => angle.value >= 360)
 const arc = computed(() => {
+  if (isFullCircle.value) return ''
   const start = -90
   const end = start + angle.value
   const sRad = (start * Math.PI) / 180
@@ -37,9 +52,10 @@ const arc = computed(() => {
   const x2 = CX + sr * Math.cos(eRad)
   const y2 = CY + sr * Math.sin(eRad)
   const large = angle.value > 180 ? 1 : 0
-  return `M ${CX} ${CY} L ${x1} ${y1} A ${sr} ${sr} 0 ${large} 1 ${x2} ${y2} Z`
+  return `M ${CX} ${CY} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${sr} ${sr} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`
 })
-/** 圆心角弧（小半径弧线 + 角度标签） */
+const sectorArea = computed(() => roundTo(PI * sectorR.value * sectorR.value * (angle.value / 360), 2))
+const sectorArcLen = computed(() => roundTo(2 * PI * sectorR.value * (angle.value / 360), 2))
 const angleArc = computed(() => {
   const end = -90 + angle.value
   const eRad = (end * Math.PI) / 180
@@ -48,91 +64,107 @@ const angleArc = computed(() => {
   const e2x = CX + 46 * Math.cos(eRad)
   const e2y = CY + 46 * Math.sin(eRad)
   const large = angle.value > 180 ? 1 : 0
-  return `M ${e1x} ${e1y} A 46 46 0 ${large} 1 ${e2x} ${e2y}`
+  return `M ${e1x.toFixed(2)} ${e1y.toFixed(2)} A 46 46 0 ${large} 1 ${e2x.toFixed(2)} ${e2y.toFixed(2)}`
 })
 const angleMid = computed(() => {
-  const mid = (-90 + angle.value / 2) * Math.PI / 180
+  const mid = ((-90 + angle.value / 2) * Math.PI) / 180
   return { x: CX + 62 * Math.cos(mid), y: CY + 62 * Math.sin(mid) }
 })
 const sectorArcLabel = computed(() => {
-  const mid = (-90 + angle.value / 2) * Math.PI / 180
+  const mid = ((-90 + angle.value / 2) * Math.PI) / 180
   return { x: CX + (sr + 16) * Math.cos(mid), y: CY + (sr + 16) * Math.sin(mid) }
 })
-
-/* ---------- 圆的周长 ---------- */
-const cir = computed(() => Math.round(props.values.r ?? 14))
-const cirPx = computed(() => Math.min(cir.value * 5, 150))
-const C = computed(() => toFixed2(2 * PI * cir.value))
-const cdValue = computed(() => cir.value * 2)
-const unfoldPx = computed(() => Math.min(2 * PI * cirPx.value, 260))
-
-/* ---------- 圆的面积 ---------- */
-const ar = computed(() => Math.round(props.values.r ?? 5))
-const slices = computed(() => Math.round(props.values.slices ?? 8))
-const A = computed(() => toFixed2(PI * ar.value * ar.value))
-const pieR = 82
-const pieCX = 88
-const pieCY = 116
-const pieSlices = computed(() => {
-  const parts: { x1: number; y1: number; x2: number; y2: number; large: number }[] = []
-  const n = slices.value
-  for (let i = 0; i < n; i++) {
-    const a1 = -90 + (360 / n) * i
-    const a2 = -90 + (360 / n) * (i + 1)
-    const r1 = (a1 * Math.PI) / 180
-    const r2 = (a2 * Math.PI) / 180
-    parts.push({
-      x1: pieCX + pieR * Math.cos(r1),
-      y1: pieCY + pieR * Math.sin(r1),
-      x2: pieCX + pieR * Math.cos(r2),
-      y2: pieCY + pieR * Math.sin(r2),
-      large: 0,
-    })
-  }
-  return parts
-})
-/** 近似长方形：交错条，份数越多边缘锯齿越细 */
-const stripW = computed(() => 280 / slices.value)
-const strips = computed(() => {
-  return Array.from({ length: slices.value }, (_, i) => ({
-    x: 20 + i * stripW.value,
-    top: i % 2 === 0 ? 92 : 98,
-    alt: i % 2 === 0,
-  }))
-})
-const interlaceAmp = computed(() => (slices.value <= 8 ? 6 : slices.value <= 16 ? 3 : 1.5))
-
-/* ---------- 环形面积 ---------- */
-const R = computed(() => Math.round(props.values.R ?? 10))
-const r = computed(() => Math.round(props.values.r ?? 6))
-const Rpx = computed(() => R.value * 8)
-const rpx = computed(() => r.value * 8)
-const invalidRing = computed(() => r.value >= R.value)
-const aOuter = computed(() => toFixed2(PI * R.value * R.value))
-const aInner = computed(() => toFixed2(PI * r.value * r.value))
-const annulus = computed(() => toFixed2(PI * (R.value * R.value - r.value * r.value)))
-
-/* ---------- 组合图形 · 窗户 ---------- */
-const side = computed(() => Math.round(props.values.side ?? 2))
-const sqPx = computed(() => side.value * 24)
-const smRadius = computed(() => (side.value * 24) / 2)
-const windowSq = computed(() => side.value * side.value)
-const windowSemi = computed(() => (PI * (side.value / 2) ** 2) / 2)
-const windowTotal = computed(() => toFixed2(windowSq.value + windowSemi.value))
-
-/* ---------- 共享计算：弧端坐标 / 环形挖洞路径 ---------- */
 const arcEnd = computed(() => {
   const end = -90 + angle.value
   const rad = (end * Math.PI) / 180
   return { x: CX + sr * Math.cos(rad), y: CY + sr * Math.sin(rad) }
 })
 
-/** 环形挖洞路径：外圆顺时 + 内圆逆时挖空 */
-const ringPath = computed(() => {
-  const oR = Math.min(Rpx.value, 60)
-  const iR = Math.min(rpx.value, 58)
-  return `M 65 ${65 - oR} A ${oR} ${oR} 0 1 1 ${65 - oR + 0.01} ${65 - oR} Z M 65 ${65 - iR} A ${iR} ${iR} 0 1 0 ${65 - iR + 0.01} ${65 - iR} Z`
+/* ---------- 圆的周长：滚圆一周 ---------- */
+const cir = computed(() => Math.max(1, Math.round(props.values.r ?? 14)))
+/** 图上半径（px）：随 r 略增大，但保证滚动一周的长度能画进画布 */
+const rollR = computed(() => Math.min(46, Math.max(22, cir.value * 2.2)))
+const rollBaseY = 176
+const rollX0 = 26
+const C = computed(() => roundTo(2 * PI * cir.value, 2))
+const cdValue = computed(() => cir.value * 2)
+const rollTheta = ref(0)
+const rolling = ref(false)
+const rollX = computed(() => rollX0 + rollDistance(rollR.value, rollTheta.value))
+const markPoint = computed(() => rollPoint(rollX0, rollBaseY, rollR.value, rollTheta.value))
+const cycloid = computed(() => cycloidPath(rollX0, rollBaseY, rollR.value))
+const rolledFull = computed(() => rollTheta.value >= 2 * Math.PI - 1e-6)
+const rollTurns = computed(() => rollTheta.value / (2 * Math.PI))
+function runRoll() {
+  if (rolling.value) return
+  playClick()
+  rolling.value = true
+  const state = { t: rollTheta.value }
+  animate(state, {
+    t: 2 * Math.PI,
+    duration: 1800,
+    easing: 'linear',
+    update: () => {
+      rollTheta.value = state.t
+    },
+    complete: () => {
+      rollTheta.value = 2 * Math.PI
+      rolling.value = false
+    },
+  })
+}
+function resetRoll() {
+  rollTheta.value = 0
+  rolling.value = false
+  playClick()
+}
+
+/* ---------- 圆的面积：等分 + 交错剪拼 ---------- */
+const ar = computed(() => Math.max(1, Math.round(props.values.r ?? 5)))
+const slices = computed(() => Math.max(4, Math.round((props.values.slices ?? 8) / 2) * 2))
+const A = computed(() => roundTo(PI * ar.value * ar.value, 2))
+const pieR = 60
+const pieCX = 74
+const pieCY = 84
+const piePaths = computed(() => {
+  const n = slices.value
+  return Array.from({ length: n }, (_, i) => ({
+    d: sectorPath(pieCX, pieCY, pieR, -90 + (360 / n) * i, -90 + (360 / n) * (i + 1)),
+    alt: i % 2 === 0,
+  }))
 })
+const wedgeR = 60
+const layout = computed(() => wedgeLayout(slices.value, wedgeR, 166, 172))
+/** 拼成图形的长，以半径 r 为单位：n·sin(π/n) → π */
+const approxLenR = computed(() => approxLengthInR(slices.value))
+const approxLenReal = computed(() => roundTo(approxLenR.value * ar.value, 3))
+const piRReal = computed(() => roundTo(PI * ar.value, 3))
+const lenGap = computed(() => roundTo(piRReal.value - approxLenReal.value, 3))
+
+/* ---------- 环形面积 ---------- */
+const R = computed(() => Math.round(props.values.R ?? 10))
+const r = computed(() => Math.round(props.values.r ?? 6))
+const invalidRing = computed(() => r.value >= R.value)
+/** 内外圆共用同一比例尺：外圆固定 60px，内圆按 r/R 缩放，比例才与真实一致 */
+const OUTER_PX = 60
+const innerPx = computed(() => (r.value / Math.max(1, R.value)) * OUTER_PX)
+const aOuter = computed(() => roundTo(PI * R.value * R.value, 2))
+const aInner = computed(() => roundTo(PI * r.value * r.value, 2))
+const annulus = computed(() => roundTo(PI * (R.value * R.value - r.value * r.value), 2))
+const ringShare = computed(() => (invalidRing.value ? 0 : (R.value * R.value - r.value * r.value) / (R.value * R.value)))
+const ringPath = computed(
+  () =>
+    `M 65 ${65 - OUTER_PX} A ${OUTER_PX} ${OUTER_PX} 0 1 1 ${65 - OUTER_PX + 0.01} ${65 - OUTER_PX} Z ` +
+    `M 65 ${65 - innerPx.value} A ${innerPx.value} ${innerPx.value} 0 1 0 ${65 - innerPx.value + 0.01} ${65 - innerPx.value} Z`,
+)
+
+/* ---------- 组合图形 · 窗户 ---------- */
+const side = computed(() => props.values.side ?? 1.8)
+const sqPx = computed(() => side.value * 46)
+const smRadius = computed(() => (side.value * 46) / 2)
+const windowSq = computed(() => roundTo(side.value * side.value, 4))
+const windowSemi = computed(() => roundTo((PI * (side.value / 2) ** 2) / 2, 4))
+const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2))
 </script>
 
 <template>
@@ -141,53 +173,49 @@ const ringPath = computed(() => {
     <template v-if="kind === 'circle-feature'">
       <div class="svg-box">
         <svg :width="340" :height="240" viewBox="0 0 340 240">
-          <circle :cx="CX" :cy="CY" :r="crPx" fill="none" stroke="var(--ui-primary)" stroke-width="2.5" />
-          <circle v-for="(p, i) in extraRadii" :key="i" :cx="p.x" :cy="p.y" r="3" class="dot amber" />
-          <line
-            v-for="(p, i) in extraRadii"
-            :key="'l' + i"
-            :x1="CX" :y1="CY" :x2="p.x" :y2="p.y"
-            stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 4"
-          />
-          <line :x1="CX" :y1="CY" :x2="CX" :y2="CY - crPx" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr)" />
-          <line :x1="CX - crPx" :y1="CY" :x2="CX + crPx" :y2="CY" stroke="#0ea5e9" stroke-width="2" />
-          <circle :cx="CX" :cy="CY" r="4" fill="var(--ui-primary)" />
-          <text :x="CX" :y="CY + 22" text-anchor="middle" class="t-lbl">圆心 O</text>
-          <text :x="CX + 10" :y="CY - crPx / 2 - 6" class="t-lbl amber">半径 r = {{ cr }}</text>
-          <text :x="CX + crPx / 2 + 6" :y="CY + 16" class="t-lbl sky">直径 d = {{ cd }}</text>
-          <text :x="CX + 16" :y="CY - 6" class="t-lbl amber">r</text>
-          <text :x="CX + crPx * 0.9 + 8" :y="CY - crPx * 0.5 - 4" class="t-lbl amber">r</text>
           <defs>
             <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
               <polygon points="0 0, 8 3.5, 0 7" fill="#f59e0b" />
             </marker>
           </defs>
+          <circle :cx="CX" :cy="CY" :r="crPx" class="circle-outline" />
+          <line :x1="CX - crPx" :y1="CY" :x2="CX + crPx" :y2="CY" class="line-diameter" />
+          <g v-for="(p, i) in radiusEnds" :key="'r' + i">
+            <line :x1="CX" :y1="CY" :x2="p.x" :y2="p.y" class="line-radius" :marker-end="i === 0 ? 'url(#arr)' : undefined" />
+            <circle :cx="p.x" :cy="p.y" r="3" class="dot amber" />
+          </g>
+          <circle :cx="CX" :cy="CY" r="4" class="dot-center" />
+          <text :x="CX" :y="CY + 22" text-anchor="middle" class="t-lbl">圆心 O</text>
+          <text :x="CX + 8" :y="CY - crPx / 2 - 6" class="t-lbl amber">半径 r = {{ cr }} 厘米</text>
+          <text :x="CX + crPx / 2 + 6" :y="CY + 16" class="t-lbl sky">直径 d = {{ cd }} 厘米</text>
+          <text :x="CX + 14" :y="CY - 10" class="t-lbl amber">r</text>
         </svg>
       </div>
-      <p class="res-line">同一个圆里所有半径都相等：d = 2 × r = 2 × {{ cr }} = <b>{{ cd }}</b></p>
+      <p class="res-line">同一个圆里所有半径都相等（OA = OB = OC = {{ cr }} 厘米）：d = 2r = 2 × {{ cr }} = <b>{{ cd }}</b> 厘米</p>
     </template>
 
     <!-- 扇形 -->
     <template v-else-if="kind === 'sector'">
       <div class="svg-box">
         <svg :width="340" :height="240" viewBox="0 0 340 240">
-          <circle :cx="CX" :cy="CY" :r="sr" fill="none" stroke="var(--ui-border-accented)" stroke-width="1.5" />
-          <path :d="arc" fill="color-mix(in srgb, var(--ui-primary) 45%, white)" stroke="var(--ui-primary)" stroke-width="2" />
-          <line :x1="CX" :y1="CY" :x2="CX" :y2="CY - sr" stroke="#f59e0b" stroke-width="1.5" />
-          <line :x1="CX" :y1="CY" :x2="arcEnd.x" :y2="arcEnd.y" stroke="#f59e0b" stroke-width="1.5" />
-          <path :d="angleArc" fill="none" stroke="var(--ui-warning, #f59e0b)" stroke-width="2" marker-end="url(#arr2)" />
-          <text :x="CX" :y="CY - sr - 8" text-anchor="middle" class="t-lbl sky">A</text>
-          <text :x="arcEnd.x + 12" :y="arcEnd.y + 4" class="t-lbl sky">B</text>
-          <text :x="angleMid.x" :y="angleMid.y + 4" text-anchor="middle" class="t-lbl amber">{{ angle }}°</text>
-          <text :x="sectorArcLabel.x" :y="sectorArcLabel.y" text-anchor="middle" class="t-lbl sky">弧 AB</text>
-          <text :x="CX" :y="CY + 22" text-anchor="middle" class="t-lbl">圆心 O</text>
-          <text :x="CX + 14" :y="CY - 8" class="t-lbl amber">r</text>
-          <text :x="arcEnd.x + 14" :y="arcEnd.y - 6" class="t-lbl amber">r</text>
           <defs>
             <marker id="arr2" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
               <polygon points="0 0, 8 3.5, 0 7" fill="#f59e0b" />
             </marker>
           </defs>
+          <circle :cx="CX" :cy="CY" :r="sr" class="circle-outline-muted" />
+          <circle v-if="isFullCircle" :cx="CX" :cy="CY" :r="sr" class="sector-fill" />
+          <path v-else :d="arc" class="sector-fill-stroke" />
+          <line :x1="CX" :y1="CY" :x2="CX" :y2="CY - sr" class="line-radius" />
+          <line :x1="CX" :y1="CY" :x2="arcEnd.x" :y2="arcEnd.y" class="line-radius" />
+          <path v-if="angle < 360" :d="angleArc" fill="none" class="line-angle" marker-end="url(#arr2)" />
+          <circle v-else :cx="CX" :cy="CY" :r="46" fill="none" class="line-angle" />
+          <text :x="CX" :y="CY - sr - 8" text-anchor="middle" class="t-lbl sky">A</text>
+          <text :x="arcEnd.x + 12" :y="arcEnd.y + 4" class="t-lbl sky">B</text>
+          <text :x="angleMid.x" :y="angleMid.y + 4" text-anchor="middle" class="t-lbl amber">{{ angle }}°</text>
+          <text :x="sectorArcLabel.x" :y="sectorArcLabel.y" text-anchor="middle" class="t-lbl sky">弧 AB</text>
+          <text :x="CX" :y="CY + 22" text-anchor="middle" class="t-lbl">圆心 O</text>
+          <text :x="CX + 14" :y="CY - 8" class="t-lbl amber">r = {{ sectorR }} 厘米</text>
         </svg>
       </div>
       <div class="sector-parts" aria-label="扇形组成部分">
@@ -196,75 +224,92 @@ const ringPath = computed(() => {
         <span class="part-chip">弧 AB</span>
         <span class="part-chip primary">圆心角 ∠AOB = {{ angle }}°</span>
       </div>
-      <p class="res-line">两条半径 + 一段弧围成的图形是扇形，圆心角 = {{ angle }}°，面积占全圆的 {{ toFixed2(angle / 360) }}</p>
+      <p class="res-line">
+        扇形占全圆的 {{ angle }} ÷ 360 = <b>{{ toFixed2(angle / 360) }}</b>；弧长 = 2πr × {{ angle }}/360 ≈
+        <b>{{ fixedN(sectorArcLen, 2) }}</b> 厘米，面积 = πr² × {{ angle }}/360 ≈ <b>{{ fixedN(sectorArea, 2) }}</b> 平方厘米
+      </p>
     </template>
 
-    <!-- 圆的周长 -->
+    <!-- 圆的周长：滚圆一周 -->
     <template v-else-if="kind === 'circumference'">
       <div class="svg-box">
-        <svg :width="340" :height="240" viewBox="0 0 340 240">
-          <circle :cx="CX" :cy="CY - 40" :r="cirPx" fill="color-mix(in srgb, var(--ui-primary) 15%, transparent)" stroke="var(--ui-primary)" stroke-width="2.5" />
-          <line :x1="CX - cirPx" :y1="CY - 40" :x2="CX + cirPx" :y2="CY - 40" stroke="#0ea5e9" stroke-width="2" />
-          <text :x="CX" :y="CY - 18" text-anchor="middle" class="t-lbl">半径 r = {{ cir }}，直径 d = {{ cdValue }}</text>
-          <text :x="CX" :y="205" text-anchor="middle" class="t-lbl sky">展开周长 C = 2πr ≈ {{ unfoldPx }}px</text>
-          <line :x1="20" :y1="215" :x2="20 + unfoldPx" :y2="215" stroke="#f59e0b" stroke-width="3" />
-          <line :x1="20" :y1="215" :x2="20 + unfoldPx" :y2="215" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2 4" />
-          <text :x="20 + unfoldPx / 2" :y="208" text-anchor="middle" class="t-lbl amber">C = {{ C }} 米</text>
+        <svg :width="360" :height="220" viewBox="0 0 360 220">
+          <line :x1="rollX0 - 14" :y1="rollBaseY" :x2="352" :y2="rollBaseY" class="baseline" />
+          <!-- 一周的滚动轨迹（摆线） -->
+          <path v-if="rollTheta > 0" :d="cycloid" class="cycloid" />
+          <!-- 圆 -->
+          <circle :cx="rollX" :cy="rollBaseY - rollR" :r="rollR" class="circle-roll" />
+          <line :x1="rollX - rollR" :y1="rollBaseY - rollR" :x2="rollX + rollR" :y2="rollBaseY - rollR" class="line-diameter-roll" />
+          <line :x1="rollX" :y1="rollBaseY - rollR" :x2="markPoint[0]" :y2="markPoint[1]" class="line-radius" />
+          <circle :cx="markPoint[0]" :cy="markPoint[1]" r="4" class="dot amber" />
+          <circle :cx="rollX" :cy="rollBaseY - rollR" r="3" class="dot-center" />
+          <text :x="Math.max(70, rollX)" :y="rollBaseY - rollR * 2 - 8" text-anchor="middle" class="t-lbl">直径 d = {{ cdValue }} 米</text>
+          <!-- 走过的距离 = 周长 -->
+          <g v-if="rollTheta > 0">
+            <line :x1="rollX0" :y1="rollBaseY + 20" :x2="rollX" :y2="rollBaseY + 20" class="line-diameter" />
+            <line :x1="rollX0" :y1="rollBaseY + 15" :x2="rollX0" :y2="rollBaseY + 25" class="line-diameter" />
+            <line :x1="rollX" :y1="rollBaseY + 15" :x2="rollX" :y2="rollBaseY + 25" class="line-diameter" />
+            <text :x="(rollX0 + rollX) / 2" :y="rollBaseY + 38" text-anchor="middle" class="t-lbl amber">
+              已滚 {{ fixedN(rollTurns, 2) }} 周，前进 {{ fixedN(rollTurns * C, 2) }} 米
+            </text>
+          </g>
+          <text :x="352" :y="rollBaseY - 6" text-anchor="end" class="t-lbl2">滚圆一周，前进的距离就是周长</text>
         </svg>
       </div>
-      <p class="res-line">C = 2 × π × r = 2 × 3.14 × {{ cir }} = <b>{{ C }}</b>，且 C ÷ d ≈ <b>π = 3.14</b></p>
+      <div class="controls">
+        <UButton size="sm" color="primary" variant="soft" icon="i-heroicons-arrow-path" :disabled="rolling" @click="runRoll">
+          滚一周 · 看前进多少米
+        </UButton>
+        <UButton v-if="rollTheta > 0" size="sm" variant="outline" color="neutral" @click="resetRoll">复位</UButton>
+        <span class="verify-line">
+          <template v-if="rolledFull">
+            ✓ 滚动一周前进的距离 = 周长 C = 2πr = 2 × 3.14 × {{ cir }} = <b>{{ C }}</b> 米；C ÷ d = {{ C }} ÷ {{ cdValue }} = {{ fixedN(C / cdValue, 2) }} ≈ π
+          </template>
+          <template v-else-if="rollTheta > 0">滚动中：转过 {{ fixedN((rollTheta / (2 * Math.PI)) * 360, 0) }}°</template>
+          <template v-else>半径 r = {{ cir }} 米，直径 d = {{ cdValue }} 米，周长 C = 2πr = {{ C }} 米</template>
+        </span>
+      </div>
+      <p class="res-line">C = πd = 2πr = 2 × 3.14 × {{ cir }} = <b>{{ C }}</b> 米，且 C ÷ d ≈ <b>π = 3.14</b></p>
     </template>
 
-    <!-- 圆的面积 · 剪拼 -->
+    <!-- 圆的面积 · 等分剪拼 -->
     <template v-else-if="kind === 'circle-area'">
-      <div class="area-grid">
-        <div class="svg-box half">
-          <svg :width="340" :height="240" viewBox="0 0 340 240">
+      <div class="svg-box">
+        <svg :width="360" :height="196" viewBox="0 0 360 196">
+          <!-- 左：等分圆 -->
+          <g>
             <path
-              v-for="(p, i) in pieSlices"
-              :key="i"
-              :d="`M ${pieCX} ${pieCY} L ${p.x1} ${p.y1} A ${pieR} ${pieR} 0 0 1 ${p.x2} ${p.y2} Z`"
-              :fill="i % 2 === 0 ? 'color-mix(in srgb, var(--ui-primary) 55%, white)' : 'color-mix(in srgb, var(--ui-primary) 25%, white)'"
-              stroke="var(--ui-bg-default)"
-              stroke-width="1.5"
+              v-for="(p, i) in piePaths"
+              :key="'pie' + i"
+              :d="p.d"
+              :class="p.alt ? 'slice-a' : 'slice-b'"
             />
-            <circle :cx="pieCX" :cy="pieCY" :r="pieR" fill="none" stroke="var(--ui-primary)" stroke-width="1.5" />
-            <text :x="85" :y="228" text-anchor="middle" class="t-lbl">把圆平均分成 {{ slices }} 份</text>
-          </svg>
-        </div>
-        <div class="svg-box half">
-          <svg :width="340" :height="240" viewBox="0 0 340 240">
-            <line x1="20" y1="92" x2="300" y2="92" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 4" />
-            <line x1="300" y1="92" x2="300" y2="140" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 4" />
-            <rect
-              v-for="(s, i) in strips"
-              :key="i"
-              :x="s.x"
-              :y="s.top"
-              :width="stripW + 0.6"
-              height="44"
-              :fill="s.alt ? 'color-mix(in srgb, var(--ui-primary) 45%, white)' : 'color-mix(in srgb, var(--ui-primary) 25%, white)'"
-              stroke="var(--ui-bg-default)"
-              stroke-width="0.8"
-            />
-            <path
-              v-for="(s, i) in strips"
-              :key="'j' + i"
-              :d="s.alt
-                ? `M ${s.x} ${92} l ${stripW / 2} ${-interlaceAmp} l ${stripW / 2} ${interlaceAmp}`
-                : `M ${s.x} ${140} l ${stripW / 2} ${interlaceAmp} l ${stripW / 2} ${-interlaceAmp}`"
-              stroke="color-mix(in srgb, var(--ui-primary) 75%, white)"
-              stroke-width="1.2"
-              fill="none"
-            />
-            <text x="160" y="84" text-anchor="middle" class="t-lbl amber">长 ≈ πr = 3.14×{{ ar }} = {{ toFixed2(PI * ar) }}</text>
-            <text x="310" y="118" class="t-lbl sky">宽 = r = {{ ar }}</text>
-            <text x="160" y="168" text-anchor="middle" class="t-lbl2">{{ slices <= 12 ? `边缘还有 ${interlaceAmp}px 的锯齿` : '份数多，边缘接近直线' }}</text>
-          </svg>
-        </div>
+            <circle :cx="pieCX" :cy="pieCY" :r="pieR" class="circle-outline-muted" />
+            <text :x="pieCX" :y="166" text-anchor="middle" class="t-lbl">把圆平均分成 {{ slices }} 份</text>
+            <text :x="pieCX" :y="184" text-anchor="middle" class="t-lbl2">r = {{ ar }} 米</text>
+          </g>
+          <!-- 右：上下一一交错拼成近似长方形 -->
+          <g>
+            <path v-for="(w, i) in layout.wedges" :key="'w' + i" :d="w.d" :class="w.up ? 'slice-a' : 'slice-b'" />
+            <rect :x="layout.x0" :y="layout.baseY - layout.height" :width="layout.width" :height="layout.height" class="rect-ghost" />
+            <text :x="layout.x0 + layout.width / 2" :y="layout.baseY - layout.height - 10" text-anchor="middle" class="t-lbl amber">
+              长 ≈ {{ fixedN(approxLenR, 3) }} r = {{ fixedN(approxLenReal, 2) }} 米
+            </text>
+            <text :x="layout.x0 + layout.width - 6" :y="layout.baseY - 8" text-anchor="end" class="t-lbl sky">宽 = r</text>
+            <text :x="layout.x0 + layout.width / 2" :y="layout.baseY + 18" text-anchor="middle" class="t-lbl2">
+              拼成的长方形：{{ fixedN(approxLenReal, 2) }} × {{ ar }} ≈ {{ fixedN(roundTo(approxLenReal * ar, 2), 2) }} 平方米
+            </text>
+          </g>
+        </svg>
+      </div>
+      <div class="conv-panel" aria-label="逼近过程">
+        <span class="conv-chip">份数 <strong>{{ slices }}</strong></span>
+        <span class="conv-chip">长 = {{ slices }} × sin(180°/{{ slices }}) × r = <strong>{{ fixedN(approxLenR, 3) }}</strong> r</span>
+        <span class="conv-chip">πr = <strong>3.142</strong> r</span>
+        <span class="conv-chip result">与 πr 还差 {{ fixedN(lenGap, 3) }} 米（份数越多差越小）</span>
       </div>
       <p class="res-line">
-        S = 长 × 宽 = πr × r = 3.14 × {{ ar }} × {{ ar }} = <b>{{ A }}</b> 平方米（份数越多越接近长方形）
+        S = 长 × 宽 = πr × r = 3.14 × {{ ar }} × {{ ar }} = <b>{{ fixedN(A, 2) }}</b> 平方米
       </p>
     </template>
 
@@ -274,51 +319,69 @@ const ringPath = computed(() => {
       <div v-else class="ring-stage">
         <div class="ring-card">
           <svg :width="130" :height="130" viewBox="0 0 130 130">
-            <circle cx="65" cy="65" :r="Math.min(Rpx, 60)" fill="color-mix(in srgb, var(--ui-primary) 45%, white)" stroke="var(--ui-primary)" stroke-width="2" />
+            <circle cx="65" cy="65" :r="OUTER_PX" class="ring-fill" />
+            <circle cx="65" cy="65" :r="innerPx" fill="var(--ui-bg)" />
           </svg>
-          <p class="ring-tag">外圆面积 S大 = πR² = {{ aOuter }}</p>
+          <p class="ring-tag">外圆半径 R = {{ R }} 厘米<br />S大 = πR² = {{ fixedN(aOuter, 2) }}</p>
         </div>
         <p class="op">－</p>
         <div class="ring-card">
           <svg :width="130" :height="130" viewBox="0 0 130 130">
-            <circle cx="65" cy="65" :r="Math.min(Rpx, 60)" fill="color-mix(in srgb, var(--ui-primary) 45%, white)" stroke="var(--ui-primary)" stroke-width="2" />
-            <circle cx="65" cy="65" :r="Math.min(rpx, 58)" fill="var(--ui-bg)" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 3" />
+            <circle cx="65" cy="65" :r="OUTER_PX" class="ring-fill" />
+            <circle cx="65" cy="65" :r="innerPx" fill="var(--ui-bg)" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 3" />
           </svg>
-          <p class="ring-tag">挖去内圆 S小 = πr² = {{ aInner }}</p>
+          <p class="ring-tag">内圆半径 r = {{ r }} 厘米<br />S小 = πr² = {{ fixedN(aInner, 2) }}</p>
         </div>
         <p class="op">＝</p>
         <div class="ring-card">
           <svg :width="130" :height="130" viewBox="0 0 130 130">
-            <path :d="ringPath" fill="color-mix(in srgb, var(--ui-primary) 45%, white)" stroke="var(--ui-primary)" stroke-width="2" />
-            <circle cx="65" cy="65" :r="Math.min(rpx, 58)" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3 3" />
+            <path :d="ringPath" class="ring-fill-stroke" />
+            <line x1="65" y1="65" :x2="65 + innerPx" y2="65" class="line-radius" />
+            <line x1="65" y1="65" :x2="65 + OUTER_PX" y2="65" class="line-diameter" />
           </svg>
-          <p class="ring-tag ring-result">环形面积 S环 = {{ annulus }} 平方厘米</p>
+          <p class="ring-tag ring-result">S环 = {{ fixedN(annulus, 2) }} 平方厘米<br />（占外圆的 {{ fixedN(ringShare * 100, 1) }}%）</p>
         </div>
       </div>
-      <p class="res-line">S 环 = π×R² − π×r² = {{ aOuter }} − {{ aInner }} = <b>{{ annulus }}</b> 平方厘米</p>
+      <p class="res-line">
+        S 环 = πR² − πr² = π(R² − r²) = 3.14 × ({{ R }}² − {{ r }}²) = <b>{{ fixedN(annulus, 2) }}</b> 平方厘米；环宽 R − r = {{ R - r }} 厘米
+      </p>
     </template>
 
     <!-- 组合图形 · 窗户 -->
     <template v-else>
       <div class="svg-box">
         <svg :width="340" :height="240" viewBox="0 0 340 240">
-          <g transform="translate(170 210)">
-            <rect :x="-sqPx / 2" :y="-sqPx" :width="sqPx" :height="sqPx" fill="color-mix(in srgb, var(--ui-primary) 20%, transparent)" stroke="var(--ui-primary)" stroke-width="2.5" />
-            <path :d="`M ${-smRadius} ${-sqPx} A ${smRadius} ${smRadius} 0 0 1 ${smRadius} ${-sqPx}`" fill="color-mix(in srgb, var(--ui-primary) 45%, white)" stroke="var(--ui-primary)" stroke-width="2.5" />
+          <g transform="translate(170 200)">
+            <rect
+              :x="-sqPx / 2"
+              :y="-sqPx"
+              :width="sqPx"
+              :height="sqPx"
+              fill="color-mix(in srgb, var(--ui-primary) 20%, transparent)"
+              stroke="var(--ui-primary)"
+              stroke-width="2.5"
+            />
+            <path
+              :d="`M ${-smRadius} ${-sqPx} A ${smRadius} ${smRadius} 0 0 1 ${smRadius} ${-sqPx}`"
+              fill="color-mix(in srgb, var(--ui-primary) 45%, white)"
+              stroke="var(--ui-primary)"
+              stroke-width="2.5"
+            />
             <line :x1="-sqPx / 2" :y1="-sqPx" :x2="sqPx / 2" :y2="-sqPx" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 4" />
-            <text :x="0" :y="-sqPx - 14" text-anchor="middle" class="t-lbl">S半圆 = πr²÷2（r = {{ toFixed2(side / 2) }}）</text>
-            <text :x="sqPx / 2 + 10" :y="-sqPx / 2" class="t-lbl">S方 = 边长² = {{ side }}² = {{ windowSq }}</text>
-            <text :x="-sqPx / 2" :y="-sqPx + 16" class="t-lbl sky">半圆</text>
-            <text :x="sqPx / 4" :y="-sqPx / 2 - 4" class="t-lbl">正方形</text>
+            <text :x="0" :y="-sqPx - smRadius - 8" text-anchor="middle" class="t-lbl">
+              半圆直径 = 正方形边长 = {{ toFixed2(side) }}，r = {{ toFixed2(side / 2) }}
+            </text>
+            <text :x="sqPx / 2 + 10" :y="-sqPx / 2" class="t-lbl">正方形 {{ toFixed2(side) }} × {{ toFixed2(side) }} = {{ fixedN(windowSq, 2) }}</text>
+            <text :x="-sqPx / 2 - 4" :y="-sqPx - 6" text-anchor="end" class="t-lbl sky">半圆 S = πr²÷2 = {{ fixedN(windowSemi, 2) }}</text>
           </g>
         </svg>
       </div>
       <p class="res-line">
-        S = {{ side }}² + π×{{ toFixed2(side / 2) }}²÷2
-        = {{ toFixed2(windowSq) }} + {{ toFixed2(windowSemi) }} = <b>{{ windowTotal }} 平方米</b>
+        S = {{ fixedN(windowSq, 2) }} + π×{{ toFixed2(side / 2) }}²÷2 = {{ fixedN(windowSq, 2) }} + {{ fixedN(windowSemi, 2) }} =
+        <b>{{ fixedN(windowTotal, 2) }} 平方米</b>
       </p>
     </template>
-</div>
+  </div>
 </template>
 
 <style scoped>
@@ -335,15 +398,9 @@ const ringPath = computed(() => {
   display: flex;
   justify-content: center;
 }
-.svg-box.half svg {
-  max-width: 240px;
+.svg-box svg {
+  max-width: 560px;
   height: auto;
-}
-.area-grid {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  flex-wrap: wrap;
 }
 .t-lbl {
   font-size: 12px;
@@ -364,13 +421,95 @@ const ringPath = computed(() => {
 .dot {
   fill: #b45309;
 }
-.sector-parts {
+.dot-center {
+  fill: var(--ui-primary);
+}
+.circle-outline {
+  fill: none;
+  stroke: var(--ui-primary);
+  stroke-width: 2.5;
+}
+.circle-outline-muted {
+  fill: none;
+  stroke: var(--ui-border-accented);
+  stroke-width: 1.5;
+}
+.circle-roll {
+  fill: color-mix(in srgb, var(--ui-primary) 18%, transparent);
+  stroke: var(--ui-primary);
+  stroke-width: 2.5;
+}
+.line-radius {
+  stroke: #f59e0b;
+  stroke-width: 1.8;
+}
+.line-diameter {
+  stroke: #0ea5e9;
+  stroke-width: 2;
+}
+.line-diameter-roll {
+  stroke: #0ea5e9;
+  stroke-width: 1.6;
+}
+.line-angle {
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 2;
+}
+.baseline {
+  stroke: var(--ui-text-muted);
+  stroke-width: 1.6;
+}
+.cycloid {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ui-primary) 55%, transparent);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 3;
+}
+.sector-fill {
+  fill: color-mix(in srgb, var(--ui-primary) 45%, white);
+}
+.sector-fill-stroke {
+  fill: color-mix(in srgb, var(--ui-primary) 45%, white);
+  stroke: var(--ui-primary);
+  stroke-width: 2;
+}
+.slice-a {
+  fill: color-mix(in srgb, var(--ui-primary) 55%, white);
+  stroke: var(--ui-bg);
+  stroke-width: 1;
+}
+.slice-b {
+  fill: color-mix(in srgb, var(--ui-primary) 25%, white);
+  stroke: var(--ui-bg);
+  stroke-width: 1;
+}
+.rect-ghost {
+  fill: none;
+  stroke: var(--ui-text-muted);
+  stroke-width: 1.4;
+  stroke-dasharray: 6 4;
+}
+.ring-fill {
+  fill: color-mix(in srgb, var(--ui-primary) 45%, white);
+  stroke: var(--ui-primary);
+  stroke-width: 2;
+}
+.ring-fill-stroke {
+  fill: color-mix(in srgb, var(--ui-primary) 45%, white);
+  stroke: var(--ui-primary);
+  stroke-width: 2;
+}
+.sector-parts,
+.conv-panel,
+.controls {
   display: flex;
   justify-content: center;
   gap: 0.4rem;
   flex-wrap: wrap;
+  align-items: center;
 }
-.part-chip {
+.part-chip,
+.conv-chip {
   border: 1px solid var(--ui-border);
   border-radius: 9999px;
   background: var(--ui-bg-muted);
@@ -379,7 +518,8 @@ const ringPath = computed(() => {
   color: var(--ui-text-toned);
   font-weight: 800;
 }
-.part-chip.primary {
+.part-chip.primary,
+.conv-chip.result {
   border-color: var(--ui-primary);
   background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
   color: var(--ui-primary);
@@ -424,6 +564,14 @@ const ringPath = computed(() => {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--ui-warning, #f59e0b);
+}
+.verify-line {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
 }
 .res-line {
   font-size: 0.95rem;

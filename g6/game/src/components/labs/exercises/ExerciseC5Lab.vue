@@ -4,9 +4,11 @@
  * ex-c5-wheel-roll     车轮滚动的路程（滚动车轮 + 摆线轨迹 + 分段路程线）
  * ex-c5-circle-packing 长方形纸剪圆片（整齐排列 + 边角料去尾）
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { animate } from 'animejs'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { toFixed2 } from '@/lib/engine/math'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -41,6 +43,38 @@ const perMinText = computed(() => fmt3(perMin.value))
 const totalText = computed(() => fmt3(Math.round(total.value * 100) / 100))
 const kmText = computed(() => fmt3(Math.round((total.value / 1000) * 10) / 10))
 const totalTurns = computed(() => n.value * t.value)
+
+/* ---------- 过程态：一圈一圈地滚，看路程累加 ---------- */
+/** 量条满格代表的圈数（滚满 10 圈就到头） */
+const ROLL_FULL = 10
+const rolled = ref(0)
+const rolling = ref(false)
+/** 已滚过的路程（厘米） = 圈数 × 周长 */
+const rolledCm = computed(() => Math.round(rolled.value * circCm.value * 100) / 100)
+const rolledText = computed(() => fmt3(Math.round(rolledCm.value * 100) / 100))
+const rollPct = computed(() => `${Math.min(100, (rolled.value / ROLL_FULL) * 100)}%`)
+function rollOnce() {
+  if (rolling.value) return
+  rolling.value = true
+  playClick()
+  const target = Math.min(ROLL_FULL, Math.floor(rolled.value) + 1)
+  animate(rolled, {
+    value: target,
+    duration: 900,
+    easing: 'cubicOut',
+    update: () => {
+      rolled.value = Math.round(rolled.value * 100) / 100
+    },
+    complete: () => {
+      rolled.value = target
+      rolling.value = false
+    },
+  })
+}
+function resetRoll() {
+  rolled.value = 0
+  playClick()
+}
 
 /** 车轮半径按直径缩放并封顶 60px，保证最大直径也不越出 viewBox */
 const rPx = computed(() => Math.min(d.value * 0.75, 60))
@@ -100,9 +134,21 @@ const discR = computed(() => discPx.value / 2)
 const paperPxW = computed(() => paperL.value * PX_PER_CM)
 const paperPxH = computed(() => paperW.value * PX_PER_CM)
 const paperMidY = computed(() => PACK_Y0 + paperPxH.value / 2)
+/* ---------- 过程态：一行一行地排，看剩下多少边角料 ---------- */
+const placedRows = ref(999)
+const discsShown = computed(() => Math.min(placedRows.value, rows.value))
+function placeRow() {
+  if (placedRows.value >= rows.value) return
+  placedRows.value += 1
+  playClick()
+}
+function resetRows() {
+  placedRows.value = 0
+  playClick()
+}
 const discs = computed(() => {
   const out: { cx: number; cy: number; light: boolean }[] = []
-  for (let j = 0; j < rows.value; j++) {
+  for (let j = 0; j < Math.min(rows.value, placedRows.value); j++) {
     for (let i = 0; i < cols.value; i++) {
       out.push({
         cx: PACK_X0 + (i + 0.5) * discPx.value,
@@ -192,6 +238,32 @@ const areaMore = computed(() => byArea.value > discCount.value)
           <text class="road-total" :x="ROAD_X0 + ROAD_W" :y="ROAD_Y + 26" text-anchor="end">≈ {{ totalText }} 米（约 {{ kmText }} 千米）</text>
         </svg>
       </div>
+      <div class="roll-panel">
+        <p class="roll-title">
+          滚一圈就走一个周长 <b>C = {{ circCmText }} 厘米</b>（{{ circMText }} 米）
+        </p>
+        <div class="roll-meter">
+          <span class="roll-meter-text">
+            已滚 {{ rolled }} / {{ ROLL_FULL }} 圈<span v-if="rolled > 0"> → {{ rolled }} × {{ circCmText }} = {{ rolledText }} 厘米</span>
+          </span>
+          <div class="roll-track" aria-label="已滚过的路程">
+            <div class="roll-fill" :style="{ width: rollPct }" />
+          </div>
+        </div>
+        <div class="roll-actions">
+          <UButton size="sm" color="primary" :disabled="rolling || rolled >= ROLL_FULL" @click="rollOnce">
+            滚一圈
+          </UButton>
+          <UButton size="sm" variant="outline" color="neutral" :disabled="rolling || rolled === 0" @click="resetRoll">
+            清零
+          </UButton>
+          <span class="roll-note">
+            {{ rolled === 0
+              ? '点「滚一圈」，看车轮转一圈走的路程正好是一个周长'
+              : `满格 ${ROLL_FULL} 圈；每滚 1 圈路程就多一个周长 ${circCmText} 厘米` }}
+          </span>
+        </div>
+      </div>
       <p class="wheel-sum">
         周长 = 3.14 × {{ d }} = {{ circCmText }} 厘米 = {{ circMText }} 米；{{ t }} 分钟共转 {{ n }} × {{ t }} = {{ totalTurns }} 圈，路程 ≈ <b>{{ totalText }} 米</b>
       </p>
@@ -201,6 +273,17 @@ const areaMore = computed(() => byArea.value > discCount.value)
     <template v-else-if="kind === 'ex-c5-circle-packing'">
       <div class="pack-stage">
         <span class="pack-badge">每行 {{ cols }} 个 × {{ rows }} 行 = {{ discCount }} 个</span>
+        <div class="pack-steps">
+          <UButton size="sm" color="primary" :disabled="placedRows >= rows" @click="placeRow">
+            再排一行
+          </UButton>
+          <UButton size="sm" variant="outline" color="neutral" :disabled="placedRows === 0" @click="resetRows">
+            全部收回
+          </UButton>
+          <span class="pack-note">
+            已排 {{ discsShown }} / {{ rows }} 行（{{ discsShown * cols }} 个）。{{ placedRows >= rows ? `排满 ${rows} 行后，宽方向只剩 ${toFixed2(remW)} 厘米、长方向只剩 ${toFixed2(remL)} 厘米——都拼不出整圆，所以要"去尾"。` : '再排一行，看看宽方向能排几行。' }}
+          </span>
+        </div>
         <svg class="pack-svg" width="440" height="320" viewBox="0 0 440 320">
           <defs>
             <pattern
@@ -304,6 +387,18 @@ const areaMore = computed(() => byArea.value > discCount.value)
   font-weight: 800;
 }
 .wheel-svg,
+.pack-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.pack-note {
+  font-size: 0.76rem;
+  color: var(--ui-text-muted);
+  max-width: 26rem;
+}
 .pack-svg {
   max-width: 100%;
   height: auto;

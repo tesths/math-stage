@@ -35,10 +35,18 @@ describe('computeLab 一 小数乘法和除法', () => {
     expect(r.value).toBeCloseTo(666.67, 2)
   })
 
-  it('round-life：去尾 / 进一', () => {
-    expect(computeLab('round-life', { method: 0, total: 300 }).value).toBe(85)
-    expect(computeLab('round-life', { method: 1, total: 300 }).value).toBe(86)
-    expect(computeLab('round-life', { method: 0, total: 300 }).text).toContain('最多')
+  it('round-life：去尾法用铅笔情境、进一法用油壶情境（不再张冠李戴）', () => {
+    // 去尾法：300 ÷ 3.5 = 85.7… → 最多买 85 支（86 支要 301 元，钱不够）
+    const floor = computeLab('round-life', { method: 0, total: 300 })
+    expect(floor.value).toBe(85)
+    expect(floor.text).toContain('最多买 85 支自动铅笔')
+    expect(floor.conclusion).toContain('再买 1 支要 301 元')
+    // 进一法：300 ÷ 2.5 = 120 → 油壶情境，至少 120 个
+    const ceil = computeLab('round-life', { method: 1, total: 300 })
+    expect(ceil.value).toBe(120)
+    expect(ceil.text).toContain('油至少需要 120 个油壶')
+    expect(ceil.conclusion).toContain('297.5 千克')
+    expect(ceil.conclusion).not.toContain('自动铅笔')
   })
 })
 
@@ -157,6 +165,44 @@ describe('computeLab 五 圆', () => {
     expect(r.value).toBe(8)
   })
 
+  it('map-scale：求图上距离与求比例尺（两种反向问法）', () => {
+    // 实际 1000 米 = 100000 厘米，1:1000 → 图上 100 厘米
+    const map = computeLab('map-scale', { scaleDen: 1000, cm: 5, ask: 1, actualM: 1000 })
+    expect(map.value).toBe(100)
+    expect(map.text).toContain('图上距离 100 厘米')
+    // 图上 5 厘米表示实际 500 米 = 50000 厘米 → 1:10000
+    const scale = computeLab('map-scale', { scaleDen: 1000, cm: 5, ask: 2, actualM: 500 })
+    expect(scale.value).toBe(10000)
+    expect(scale.text).toBe('比例尺 1:10000')
+  })
+
+  it('work-together：中间量用最简分数，不出现「1 ÷ 0.34 = 2.92」', () => {
+    const r = computeLab('work-together', { a: 5, b: 7 })
+    // 1/5 + 1/7 = 12/35，合作时间 35/12 ≈ 2.92（除不尽，用约等号）
+    expect(r.steps[1]!.result).toContain('12/35')
+    expect(r.steps[2]!.expr).toContain('1 ÷ 12/35')
+    expect(r.steps[2]!.result).toContain('35/12')
+    expect(r.steps[2]!.result).toContain('≈ 2.92')
+    expect(r.value).toBe(2.92)
+    // 课本例：1/6 + 1/3 = 1/2 → 正好 2 小时
+    const exact = computeLab('work-together', { a: 6, b: 3 })
+    expect(exact.steps[1]!.result).toContain('= 1/2')
+    expect(exact.steps[2]!.result).toBe('2 小时')
+    expect(exact.text).toContain('一起做 2 小时完成')
+    expect(exact.conclusion).toContain('一起 2 小时完成')
+  })
+
+  it('segment：人数必须是整数时给出提示（45 × 1/7 不整）', () => {
+    const bad = computeLab('segment', { total: 45, fn: 1, fd: 7 })
+    expect(bad.text).toContain('人数需为整数')
+    expect(bad.steps.some((s) => s.expr.includes('人数必须是整数'))).toBe(true)
+    expect(bad.conclusion).toContain('49 人')
+    const ok = computeLab('segment', { total: 45, fn: 2, fd: 5 })
+    expect(ok.value).toBe(27)
+    expect(ok.text).not.toContain('人数需为整数')
+    expect(ok.steps).toHaveLength(3)
+  })
+
   it('sector：圆心角比例', () => {
     expect(computeLab('sector', { angle: 90 }).value).toBe(90)
     expect(computeLab('sector', { angle: 90 }).text).toContain('0.25')
@@ -234,16 +280,23 @@ describe('computeLab 分支覆盖', () => {
     expect(r.conclusion).toContain('少')
   })
 
-  it('piecewise 起步价内 steps 显示 0 超出', () => {
+  it('piecewise 起步价内不出现「超出」步骤', () => {
     const r = computeLab('piecewise', { km: 2 })
-    expect(r.steps[1]!.result).toBe('0 千米')
+    expect(r.steps).toHaveLength(2)
+    expect(r.steps[1]!.expr).toContain('没有超出')
+    expect(r.steps.some((s) => s.expr.includes('超出部分费用'))).toBe(false)
+    expect(r.conclusion).toContain('都收起步价')
   })
 
   it('estimate-shop 结论翻转分支（钱少 / 钱多）', () => {
     const poor = computeLab('estimate-shop', { budget: 80 })
-    expect(poor.steps[2]!.result).toContain('≤ 16.8')
+    // 预算 80：估大 82（剩 -2）、估小 79（剩 1）→ 连面粉也一定不够
+    expect(poor.steps[2]!.result).toContain('一定不够买面粉')
+    expect(poor.steps[2]!.result).toContain('一定不够')
     const rich = computeLab('estimate-shop', { budget: 150 })
-    expect(rich.steps[3]!.result).toContain('≥ 21.6')
+    // 预算 150：估大剩 68、估小剩 71 → 两样都一定够
+    expect(rich.steps[3]!.result).toContain('一定够买大米')
+    expect(rich.steps[2]!.result).toContain('一定够买面粉')
   })
 
   it('round-life 进一法结论', () => {

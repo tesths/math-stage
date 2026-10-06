@@ -5,6 +5,7 @@
 import { computed } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { toFixed2 } from '@/lib/engine/math'
+import { fractionCount, fractionDecimal, fractionText, snapUpToMultiple, unitFractionSum } from '@/lib/labs/fractions'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -14,8 +15,9 @@ const kind = computed(() => props.lab.kind)
 const total = computed(() => props.values.total ?? 45)
 const fn = computed(() => Math.round(props.values.fn ?? 2))
 const fd = computed(() => Math.round(props.values.fd ?? 5))
-const boys = computed(() => (total.value * fn.value) / fd.value)
-const girls = computed(() => total.value - boys.value)
+const boysCount = computed(() => fractionCount(total.value, fn.value, fd.value))
+const boys = computed(() => Math.round(boysCount.value.value * 100) / 100)
+const girls = computed(() => Math.round((total.value - boys.value) * 100) / 100)
 
 /* ---------- 比一个数多（少）几分之几 ---------- */
 const base = computed(() => props.values.base ?? 14)
@@ -37,7 +39,12 @@ const b = computed(() => Math.round(props.values.b ?? 3))
 const rateA = computed(() => 1 / a.value)
 const rateB = computed(() => 1 / b.value)
 const rateSum = computed(() => rateA.value + rateB.value)
-const hours = computed(() => 1 / rateSum.value)
+/** 中间量用最简分数表达，避免「1 ÷ 0.34 = 2.92」这种自相矛盾的算式 */
+const rateFraction = computed(() => unitFractionSum(a.value, b.value))
+const rateText = computed(() => fractionText(rateFraction.value[0], rateFraction.value[1]))
+const hoursFraction = computed(() => fractionDecimal(rateFraction.value[1], rateFraction.value[0], 2))
+const hoursText = computed(() => fractionText(rateFraction.value[1], rateFraction.value[0]))
+const hoursExact = computed(() => hoursFraction.value.exact || rateFraction.value[1] === 1)
 </script>
 
 <template>
@@ -58,6 +65,9 @@ const hours = computed(() => 1 / rateSum.value)
           男运动员 = {{ total }} × {{ fn }}/{{ fd }} = {{ toFixed2(boys) }} 人
           <br />
           女运动员 = {{ total }} - {{ toFixed2(boys) }} = <b>{{ toFixed2(girls) }} 人</b>
+        </p>
+        <p v-if="!boysCount.integral" class="seg-warn">
+          人数必须是整数：{{ total }} 不是 {{ fd }} 的倍数，算出 {{ toFixed2(boysCount.value) }} 人。把总人数调成 {{ fd }} 的倍数（如 {{ snapUpToMultiple(total, fd) }} 人）才合适。
         </p>
       </div>
     </template>
@@ -124,15 +134,15 @@ const hours = computed(() => 1 / rateSum.value)
           <div class="work-part">
             <span class="wp-name">合作效率叠加</span>
             <div class="wp-track combined">
-              <div class="wp-fill sum" :style="{ width: `${rateSum * 100}%` }">{{ toFixed2(rateSum) }}</div>
+              <div class="wp-fill sum" :style="{ width: `${rateSum * 100}%` }">{{ rateText }}</div>
             </div>
-            <span class="wp-rate">1/{{ a }} + 1/{{ b }} = {{ toFixed2(rateSum) }}</span>
+            <span class="wp-rate">1/{{ a }} + 1/{{ b }} = {{ rateText }}（≈{{ toFixed2(rateSum) }}）</span>
           </div>
         </div>
         <p class="seg-result">
-          合作每小时完成 {{ toFixed2(rateSum) }}，把总工作量 1 分成每小时一小段：
+          合作每小时完成 1/{{ a }} + 1/{{ b }} = {{ rateText }}，把总工作量 1 按这个效率分：
           <br />
-          合作时间 = 1 ÷ {{ toFixed2(rateSum) }} = <b>{{ toFixed2(hours) }} 小时</b>
+          合作时间 = 1 ÷ {{ rateText }} = <b>{{ hoursText }} 小时{{ hoursExact ? '' : ` ≈ ${hoursFraction.text} 小时` }}</b>
         </p>
       </div>
     </template>
@@ -185,6 +195,17 @@ const hours = computed(() => 1 / rateSum.value)
 .seg-part.girls {
   background: color-mix(in srgb, var(--ui-primary) 40%, white);
   color: var(--ui-text-highlighted);
+}
+.seg-warn {
+  margin-top: 0.35rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 14%, var(--ui-bg));
+  color: #92400e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  text-align: center;
+  max-width: 34rem;
 }
 .seg-result {
   font-size: 0.95rem;

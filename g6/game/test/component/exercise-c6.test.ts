@@ -106,6 +106,88 @@ describe('ExerciseC6Lab（六 放大与缩小 · 练习题）', () => {
   })
 })
 
+describe('ExerciseC6Lab · 过程态：一格一格放大，看边长 ×k 时面积 ×k²', () => {
+  it('ex-c6-scale-area 过程态：默认最完整态，退回 1× 后逐级放大回原位', async () => {
+    const lab = findLabById('g6-c6-ex-scale-area')!
+    const wrapper = mount(ExerciseC6Lab, {
+      props: { lab, values: { a: 2, n: 3, d: 2, trapTop: 4, trapBottom: 8, trapHeight: 6 } },
+    })
+
+    // 初始态：最完整（边长 ×3，面积 18 格² → 108px），阶梯柱 3 根且第 3 根高亮
+    expect(wrapper.findAll('.sa-step-col')).toHaveLength(3)
+    expect(wrapper.find('.sa-step-col.is-current').exists()).toBe(true)
+    expect(wrapper.find('.sa-bar-scaled').attributes('width')).toBe('108')
+    expect(wrapper.text()).toContain('最完整态')
+    expect(wrapper.text()).toContain('面积格子数 ×9（边长 ×3）')
+
+    // 回到 1×：放大图缩回原图大小（与原图同尺寸、只是平移 160px）
+    const back = wrapper.findAll('button').find((b) => b.text().includes('回到 1×'))!
+    expect(back).toBeTruthy()
+    await back.trigger('click')
+    expect(wrapper.find('.sa-tri-scaled.is-origin-step').exists()).toBe(true)
+    expect(wrapper.find('.sa-tri-scaled').attributes('d')).toBe('M 190 168 L 210 168 L 190 148 Z')
+    expect(wrapper.find('.sa-bar-scaled').attributes('width')).toBe('12')
+    expect(wrapper.text()).toContain('第 1 级')
+    expect(wrapper.text()).toContain('1 × 1 = 1 倍')
+
+    // 逐级放大：边长 ×2 → 面积 8 格²（4 倍）；再放大一级 → 18 格²（9 倍）
+    const grow = wrapper.findAll('button').find((b) => b.text().includes('再放大 1 倍'))!
+    await grow.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).toContain('第 2 级')
+    expect(wrapper.find('.sa-tri-scaled').attributes('d')).toBe('M 190 168 L 230 168 L 190 128 Z')
+    expect(wrapper.find('.sa-bar-scaled').attributes('width')).toBe('48')
+
+    await grow.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.sa-tri-scaled.is-origin-step').exists()).toBe(false)
+    expect(wrapper.find('.sa-bar-scaled').attributes('width')).toBe('108')
+    expect(wrapper.text()).toContain('最完整态')
+    // 已到位：再点也不再放大（宽度不变）
+    await grow.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.sa-bar-scaled').attributes('width')).toBe('108')
+  })
+})
+
+describe('ExerciseC6Lab · 过程态：先算实际距离，再揭示换画到 A 图', () => {
+  it('ex-c6-two-maps 过程态：默认两步同屏，退到第 1 步再揭示第 2 步', async () => {
+    const lab = findLabById('g6-c6-ex-two-maps')!
+    const wrapper = mount(ExerciseC6Lab, { props: { lab, values: { denA: 5000, denB: 2000, cm: 2, cmA: 3 } } })
+
+    // 初始态：最完整的两步同屏（A 图那一段 0.8 厘米 → 40px，x2 = 80）
+    expect(wrapper.find('.tm-stage.tm-step-one').exists()).toBe(false)
+    expect(wrapper.find('.tm-a-seg').exists()).toBe(true)
+    expect(wrapper.find('.tm-seg-a-cmp').attributes('x2')).toBe('80')
+    expect(wrapper.find('.tm-flow').text()).toContain('A 图 0.8 厘米')
+    expect(wrapper.text()).toContain('两步都亮着')
+
+    // 第 1 步：只保留「图上 × 分母 ÷ 100」，A 图那一段与换画结论先藏起来
+    const step1 = wrapper.findAll('button').find((b) => b.text().includes('先只看第 1 步'))!
+    expect(step1).toBeTruthy()
+    await step1.trigger('click')
+    expect(wrapper.find('.tm-stage.tm-step-one').exists()).toBe(true)
+    expect(wrapper.find('.tm-a-seg').exists()).toBe(false)
+    expect(wrapper.find('.tm-seg-a-cmp').exists()).toBe(false)
+    expect(wrapper.find('.tm-seg-hint').exists()).toBe(true)
+    expect(wrapper.find('.tm-flow').text()).toContain('× 2000')
+    expect(wrapper.find('.tm-flow').text()).toContain('÷ 100')
+    expect(wrapper.find('.tm-flow').text()).toContain('40 米')
+    expect(wrapper.find('.tm-flow').text()).not.toContain('A 图 0.8 厘米')
+    expect(wrapper.text()).not.toContain('0.8')
+    expect(wrapper.text()).toContain('第 1 步')
+
+    // 第 2 步：换画换算重新出现，回到初始的最完整态
+    const step2 = wrapper.findAll('button').find((b) => b.text().includes('揭示第 2 步'))!
+    await step2.trigger('click')
+    expect(wrapper.find('.tm-stage.tm-step-one').exists()).toBe(false)
+    expect(wrapper.find('.tm-seg-a-cmp').attributes('x2')).toBe('80')
+    expect(wrapper.find('.tm-flow').text()).toContain('÷ 5000')
+    expect(wrapper.find('.tm-flow').text()).toContain('A 图 0.8 厘米')
+    expect(wrapper.text()).toContain('0.8')
+  })
+})
+
 describe('computeC6（六 放大与缩小 · 练习题求值）', () => {
   it('ex-c6-scale-area：放大 n 倍面积是 n² 倍、缩小 d 倍面积是 1/d²', () => {
     const r = computeC6('ex-c6-scale-area', { a: 2, n: 3, d: 2, trapTop: 4, trapBottom: 8, trapHeight: 6 })
