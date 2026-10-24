@@ -6,6 +6,7 @@ import type { LabDef, ParamValues } from '@data/schema/lab'
 import { labComponentFor } from '@/lib/labs/registry'
 import { computeLab } from '@/lib/labs/compute'
 import { playClick } from '@/lib/sound'
+import ConceptTip from '@shared/components/ConceptTip.vue'
 
 const route = useRoute()
 const labId = computed(() => String(route.params.id))
@@ -173,6 +174,8 @@ watch(labId, () => {
               <p class="text-xs text-(--ui-text-muted)">{{ lab.formula }}</p>
               <p class="mt-1 text-3xl font-bold text-(--ui-primary)">{{ result.text }}</p>
             </div>
+
+            <ConceptTip :tip="lab.tip" :page="lab.page" :source="lab.source" />
 
             <UButton size="sm" variant="outline" color="neutral" icon="i-heroicons-arrow-path" @click="resetParams">
               重置参数

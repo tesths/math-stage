@@ -2,13 +2,35 @@
 /**
  * 方向 Lab：东、南、西、北方向板（面向某个方向，观察前后左右）
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { DIRECTIONS, leftOf, oppositeOf, rightOf } from '@/lib/engine/math'
+import { turnRight } from '@/lib/labs/process'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
+const emit = defineEmits<{ acted: [] }>()
 
-const face = computed(() => Math.round(props.values.face ?? 0) % 4)
+/** 过程态：从「开始时的朝向」向右转了几次（每次 90°） */
+const turned = ref(0)
+const startFace = computed(() => Math.round(props.values.face ?? 0) % 4)
+const face = computed(() => {
+  let f = startFace.value
+  for (let i = 0; i < turned.value; i++) f = turnRight(f)
+  return f
+})
+/** 转过的路线：东→南→西→北 */
+const trail = computed(() => Array.from({ length: turned.value + 1 }, (_, i) => {
+  let f = startFace.value
+  for (let j = 0; j < i; j++) f = turnRight(f)
+  return DIRECTIONS[f]!
+}))
+function turnOnce() {
+  turned.value = (turned.value + 1) % 4
+  emit('acted')
+}
+watch(startFace, () => {
+  turned.value = 0
+})
 const front = computed(() => DIRECTIONS[face.value]!)
 const back = computed(() => DIRECTIONS[oppositeOf(face.value)]!)
 const left = computed(() => DIRECTIONS[leftOf(face.value)]!)
@@ -82,10 +104,41 @@ function arrowHead(d: Dir): string {
       </span>
     </div>
     <p class="dir-line-text">面向{{ front }} → 后{{ back }} · 左{{ left }} · 右{{ right }}</p>
+    <div class="step-bar">
+      <button type="button" class="step-btn" data-test="turn-once" @click="turnOnce">转一转</button>
+      <span class="step-say" data-test="turn-say">
+        向右转了 {{ turned }} 次：{{ trail.join(' → ') }}
+        <template v-if="turned > 0">；面向{{ front }}，左手指向{{ left }}、右手指向{{ right }}</template>
+        <template v-else>（点「转一转」，每转一次方向就顺时针换一个）</template>
+      </span>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.step-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.step-btn {
+  border: 1px solid var(--ui-primary);
+  background: var(--ui-bg);
+  color: var(--ui-primary);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.22rem 0.9rem;
+  cursor: pointer;
+}
+.step-say {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  max-width: 22rem;
+  line-height: 1.4;
+}
 .dir-wrap {
   display: flex;
   flex-direction: column;

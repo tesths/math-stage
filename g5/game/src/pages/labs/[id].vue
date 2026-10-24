@@ -3,6 +3,8 @@ import { computed, reactive, ref, watch } from 'vue'
 import { animate } from 'animejs'
 import { findLabById, labsOfChapter, chapters } from '@data'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import ParamControl from '@/components/lab/ParamControl.vue'
+import ConceptTip from '@shared/components/ConceptTip.vue'
 import { labComponentFor } from '@/lib/labs/registry'
 import { computeLab } from '@/lib/labs/compute'
 import { playClick } from '@/lib/sound'
@@ -74,7 +76,12 @@ function goNext() {
   else void navigateTo(`/units/${lab.value!.chapter}`)
 }
 
-watch(labId, () => {
+watch(labId, (now, prev) => {
+  // 水合期 `route.params.id` 会先空、后到：这一次不是「换了一道题」，
+  // 绝不能 bump shapeKey —— 否则客户端挂载后整块 Lab 组件被重建，
+  // 学生/截图脚本在挂载后 1 秒内点出的过程态会被无声清回初始态
+  // （第 4 轮实测：g6-c4-ex-football-ratio 单次点击触发两次，随后组件重建，-act 与初始态逐字节相同）。
+  if (!prev || prev === now) return
   for (const p of lab.value!.params) values[p.key] = p.default
   if (lab.value!.fixed) for (const [k, v] of Object.entries(lab.value!.fixed)) values[k] = v
   shapeKey.value++
@@ -148,26 +155,14 @@ watch(labId, () => {
 
           <!-- 右侧：滑块 + 结果 -->
           <div class="flex flex-col gap-4">
-            <div v-for="p in lab.params" :key="p.key" class="param-block">
-              <div class="mb-1 flex items-baseline justify-between">
-                <label class="text-sm font-medium text-(--ui-text-highlighted)">
-                  {{ p.label }} <span class="text-xs text-(--ui-text-muted)">{{ p.unit }}</span>
-                </label>
-                <strong class="text-(--ui-primary)">{{ values[p.key] }}</strong>
-              </div>
-              <input
-                v-model.number="values[p.key]"
-                type="range"
-                class="lab-range"
-                :min="p.min"
-                :max="p.max"
-                :step="p.step"
-                @input="playClick"
-              />
-              <div class="mt-0.5 flex justify-between text-[11px] text-(--ui-text-muted)">
-                <span>{{ p.min }}</span><span>{{ p.max }}</span>
-              </div>
-            </div>
+            <ParamControl
+              v-for="p in lab.params"
+              :key="p.key"
+              :param="p"
+              :model-value="values[p.key] ?? p.default"
+              @update:model-value="(v: number) => (values[p.key] = v)"
+              @pick="playClick"
+            />
 
             <div ref="resultBoxRef" class="result-box">
               <p class="text-xs text-(--ui-text-muted)">{{ lab.formula }}</p>
@@ -198,6 +193,11 @@ watch(labId, () => {
             💡 {{ result.conclusion }}
           </p>
         </div>
+
+        <!-- 重点概念：数据层 tip，默认收起（先动手、后看概念） -->
+        <div class="mt-4">
+          <ConceptTip :tip="lab.tip" :page="lab.page" :source="lab.source" />
+        </div>
       </UCard>
     </div>
 
@@ -216,11 +216,6 @@ watch(labId, () => {
 </template>
 
 <style scoped>
-.lab-range {
-  width: 100%;
-  accent-color: var(--ui-primary);
-  cursor: pointer;
-}
 .result-box {
   border: 1px dashed var(--ui-border-accented);
   border-radius: var(--ui-radius-lg);

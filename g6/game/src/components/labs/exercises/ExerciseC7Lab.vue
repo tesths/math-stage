@@ -371,7 +371,7 @@ const OBS_H_BOUNDS = Array.from({ length: O_ROWS + 1 }, (_, i) => O_BOTTOM - i *
             <UButton size="sm" color="primary" :disabled="rWalked >= routeWalking" @click="routeNextStep">
               走下一格
             </UButton>
-            <UButton size="sm" variant="outline" color="neutral" :disabled="rWalked === 0" @click="routeResetStep">
+            <UButton size="sm" variant="outline" color="neutral" :disabled="rWalked === 0" @click="routeResetStep" data-act>
               回到起点
             </UButton>
           </div>

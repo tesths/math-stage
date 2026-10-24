@@ -18,7 +18,7 @@ export const c5Labs: LabDef[] = [
       { key: 'grape', label: '葡萄', min: 0, max: 30, step: 1, default: 2, unit: '人' },
     ],
     formula: '合计 = 各项人数之和',
-    tip: '一个"正"字是 5 画，每画表示 1 人。统计表能清楚地看出喜欢各种水果的人数。',
+    tip: '一个「正」字 5 画，每画表示 1 人；用「正」字整理数据又快又不容易漏。易错点：把「正」字当成 4 画。',
   },
   {
     id: 'g3-c5-stat',
@@ -36,6 +36,6 @@ export const c5Labs: LabDef[] = [
       { key: 'detective', label: '侦探童话', min: 0, max: 20, step: 1, default: 8, unit: '人' },
     ],
     formula: '合计 = 四类人数之和',
-    tip: '正字每 5 画为一个人。条形统计图的高矮能直观比较各类人数多少。',
+    tip: '统计表能看清各项人数，条形统计图能一眼比出多少；合计 = 各项之和。易错点：合计只加了几项就填。',
   },
 ]

@@ -289,7 +289,7 @@ const footStepNote = computed(() => {
         </div>
 
         <div class="ex-c4-foot-steps">
-          <UButton size="sm" variant="outline" color="neutral" @click="nextFootStep">
+          <UButton size="sm" variant="outline" color="neutral" data-act @click="nextFootStep">
             下一步：{{ nextFootLabel }}
           </UButton>
           <span class="ex-c4-foot-note">{{ footStepNote }}</span>

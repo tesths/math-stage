@@ -2,24 +2,20 @@
 /**
  * 周长与面积的变化 Lab：面积一定时拼长方形，观察周长变化
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
-const rows = computed(() => Math.round(props.values.rows ?? 4))
+const paramRows = computed(() => Math.round(props.values.rows ?? 4))
 const total = 36
-const cols = computed(() => total / rows.value)
-const perimeter = computed(() => (rows.value + cols.value) * 2)
-const cell = computed(() => {
-  const maxSide = Math.max(rows.value, cols.value)
-  return Math.min(28, 340 / maxSide)
-})
-const gridW = computed(() => cols.value * cell.value)
-const gridH = computed(() => rows.value * cell.value)
 
-/** 全部可能的拼法（用于对比展示） */
-const allCombos = computed(() => {
+/**
+ * 过程态：换一种拼法。面积一直是 36 平方厘米，但周长会变：
+ * 点按钮在"所有拼法"里换一种，方格真的重新排（L3），学生自己发现"越细长周长越长"。
+ */
+const comboIdx = ref(0)
+const allCombosRaw = computed(() => {
   const out: { r: number; c: number; peri: number }[] = []
   for (let r = 1; r <= total; r++) {
     if (total % r !== 0) continue
@@ -29,6 +25,36 @@ const allCombos = computed(() => {
   }
   return out.sort((x, y) => x.peri - y.peri)
 })
+/** 参数选中的拼法作为起始，之后可以继续换 */
+const activeCombo = computed(() => {
+  const list = allCombosRaw.value
+  const idx = comboIdx.value % Math.max(1, list.length)
+  return list[idx] ?? { r: paramRows.value, c: total / paramRows.value, peri: 0 }
+})
+function nextCombo() {
+  comboIdx.value = (comboIdx.value + 1) % Math.max(1, allCombosRaw.value.length)
+}
+const rows = computed(() => activeCombo.value.r)
+const cols = computed(() => activeCombo.value.c)
+const perimeter = computed(() => (rows.value + cols.value) * 2)
+const cell = computed(() => {
+  const maxSide = Math.max(rows.value, cols.value)
+  return Math.min(28, 340 / maxSide)
+})
+const gridW = computed(() => cols.value * cell.value)
+const gridH = computed(() => rows.value * cell.value)
+
+/** 全部可能的拼法（用于对比展示，与上面的列表同一份数据） */
+const allCombos = computed(() => allCombosRaw.value)
+/** 参数选中的长方形作为起点 */
+watch(
+  paramRows,
+  (r) => {
+    const idx = allCombosRaw.value.findIndex((c) => c.c === Math.max(r, total / r) && total % r === 0)
+    comboIdx.value = idx >= 0 ? idx : 0
+  },
+  { immediate: true },
+)
 const minPerimeter = computed(() => Math.min(...allCombos.value.map((c) => c.peri)))
 const maxPerimeter = computed(() => Math.max(...allCombos.value.map((c) => c.peri)))
 function miniRectStyle(c: { r: number; c: number }) {
@@ -51,6 +77,13 @@ function perimeterWidth(p: number): number {
       }"
     >
       <span v-for="i in total" :key="i" class="grid-cell" />
+    </div>
+
+    <div class="op-bar">
+      <button type="button" class="op-btn primary" data-test="combo-next" @click="nextCombo">
+        试一试：换一种拼法（第 {{ (comboIdx % allCombos.length) + 1 }} / {{ allCombos.length }} 种）
+      </button>
+      <span class="combo-state">同样 36 平方厘米，周长是 {{ perimeter }} 厘米</span>
     </div>
 
     <div class="formula-row">
@@ -91,6 +124,32 @@ function perimeterWidth(p: number): number {
 </template>
 
 <style scoped>
+.op-bar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.op-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  cursor: pointer;
+}
+.op-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.combo-state {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
 .puzzle-wrap {
   display: flex;
   flex-direction: column;

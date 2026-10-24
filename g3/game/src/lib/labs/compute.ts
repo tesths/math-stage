@@ -11,6 +11,8 @@ import {
   toFixed2,
   type MixOp,
 } from '@/lib/engine/math'
+import { estimateEnough, intervalCounts, stonesToMatch, verticalMul } from '@/lib/labs/arith'
+import { BALLOT_BOX, VIEW_SHAPES, gridText, viewGrids } from '@/lib/labs/views'
 
 export interface LabStep {
   expr: string
@@ -30,29 +32,6 @@ export interface LabResult {
 
 function fmt(v: number): string {
   return toFixed2(Math.round(v * 100000) / 100000)
-}
-
-/** 一位数乘法竖式的进位过程（按位返回步骤） */
-function mulSteps(
-  digits: number[],
-  multi: number,
-): { steps: LabStep[]; product: number } {
-  const n = digits.length
-  const parts: { digit: number; value: number }[] = []
-  let carry = 0
-  for (let i = n - 1; i >= 0; i--) {
-    const prod = digits[i]! * multi + carry
-    const digit = prod % 10
-    parts.push({ digit, value: digit * 10 ** (n - 1 - i) })
-    carry = Math.floor(prod / 10)
-  }
-  if (carry > 0) parts.push({ digit: carry, value: carry * 10 ** n })
-  const product = parts.reduce((acc, p) => acc + p.value, 0)
-  const stepStrs = parts.map((p, i) => ({
-    expr: `第 ${i + 1} 位相乘得 ${fmt(p.digit)}${p.value >= 10 ? `（${fmt(p.value)}）` : ''}`,
-    result: `这一位写 ${fmt(p.digit)}`,
-  }))
-  return { steps: stepStrs, product }
 }
 
 /** 除法竖式过程（整除与有余数） */
@@ -192,18 +171,18 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       if (isEstimate) {
         const price = p.price ?? p.base ?? 40
         const money = p.money ?? 0
-        const rounded = Math.round(price / 10) * 10
-        const est = rounded * count
-        const enough = est <= money
+        const est = estimateEnough(price, count, money)
+        const verdictWord =
+          est.verdict === 'enough' ? '一定够买' : est.verdict === 'not-enough' ? '一定不够买' : '估算不能确定，要精算'
         return {
-          value: est,
-          text: `${rounded} × ${count} = ${est}，${enough ? '够买' : '不够'}`,
+          value: est.exact,
+          text: `${verdictWord}（精算 ${fmt(est.exact)} 元，带 ${fmt(money)} 元）`,
           steps: [
-            { expr: `把 ${fmt(price)} 看作整十数`, result: `${fmt(rounded)}` },
-            { expr: `${fmt(rounded)} × ${fmt(count)} = ${fmt(est)}`, result: `${fmt(est)} 元` },
-            { expr: `带的钱 ${fmt(money)} 元`, result: `${enough ? '够买' : '不够买'}（${fmt(price)} × ${fmt(count)} ${enough ? '≤' : '>'} ${fmt(money)}）` },
+            { expr: `估大：把 ${fmt(price)} 看作整十数 ${fmt(est.upperPrice)}`, result: `${fmt(est.upperPrice)} × ${fmt(count)} = ${fmt(est.upper)} 元` },
+            { expr: `估小：把 ${fmt(price)} 看作整十数 ${fmt(est.lowerPrice)}`, result: `${fmt(est.lowerPrice)} × ${fmt(count)} = ${fmt(est.lower)} 元` },
+            { expr: `带着 ${fmt(money)} 元去比`, result: `${verdictWord}（精算 ${fmt(price)} × ${fmt(count)} = ${fmt(est.exact)} 元）` },
           ],
-          conclusion: `估算时把单价看作接近的整十数：${fmt(price)} ≈ ${fmt(rounded)}，${fmt(rounded)} × ${fmt(count)} = ${fmt(est)}，所以${enough ? '够买' : '不够买'}。`,
+          conclusion: est.text,
         }
       }
       const places = base >= 100 ? '百' : base >= 10 ? '十' : '一'
@@ -222,71 +201,89 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
     case 'mul-pen': {
       const multi = Math.round(p.multi ?? 3)
       const hasTens = p.tens !== undefined
-      const digits = hasTens ? [p.tens ?? 1, p.ones ?? 0] : [p.h ?? 1, p.t ?? 0, p.o ?? 0]
+      const midZero = p.mid !== undefined
+      const digits = hasTens
+        ? [p.tens ?? 1, p.ones ?? 0]
+        : midZero
+          ? [p.h ?? 1, p.mid ?? 0, p.o ?? 0]
+          : [p.h ?? 1, p.t ?? 0, p.o ?? 0]
       const num = digits.reduce((acc, d) => acc * 10 + d, 0)
-      const { steps, product } = mulSteps(digits, multi)
+      const { notes, product } = verticalMul(digits, multi)
       return {
         value: product,
         text: `${fmt(num)} × ${fmt(multi)} = ${fmt(product)}`,
         steps: [
-          { expr: `用一位数依次乘各数位`, result: digits.map((d) => `${fmt(d)} × ${fmt(multi)}`).join('，') },
-          ...steps,
+          { expr: `从个位乘起：${digits.map((d) => `${fmt(d)} × ${fmt(multi)}`).join('、')}`, result: `满几十就向前一位进几` },
+          ...notes.map((n) => ({ expr: n, result: '逐位写积' })),
           { expr: `最后结果`, result: `${fmt(num)} × ${fmt(multi)} = ${fmt(product)}` },
         ],
-        conclusion: `笔算 ${fmt(num)} × ${fmt(multi)}：从个位乘起，满几十向前一位进几，结果是 ${fmt(product)}。`,
+        conclusion: `笔算 ${fmt(num)} × ${fmt(multi)}：从个位乘起，每一步都要先加上进上来的数，满几十向前一位进几，结果是 ${fmt(product)}。`,
       }
     }
     case 'mul-zero': {
       const multi = Math.round(p.multi ?? 4)
-      const num = (p.h ?? 1) * 100 + (p.o ?? 2)
-      const product = num * multi
+      const mid = p.mid ?? Math.round((p.t ?? 0))
+      const num = (p.h ?? 1) * 100 + mid * 10 + (p.o ?? 2)
+      const digits = [p.h ?? 1, mid, p.o ?? 2]
+      const { notes, product } = verticalMul(digits, multi)
       return {
         value: product,
         text: `${fmt(num)} × ${fmt(multi)} = ${fmt(product)}`,
         steps: [
-          { expr: `十位是 0：0 × ${fmt(multi)}`, result: `= 0，积的十位写 0` },
-          { expr: `先算 ${fmt(p.h ?? 1)} × ${fmt(multi)} = ${fmt((p.h ?? 1) * multi)}`, result: `再算个位 ${fmt(p.o ?? 0)} × ${fmt(multi)} = ${fmt((p.o ?? 0) * multi)}` },
+          { expr: `十位是 ${fmt(mid)}：${fmt(mid)} × ${fmt(multi)}${mid === 0 ? ' = 0' : ''}`, result: mid === 0 ? '积的十位写 0 占位' : `积的十位写 ${fmt((mid * multi) % 10)}` },
+          ...notes.map((n) => ({ expr: n, result: '逐位写积' })),
           { expr: `${fmt(num)} × ${fmt(multi)}`, result: `${fmt(product)}` },
         ],
-        conclusion: `中间有 0 的乘法：0 乘任何数都得 0，积的十位直接写 0，再继续乘其他数位，结果是 ${fmt(product)}。`,
+        conclusion:
+          (p.o ?? 0) === 0
+            ? `末尾有 0 的乘法：先算 ${fmt(Math.floor(num / 10))} × ${fmt(multi)} = ${fmt(Math.floor(num / 10) * multi)}，再在积的末尾添上 0，得 ${fmt(product)}。`
+            : `中间有 0 的乘法：0 乘任何数都得 0，积的十位直接写 0，再继续乘其他数位，结果是 ${fmt(product)}。`,
       }
     }
 
     /* ============ 曹冲称象的故事 ============ */
     case 'weight': {
       const value = p.value ?? 3
-      const unitIdx = Math.round(p.unit ?? 0)
+      // unit 参数 = "换算成哪个单位"：0 克 / 1 千克 / 2 吨
+      const target = Math.round(p.unit ?? 1)
       const grams = value * 1000
-      const table: [string, string][] =
-        unitIdx === 0
-          ? [['千克', `${value} 千克 = ${fmt(grams)} 克`], ['吨', `${fmt(value / 1000)} 吨`]]
-          : unitIdx === 1
-            ? [['克', `${fmt(grams)} 克`], ['吨', `${fmt(value / 1000)} 吨`]]
-            : [['克', `${fmt(grams)} 克`], ['千克', `${fmt(value)} 千克`]]
+      const targetValue = target === 0 ? grams : target === 1 ? value : value / 1000
+      const targetUnit = target === 0 ? '克' : target === 1 ? '千克' : '吨'
       return {
-        value: grams,
-        text: `${value} 千克 = ${fmt(grams)} 克`,
+        value: targetValue,
+        text: `${fmt(value)} 千克 = ${fmt(targetValue)} ${targetUnit}`,
         steps: [
           { expr: `1 千克 = 1000 克`, result: `${fmt(value)} 千克 = ${fmt(grams)} 克` },
           { expr: `1 吨 = 1000 千克`, result: `${fmt(value)} 千克 = ${fmt(value / 1000)} 吨` },
-          ...table.map(([k, v]) => ({ expr: k, result: v })),
+          {
+            expr: `换算成${targetUnit}`,
+            result:
+              target === 0
+                ? `${fmt(value)} × 1000 = ${fmt(grams)} 克`
+                : target === 1
+                  ? `就是 ${fmt(value)} 千克（不用换算）`
+                  : `${fmt(value)} ÷ 1000 = ${fmt(value / 1000)} 吨`,
+          },
         ],
-        conclusion: `相邻质量单位的进率都是 1000：${value} 千克 = ${fmt(grams)} 克 = ${fmt(value / 1000)} 吨。`,
+        conclusion: `相邻质量单位的进率都是 1000：${fmt(value)} 千克 = ${fmt(grams)} 克 = ${fmt(value / 1000)} 吨，所以要换算成${targetUnit}，结果是 ${fmt(targetValue)} ${targetUnit}。`,
       }
     }
     case 'equivalent': {
-      const stones = Math.round(p.stones ?? 5)
-      const each = p.each ?? 40
-      const total = stones * each
+      // 大象质量是先已知的条件（课本：称象）；石头一块一块加上去逼近它，不能反过来定义象重
+      const mass = Math.round(p.mass ?? 2000)
+      const each = Math.round(p.each ?? 200)
+      const match = stonesToMatch(mass, each)
       return {
-        value: total,
-        text: `${fmt(stones)} 块 × ${fmt(each)} 千克 = ${fmt(total)} 千克`,
+        value: match.count,
+        text: `大象 ${fmt(mass)} 千克，每块石头 ${fmt(each)} 千克 → 需要 ${fmt(match.count)} 块`,
         steps: [
-          { expr: `称出每块石头的质量`, result: `每块 ${fmt(each)} 千克` },
-          { expr: `石头质量相加`, result: `${Array.from({ length: stones }, () => fmt(each)).join(' + ')} = ${fmt(total)} 千克` },
-          { expr: `大象质量 = 石头总质量`, result: `大象约 ${fmt(total)} 千克` },
+          { expr: `每块石头 ${fmt(each)} 千克，大象 ${fmt(mass)} 千克`, result: `一块一块地加，直到水面回到刻线` },
+          { expr: `${fmt(match.count)} 块石头` , result: `${fmt(match.count)} × ${fmt(each)} = ${fmt(match.total)} 千克` },
+          { expr: `和刻线比一比`, result: match.exact ? `正好一样重，大象 ${fmt(mass)} 千克` : `差 ${fmt(match.gap)} 千克，得再换几块小石头` },
         ],
-        conclusion: `小船下沉到相同位置，说明石头的总质量等于大象的质量：${fmt(stones)} × ${fmt(each)} = ${fmt(total)} 千克。`,
+        conclusion: match.exact
+          ? `船下沉到同一刻线说明质量相等：${fmt(match.count)} 块 × ${fmt(each)} 千克 = ${fmt(match.total)} 千克，就是大象的质量。`
+          : `${fmt(match.count)} 块石头共 ${fmt(match.total)} 千克，比大象多 ${fmt(match.gap)} 千克；石块质量要再凑得准一些。`,
       }
     }
 
@@ -509,18 +506,28 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
     case 'interval': {
       const count = Math.round(p.count ?? 6)
       const end = Math.round(p.end ?? 0)
-      // end: 0=两端都是□ 1=两端都是○ 2=两端不同
-      const other = end === 2 ? count : count - 1
-      const endText = ['两端都是□', '两端都是○', '两端各一个'][end]
+      // end: 0=两端都是□ 1=两端各一个（两端不同） 2=两端都是○
+      const endText = ['两端都是□', '两端各一个', '两端都是○'][end] ?? '两端都是□'
+      const counts = intervalCounts(count, end as 0 | 1 | 2)
+      const square = end === 2 ? counts.other : counts.endObject
+      const circle = end === 2 ? counts.endObject : counts.other
+      const diff = Math.abs(square - circle)
       return {
-        value: other,
-        text: `${endText}时：□ ${fmt(count)} 个，○ ${fmt(other)} 个`,
+        value: circle,
+        text: `${endText}时：□ ${fmt(square)} 个，○ ${fmt(circle)} 个`,
         steps: [
           { expr: `一组一组圈一圈`, result: `□○ | □○ | …` },
-          { expr: `两端相同`, result: `□比○多 1 个（${fmt(count)} − ${fmt(other)} = 1）` },
-          { expr: `两端不同`, result: `两种物体数量相等` },
+          { expr: `排成的两端`, result: endText },
+          {
+            expr: counts.sameEnds ? `两端相同` : `两端不同`,
+            result: counts.sameEnds
+              ? `两端那种物体多 1 个（${fmt(Math.max(square, circle))} 与 ${fmt(Math.min(square, circle))} 相差 ${fmt(diff)}）`
+              : `两种物体一样多（都是 ${fmt(count)} 个）`,
+          },
         ],
-        conclusion: `间隔排列的两种物体：两端相同时差 1 个，两端不同时数量相等。`,
+        conclusion: counts.sameEnds
+          ? `两端相同时，两端的那种物体比另一种多 1 个：□ ${fmt(square)} 个，○ ${fmt(circle)} 个。`
+          : `两端不同时，两种物体数量相等：□ ${fmt(square)} 个，○ ${fmt(circle)} 个。`,
       }
     }
 
@@ -595,41 +602,36 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
 
     /* ============ 八 观察物体（二） ============ */
     case 'views': {
-      const shapes = [
-        { name: '6 个摆成长方体（1 行 6 个）', front: '6 个方格一排', right: '1 个方格', top: '6 个方格一排' },
-        { name: '6 个摆成长方体（2 行 3 个）', front: '3 个方格', right: '2 个方格', top: '3 × 2 方格' },
-        { name: '4 个摆成"L"形', front: '2 个方格', right: '3 个方格', top: '2 × 2 缺 1 格' },
-        { name: '4 个摆成"田"形', front: '2 个方格', right: '2 个方格', top: '2 × 2 方格' },
-      ]
-      const sel = Math.round(p.shape ?? 0) % shapes.length
-      const d = shapes[sel]!
+      const sel = Math.round(p.shape ?? 0) % VIEW_SHAPES.length
+      const shape = VIEW_SHAPES[sel]!
+      const grids = viewGrids(shape.cubes)
+      const front = gridText(grids.front)
+      const right = gridText(grids.right)
+      const top = gridText(grids.top)
       return {
         value: sel,
-        text: `${d.name}：前面 ${d.front}，右面 ${d.right}，上面 ${d.top}`,
+        text: `${shape.name}：前面 ${grids.front.cols}×${grids.front.rows}，右面 ${grids.right.cols}×${grids.right.rows}，上面 ${grids.top.cols}×${grids.top.rows}`,
         steps: [
-          { expr: `从前面看`, result: `${d.front}` },
-          { expr: `从右面看`, result: `${d.right}` },
-          { expr: `从上面看`, result: `${d.top}` },
+          { expr: `从前面看`, result: front },
+          { expr: `从右面看`, result: right },
+          { expr: `从上面看`, result: top },
         ],
-        conclusion: `从不同方向观察同一个物体，看到的图形可能不同。${d.name}：前面是${d.front}，右面是${d.right}，上面是${d.top}。`,
+        conclusion: `从不同方向观察同一个物体，看到的图形可能不同。${shape.name}：前面是 ${front}，右面是 ${right}，上面是 ${top}。`,
       }
     }
     case 'views3d': {
       const views = ['前面', '右面', '上面']
       const view = Math.round(p.view ?? 0)
-      const texts = [
-        '投票箱正面：看到长方形（正面）',
-        '投票箱右侧：看到较窄的长方形（侧面）',
-        '投票箱顶部：看到顶面形状',
-      ]
+      const grids = viewGrids(BALLOT_BOX)
+      const g = [grids.front, grids.right, grids.top][view] ?? grids.front
       return {
         value: view,
-        text: `从${views[view]}看：${texts[view]!}`,
+        text: `从${views[view]}看：${g.cols} 列 × ${g.rows} 行，共 ${g.cells.filter(Boolean).length} 个方格`,
         steps: [
           { expr: `观察方向`, result: `${views[view]}` },
-          { expr: `看到的图形`, result: `${texts[view]!}` },
+          { expr: `看到的图形`, result: gridText(g) },
         ],
-        conclusion: `从${views[view]}观察，看到的图形由物体在${views[view]}方向的投影决定。`,
+        conclusion: `从${views[view]}观察，看到的图形由物体在${views[view]}方向的投影决定：${gridText(g)}。`,
       }
     }
 

@@ -2,13 +2,26 @@
 /**
  * 面积单位换算 Lab：平方厘米 ↔ 平方分米 ↔ 平方米
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { deriveAreaUnitConversion } from '@/lib/labs/areaUnit'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
 const conversion = computed(() => deriveAreaUnitConversion(props.values))
+
+/**
+ * 过程态：一格一格铺满 100 个小正方形。
+ * 旧实现 100 个小格一次全亮，"1 平方分米 = 100 平方厘米"只能靠背；现在能数（L3）。
+ */
+const filled = ref(100)
+const rowsDone = computed(() => Math.floor(filled.value / 10))
+function fillNextRow() {
+  filled.value = filled.value >= 100 ? 10 : Math.min(100, filled.value + 10)
+}
+function fillAll() {
+  filled.value = 100
+}
 </script>
 
 <template>
@@ -29,7 +42,12 @@ const conversion = computed(() => deriveAreaUnitConversion(props.values))
             <span v-for="i in 10" :key="`left-${i}`" class="edge-cell" />
           </div>
           <div class="big-area">
-            <span v-for="i in 100" :key="`grid-${i}`" class="mini-cell" />
+            <span
+              v-for="i in 100"
+              :key="`grid-${i}`"
+              class="mini-cell"
+              :class="{ on: i <= filled }"
+            />
             <div class="area-badge">
               <strong>1 {{ conversion.bigUnit }}</strong>
               <small>10 × 10 = 100 个 1 {{ conversion.smallUnit }}</small>
@@ -44,6 +62,13 @@ const conversion = computed(() => deriveAreaUnitConversion(props.values))
         <span class="sample-tile" />
         <span class="sample-note">1 {{ conversion.smallUnit }}</span>
       </div>
+    </div>
+
+    <div class="fill-bar">
+      <button type="button" class="fill-btn primary" data-test="areaunit-next" @click="fillNextRow">
+        试一试：一排一排铺满（已铺 {{ filled }} / 100，共 {{ rowsDone }} 排）
+      </button>
+      <button type="button" class="fill-btn ghost" data-test="areaunit-all" @click="fillAll">铺满</button>
     </div>
 
     <div class="rule-line">
@@ -70,6 +95,34 @@ const conversion = computed(() => deriveAreaUnitConversion(props.values))
 </template>
 
 <style scoped>
+.fill-bar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.fill-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  cursor: pointer;
+}
+.fill-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.fill-btn.ghost {
+  color: var(--ui-text-muted);
+}
+.mini-cell.on {
+  background: color-mix(in srgb, var(--ui-primary) 45%, white);
+}
 .unit-wrap {
   display: flex;
   flex-direction: column;
@@ -306,7 +359,35 @@ const conversion = computed(() => deriveAreaUnitConversion(props.values))
 }
 
 @media (max-width: 640px) {
-  .unit-wrap {
+  .fill-bar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.fill-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  cursor: pointer;
+}
+.fill-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.fill-btn.ghost {
+  color: var(--ui-text-muted);
+}
+.mini-cell.on {
+  background: color-mix(in srgb, var(--ui-primary) 45%, white);
+}
+.unit-wrap {
     min-height: 320px;
   }
   .lesson-board {

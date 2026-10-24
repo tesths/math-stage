@@ -4,6 +4,7 @@
  */
 import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import { estimateEnough, verticalMul } from '@/lib/labs/arith'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -13,9 +14,17 @@ const kind = computed(() => props.lab.kind)
 const base = computed(() => props.values.base ?? props.values.price ?? 40)
 const count = computed(() => Math.round(props.values.count ?? 3))
 const isEstimate = computed(() => props.values.money !== undefined)
-const rounded = computed(() => Math.round(base.value / 10) * 10)
-const est = computed(() => rounded.value * count.value)
-const enough = computed(() => est.value <= (props.values.money ?? 0))
+const money = computed(() => props.values.money ?? 0)
+/** 估算三值判定：估大不超→一定够；估小已超→一定不够；其余不能靠估算下结论 */
+/** 过程态：估算三步（估大 → 估小 → 精算） */
+const estStep = ref(isEstimate.value ? 3 : 0)
+function nextEst() {
+  estStep.value = estStep.value >= 3 ? 1 : estStep.value + 1
+}
+const estimate = computed(() => estimateEnough(base.value, count.value, money.value))
+const verdictText = computed(() =>
+  estimate.value.verdict === 'enough' ? '一定够买' : estimate.value.verdict === 'not-enough' ? '一定不够买' : '估算不能确定，要精算',
+)
 
 /** 把整十整百数分解为数量单位：40 → { n: 4, unit: '十' } */
 const baseUnit = computed(() => {
@@ -25,6 +34,11 @@ const baseUnit = computed(() => {
 })
 
 const rodCount = computed(() => Math.min(baseUnit.value.n, 9))
+/** 过程态：口算的小棒一捆一捆地数 */
+const rodsShown = ref(rodCount.value)
+function nextRod() {
+  rodsShown.value = rodsShown.value >= rodCount.value ? 1 : rodsShown.value + 1
+}
 
 /* mul-pen */
 const multi = computed(() => Math.round(props.values.multi ?? 3))
@@ -37,59 +51,25 @@ const digits = computed(() => {
 const num = computed(() => digits.value.reduce((acc, d) => acc * 10 + d, 0))
 const product = computed(() => num.value * multi.value)
 
-/** 逐位乘积（从个位起），用于竖式展示 */
-const rows = computed(() => {
-  const out: { digit: number; carry: number; place: number }[] = []
-  let carry = 0
-  for (let i = digits.value.length - 1; i >= 0; i--) {
-    const prod = digits.value[i]! * multi.value + carry
-    out.push({ digit: prod % 10, carry: Math.floor(prod / 10), place: i })
-    carry = Math.floor(prod / 10)
-  }
-  if (carry > 0) out.push({ digit: carry, carry: 0, place: -1 })
-  return out.reverse()
-})
+/**
+ * 竖式的每一列、每一步都由 `verticalMul` 统一算出（与「分步思考」面板同一份文字）：
+ * 4 × 3 = 12 → 写 2 进 1 → 十位 1 × 3 + 进 1 = 4。
+ */
+const isZero = computed(() => props.values.mid !== undefined && Math.round(props.values.mid) === 0)
+const vm = computed(() => verticalMul(digits.value, multi.value))
+const cols = computed(() => vm.value.cols)
+const stepOrder = computed(() => vm.value.order)
+const stepNotes = computed(() => vm.value.notes.map((text, idx) => ({ idx, text })))
 
-/** 竖式每一行需要显示的进位提示 */
-const isZero = computed(() => props.values.mid !== undefined)
-
-/* ---------- 竖式逐步演示 ---------- */
-/** 列（从右往左）：每列 { digit, carryIn, carryOut, src, prod } */
-const cols = computed(() => {
-  const arr: { digit: number; carryIn: number; carryOut: number; src: number | null; prod: number }[] = []
-  let carry = 0
-  for (let i = digits.value.length - 1; i >= 0; i--) {
-    const src = digits.value[i]!
-    const prod = src * multi.value + carry
-    arr.unshift({ digit: prod % 10, carryIn: carry, carryOut: Math.floor(prod / 10), src, prod })
-    carry = Math.floor(prod / 10)
-  }
-  if (carry > 0) arr.unshift({ digit: carry, carryIn: carry, carryOut: 0, src: null, prod: carry })
-  return arr
-})
-/** 步骤顺序：从个位到高位，最后再写最左侧纯进位 */
-const stepOrder = computed(() => {
-  const order: number[] = []
-  for (let i = cols.value.length - 1; i >= 0; i--) {
-    if (cols.value[i]?.src !== null) order.push(i)
-  }
-  if (cols.value[0]?.src === null) order.push(0)
-  return order
-})
-/** 当前演示步骤（0 = 个位开始） */
+/** 当前演示步骤（0 = 从个位开始） */
 const cur = ref(0)
 const setStep = (i: number) => {
   cur.value = Math.min(Math.max(i, 0), Math.max(stepOrder.value.length - 1, 0))
 }
-const stepNotes = computed(() => {
-  return stepOrder.value.map((colIdx, idx) => {
-    const c = cols.value[colIdx]!
-    if (c.src === null) return { idx, text: `最左边写进位 ${c.carryIn}` }
-    const withCarry = c.carryIn > 0 ? ` + 进${c.carryIn}` : ''
-    const tail = c.carryOut > 0 ? `，向高一位进 ${c.carryOut}` : c.digit === 0 ? '，该位写 0' : ''
-    return { idx, text: `${c.src} × ${multi.value}${withCarry} = ${c.prod}，该位写 ${c.digit}${tail}` }
-  })
-})
+const nextStep = () => setStep(cur.value + 1)
+const prevStep = () => setStep(cur.value - 1)
+const resetSteps = () => setStep(0)
+
 const currentStep = computed(() => Math.min(cur.value, Math.max(stepOrder.value.length - 1, 0)))
 const activeNote = computed(() => stepNotes.value[currentStep.value])
 const activeCol = computed(() => stepOrder.value[currentStep.value] ?? cols.value.length - 1)
@@ -109,6 +89,17 @@ const carryBubble = (idx: number) => {
   const c = cols.value[idx]
   return c && c.src !== null ? c.carryIn : 0
 }
+/** 积的第 i 位对应哪一列（积可能比被乘数多一位，不能直接用 i） */
+const resultCol = (i: number) => cols.value.length - String(vm.value.product).length + i
+const resultStepPos = (i: number) => colStepPos(resultCol(i))
+/** 已经算出的积的位数（过程态：没算到的位不显示，避免一上来就剧透答案） */
+const shownResultCount = computed(() => {
+  let n = 0
+  for (let i = 0; i < String(vm.value.product).length; i++) {
+    if (resultStepPos(i) >= 0 && resultStepPos(i) <= currentStep.value) n++
+  }
+  return n
+})
 </script>
 
 <template>
@@ -117,11 +108,23 @@ const carryBubble = (idx: number) => {
     <template v-if="kind === 'mul-oral'">
       <template v-if="isEstimate">
         <div class="estimate-card">
-          <p class="est-line">单价 {{ base }} 元 ≈ 整十数 <b>{{ rounded }}</b> 元</p>
-          <p class="est-line">{{ rounded }} × {{ count }} = <b>{{ est }}</b> 元</p>
-          <p class="est-result" :class="enough ? 'ok' : 'no'">
-            {{ base }} × {{ count }} = {{ base * count }} 元 {{ enough ? '≤' : '>' }} 带的钱 {{ props.values.money }} 元 → {{ enough ? '够买' : '不够买' }}
+          <p v-if="estStep >= 1" class="est-line">
+            把单价 {{ base }} 元往上估成 <b>{{ estimate.upperPrice }}</b> 元：{{ estimate.upperPrice }} × {{ count }} = <b>{{ estimate.upper }}</b> 元
           </p>
+          <p v-if="estStep >= 2" class="est-line">
+            往下估成 <b>{{ estimate.lowerPrice }}</b> 元：{{ estimate.lowerPrice }} × {{ count }} = <b>{{ estimate.lower }}</b> 元
+          </p>
+          <p v-if="estStep >= 3" class="est-line">精算：{{ base }} × {{ count }} = <b>{{ estimate.exact }}</b> 元，带 {{ money }} 元</p>
+          <p v-if="estStep >= 3" class="est-result" :class="estimate.verdict === 'not-enough' ? 'no' : estimate.verdict === 'enough' ? 'ok' : 'maybe'" data-test="estimate-verdict">
+            {{ verdictText }}
+          </p>
+          <p v-else class="est-line muted" data-test="est-progress">第 {{ estStep }} / 3 步：先估大，再估小，最后精算</p>
+        </div>
+        <div class="pen-buttons">
+          <button type="button" class="pen-btn primary" data-test="est-next" @click="nextEst">
+            试一试：先估大，再估小，最后精算
+          </button>
+          <button type="button" class="pen-btn ghost" data-test="est-reset" @click="estStep = 3">重来</button>
         </div>
       </template>
       <template v-else>
@@ -133,9 +136,19 @@ const carryBubble = (idx: number) => {
           </div>
         </div>
         <div v-else class="blocks-row">
-          <span v-for="i in rodCount" :key="'r' + i" class="ten-rod">
+          <span
+            v-for="i in rodCount"
+            :key="'r' + i"
+            class="ten-rod"
+            :class="{ dim: i > rodsShown }"
+          >
             <span v-for="j in 10" :key="'d' + j" class="rod-dot" />
           </span>
+        </div>
+        <div class="pen-buttons">
+          <button type="button" class="pen-btn primary" data-test="rod-next" @click="nextRod">
+            试一试：一捆一捆地数（已数 {{ rodsShown }} / {{ rodCount }} 捆 = {{ rodsShown * 10 }} 个点）
+          </button>
         </div>
         <p class="decompose">{{ baseUnit.n }} 个{{ baseUnit.unit }} × {{ count }} = {{ baseUnit.n * count }} 个{{ baseUnit.unit }}</p>
         <div class="formula-row">
@@ -177,7 +190,8 @@ const carryBubble = (idx: number) => {
               v-for="(d, i) in String(product).split('')"
               :key="'p' + i"
               class="v-digit result-digit"
-              :class="{ active: i === activeCol, pending: colStepPos(i) > currentStep }"
+              :class="{ active: resultCol(i) === activeCol, pending: resultStepPos(i) > currentStep, shown: resultStepPos(i) >= 0 && resultStepPos(i) <= currentStep }"
+              :data-test="'result-digit-' + i"
             >{{ d }}</span>
           </div>
         </div>
@@ -195,12 +209,32 @@ const carryBubble = (idx: number) => {
             </button>
           </div>
           <p class="note-line">
-            第 {{ cur + 1 }} 步：{{ activeNote?.text }}
+            第 {{ cur + 1 }} / {{ stepNotes.length }} 步：{{ activeNote?.text }}
           </p>
-          <p class="note-result">= {{ num }} × {{ multi }} = <b>{{ product }}</b></p>
+          <div class="pen-buttons">
+            <button type="button" class="pen-btn" data-test="mul-prev" :disabled="cur === 0" @click="prevStep">上一步</button>
+            <button
+              type="button"
+              class="pen-btn primary"
+              data-test="mul-next"
+              :disabled="cur >= stepNotes.length - 1"
+              @click="nextStep"
+            >
+              演示下一步
+            </button>
+            <button type="button" class="pen-btn ghost" data-test="mul-reset" @click="resetSteps">重来</button>
+          </div>
+          <p class="note-result" data-test="mul-progress">
+            {{ num }} × {{ multi }} = <b>{{ product }}</b>（已写出 {{ shownResultCount }} / {{ String(product).length }} 位）
+          </p>
         </div>
       </div>
-      <p v-if="isZero" class="zero-tip">💡 十位是 0，0 × {{ multi }} = 0，积的十位写 0 占位</p>
+      <p v-if="isZero" class="zero-tip" data-test="zero-tip">
+        💡 十位是 0：0 × {{ multi }} = 0，积的十位必须写 0 占位（不能跳过这一位）
+      </p>
+      <p v-else-if="Math.round(props.values.o ?? -1) === 0" class="zero-tip" data-test="zero-tip">
+        💡 末尾有 0：先算 {{ Math.round(num / 10) }} × {{ multi }} = {{ Math.round(num / 10) * multi }}，再在积的末尾添 0，得 {{ product }}
+      </p>
     </template>
   </div>
 </template>
@@ -256,6 +290,13 @@ const carryBubble = (idx: number) => {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--ui-text-highlighted);
+}
+.dim {
+  opacity: 0.3;
+}
+.est-line.muted {
+  color: var(--ui-text-muted);
+  font-size: 0.8rem;
 }
 .estimate-card {
   display: flex;
@@ -419,9 +460,37 @@ const carryBubble = (idx: number) => {
   outline: 2px solid var(--ui-primary);
   outline-offset: 1px;
 }
+.pen-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.pen-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+}
+.pen-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.pen-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.pen-btn.ghost {
+  color: var(--ui-text-muted);
+}
 .result-digit.pending {
   color: var(--ui-text-muted);
-  opacity: 0.38;
+  /* 过程态：还没算到的那一位先不显示，避免一上来就把答案写在竖式里 */
+  opacity: 0;
 }
 .v-line {
   width: 7rem;

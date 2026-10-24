@@ -10,24 +10,13 @@ import * as THREE from 'three'
 import { animate } from 'animejs'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import { BALLOT_BOX, viewGrids } from '@/lib/labs/views'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
 /** 投票箱模型：长方体 + 顶部投票口 */
-const cubes = computed<[number, number, number][]>(() => [
-  [0, 0, 0],
-  [1, 0, 0],
-  [2, 0, 0],
-  [0, 0, 1],
-  [1, 0, 1],
-  [2, 0, 1],
-  [0, 1, 0],
-  [1, 1, 0],
-  [2, 1, 0],
-  [0, 1, 1],
-  [1, 1, 1],
-  [2, 1, 1],
-])
+/** 投票箱模型：3 × 2 × 2 的长方体（12 块），与三视图共用同一份坐标 */
+const cubes = computed<[number, number, number][]>(() => BALLOT_BOX)
 
 const views = [
   { key: 0, name: '前面', dir: 'front' },
@@ -36,31 +25,47 @@ const views = [
 ] as const
 const view = computed(() => Math.round(props.values.view ?? 0))
 
-const projections = computed(() => {
-  const front = new Set<string>()
-  const right = new Set<string>()
-  const top = new Set<string>()
-  for (const [x, y, z] of cubes.value) {
-    front.add(`${x},${y}`)
-    right.add(`${z},${y}`)
-    top.add(`${x},${z}`)
-  }
-  return { front, right, top }
-})
-
-function renderProjection(set: Set<string>): { filled: boolean[][] } {
-  const filled: boolean[][] = []
-  for (let row = 0; row < 3; row++) {
-    const r: boolean[] = []
-    for (let col = 0; col < 3; col++) r.push(set.has(`${col},${2 - row}`))
-    filled.push(r)
-  }
-  return { filled }
+/** 三视图与 3D 模型同源：格数、行列数都由 viewGrids 算出（旧实现写死 3×3 会多画空行） */
+const grids = computed(() => viewGrids(cubes.value))
+function asRows(g: { cols: number; rows: number; cells: boolean[] }): boolean[][] {
+  return Array.from({ length: g.rows }, (_, r) => g.cells.slice(r * g.cols, r * g.cols + g.cols))
+}
+const projFront = computed(() => ({ filled: asRows(grids.value.front), cols: grids.value.front.cols, rows: grids.value.front.rows }))
+const projRight = computed(() => ({ filled: asRows(grids.value.right), cols: grids.value.right.cols, rows: grids.value.right.rows }))
+const projTop = computed(() => ({ filled: asRows(grids.value.top), cols: grids.value.top.cols, rows: grids.value.top.rows }))
+const CELL = 24
+function cellScale(g: { cols: number; rows: number }): number {
+  return Math.min(CELL, Math.floor(96 / Math.max(g.cols, g.rows)))
 }
 
-const projFront = computed(() => renderProjection(projections.value.front))
-const projRight = computed(() => renderProjection(projections.value.right))
-const projTop = computed(() => renderProjection(projections.value.top))
+/* ---------- 过程态：绕物体转一圈 ---------- */
+const orbitDeg = ref(0)
+const orbiting = ref(false)
+function orbitOnce() {
+  if (!camera || !controls) return
+  const c = centerOf()
+  const radius = camera.position.distanceTo(c)
+  const start = Math.atan2(camera.position.x - c.x, camera.position.z - c.z)
+  const state = { t: 0 }
+  orbiting.value = true
+  camTween?.cancel()
+  camTween = animate(state, {
+    t: [0, 1],
+    duration: 1600,
+    easing: 'easeInOutQuad',
+    update: () => {
+      const ang = start + state.t * Math.PI * 2
+      camera!.position.set(c.x + radius * Math.sin(ang), camera!.position.y, c.z + radius * Math.cos(ang))
+      camera!.lookAt(c)
+      controls!.update()
+      orbitDeg.value = Math.round(state.t * 360)
+    },
+    complete: () => {
+      orbiting.value = false
+      orbitDeg.value = 0
+    },
+  })
+}
 
 /* ---------- three.js 场景 ---------- */
 const mountRef = ref<HTMLDivElement | null>(null)
@@ -200,6 +205,9 @@ onBeforeUnmount(() => {
     <div ref="mountRef" class="three-mount" />
 
     <div class="view-buttons">
+      <UButton size="sm" color="warning" variant="soft" :disabled="orbiting" @click="orbitOnce">
+        试一试：绕物体转一圈{{ orbitDeg ? `（${orbitDeg}°）` : '' }}
+      </UButton>
       <UButton
         v-for="v in views"
         :key="v.key"
@@ -218,30 +226,54 @@ onBeforeUnmount(() => {
         <svg viewBox="0 0 110 110" class="proj-svg">
           <rect v-for="(row, r) in projFront.filled" :key="r">
             <template v-for="(on, c) in row" :key="c">
-              <rect v-if="on" :x="c * 26 + 16" :y="r * 26 + 16" width="24" height="24" class="proj-cell" />
+              <rect
+                v-if="on"
+                :x="c * cellScale(projFront) + 16"
+                :y="r * cellScale(projFront) + 16"
+                :width="cellScale(projFront) - 2"
+                :height="cellScale(projFront) - 2"
+                class="proj-cell"
+              />
             </template>
           </rect>
         </svg>
+        <p class="proj-rule">{{ projFront.cols }} 列 × {{ projFront.rows }} 行</p>
       </div>
       <div class="proj-box" :class="{ active: view === 1 }">
         <p class="proj-name">右面</p>
         <svg viewBox="0 0 110 110" class="proj-svg">
           <rect v-for="(row, r) in projRight.filled" :key="r">
             <template v-for="(on, c) in row" :key="c">
-              <rect v-if="on" :x="c * 26 + 16" :y="r * 26 + 16" width="24" height="24" class="proj-cell" />
+              <rect
+                v-if="on"
+                :x="c * cellScale(projRight) + 16"
+                :y="r * cellScale(projRight) + 16"
+                :width="cellScale(projRight) - 2"
+                :height="cellScale(projRight) - 2"
+                class="proj-cell"
+              />
             </template>
           </rect>
         </svg>
+        <p class="proj-rule">{{ projRight.cols }} 列 × {{ projRight.rows }} 行</p>
       </div>
       <div class="proj-box" :class="{ active: view === 2 }">
         <p class="proj-name">上面</p>
         <svg viewBox="0 0 110 110" class="proj-svg">
           <rect v-for="(row, r) in projTop.filled" :key="r">
             <template v-for="(on, c) in row" :key="c">
-              <rect v-if="on" :x="c * 26 + 16" :y="r * 26 + 16" width="24" height="24" class="proj-cell" />
+              <rect
+                v-if="on"
+                :x="c * cellScale(projTop) + 16"
+                :y="r * cellScale(projTop) + 16"
+                :width="cellScale(projTop) - 2"
+                :height="cellScale(projTop) - 2"
+                class="proj-cell"
+              />
             </template>
           </rect>
         </svg>
+        <p class="proj-rule">{{ projTop.cols }} 列 × {{ projTop.rows }} 行</p>
       </div>
     </div>
     <p class="note">🖱️ 拖拽旋转 3D 场景 · 点击按钮切换观察方向 · 从不同方向看，看到的图形可能不同</p>
@@ -292,6 +324,11 @@ onBeforeUnmount(() => {
 .proj-svg {
   width: 92px;
   height: 92px;
+}
+.proj-rule {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--ui-text-muted);
 }
 .proj-cell {
   fill: color-mix(in srgb, var(--ui-primary) 60%, white);

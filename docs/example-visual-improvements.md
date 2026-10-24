@@ -310,3 +310,302 @@ node scripts/visual-shots.mjs --base http://localhost:3105 --grade g5 --all-labs
 cd g6/game && PORT=3106 npx nuxt dev --port 3106 &
 node scripts/visual-shots.mjs --base http://localhost:3106 --grade g6 --all-labs
 ```
+
+## 6. 第 31 轮：把「重点概念」真正呈现出来（覆盖全 80 个 Lab）
+
+### 6.0 调研方法与限制（如实记录）
+
+本轮要求「搜索例题解析 / 教案，了解每个例题想表达的重点概念」。**`web_search` 在本会话不可用**
+（未配置 `DEEPSEEK_API_KEY`），直连百度 / 必应 / 360 / 头条 / DuckDuckGo 也全部被反爬拦截或返回被降级的结果
+（必应只返回「苏」字词条、百度与搜狗返回 JS 空壳、Mojeek 直接 403）。因此本轮**不引用任何无法核实的网页来源**，
+「教材意图 / 教案关键环节 / 常见误区」以**教材原文 OCR**（`gX/ocr/upper/book/上册_正文.md`，逐页对照）
+＋ 仓库既有联网调研（`docs/research/数学可视化调研-国内实践.md`、`-国际平台与前端实现.md`，其中含课标原文逐字摘录）
+＋《义务教育数学课程标准（2022 年版）》的核心概念重建，逐题清单见
+[`docs/research/五六年级例题重点概念清单.md`](research/五六年级例题重点概念清单.md)（可用
+`node scripts/gen_concept_list.mjs` 复现）。
+
+### 6.1 本轮定位到的缺口（含 3 个真错误）
+
+| # | 缺口 | 影响面 | 证据 |
+|---|---|---|---|
+| 1 | **数据层的 `LabDef.tip`（这道例题要建立的概念）页面从不渲染** —— `pages/labs/[id].vue` 里没有任何地方读 `tip`（`grep -rn "tip" g5/game/src g6/game/src` 为空） | **全部 80 个 Lab**：概念写好了但学生看不到 | 新增 `shared/components/ConceptTip.vue` + 两页接入；`concept-tip.test.ts`×2 |
+| 2 | g5 的「选择型」参数把选项塞进 `unit` 字符串：`0右 1下 2左 3上`、`0顺 1逆`、`0前 1右 2上`、`0矩形 1三角 2L形 3五边 4凹` —— 学生要先把编号翻译成词（g6 上一轮已解决，g5 没有 `options` 字段） | g5 7 个 Lab / 8 个参数 | `g5/data/upper/schema/lab.ts` 增加 `options`；新增 `g5/game/src/components/lab/ParamControl.vue`；页面改用 `ParamControl`；`param-control.test.ts`（含 7 组数据的合法性与渲染断言） |
+| 3 | g5 有 5 个 Lab **根本没有 `tip`**：`g5-c4-dmul-ballpen`、`g5-c6-factors-16`、`g5-c6-gcdlcm-8-12`、`g5-c6-gcdlcm-6-9`、`g5-c8-views3d-move` | 5 个 Lab 的概念卡会是空壳 | 逐条补齐；`g5/game/test/unit/data.test.ts` 断言「每个 Lab 都有 tip / page / source」 |
+| 4 | **真 bug：切换到 `ParamControl` 后滑块样式失效** —— `.lab-range` 的样式写在页面的 `scoped` 里，而 Vue scoped CSS 不会作用到子组件内部的 `input`（子组件只有根节点会带上父级 scope 属性） | g6 全部使用滑块的 Lab（本轮一并修掉） | `.lab-range` 样式移进两个 `ParamControl.vue` 内部；页面残留样式删除 |
+| 5 | **真错误：转盘三等分（面积相等）时 `compute` 仍输出「红色区域最大」** —— `red === biggest ? '红' : …` 在三值相等时判定为红最大，与「各区域面积相等时可能性相等」直接矛盾 | `g5-c5-spinner-rotate` | `compute.ts` 的 `spinner` 分支改为区分「三个一样大 / 两个并列最大 / 唯一最大」；`compute.test.ts` 新增 2 例（含三种并列组合） |
+| 6 | **真错误：`小数点移动` 两个 Lab 的参数 `unit` 与实际含义不符** —— A4 纸写 `10^n 张`（power=2 实为 1000 张）、甘蔗写 `10^n 千克`（power=3 实为 1 千克），与题干「100 千克、10 千克、1 千克」对不上 | `g5-c4-dmul-paper`、`g5-c4-ddiv-sugarcane` | 用 `options` 把每一档写成「×100（1000 张）」「÷1000（1 千克）」，操作与量名同时可见 |
+
+### 6.2 逐项改法
+
+**① 「重点概念」卡（`shared/components/ConceptTip.vue`，全 80 个 Lab）**
+
+- 位置：`分步思考 → 💡 结论` 之后，卡片左侧 4px 主色描边 + `重点概念` 徽标 + `课本第 N 页 · 题源`。
+- **默认收起**，显示「先在左边拖一拖、说一说：这道例题要建立什么概念？想好了再点开对照」，点「先想一想，再看提示」展开 `tip` 正文。
+  这是调研规则 3「分步揭示，不抢先给结论」的落地：概念卡不能变成"看过即会"的结论栏，也不该像原来那样完全看不到。
+- 组件放在 `shared/`：五、六年级共用一份实现；`tip` 为空（或全空白）时整卡不渲染，不留空壳。
+
+**② g5 参数选项化（8 个参数）**
+
+| Lab | 参数 | 改后按钮 |
+|---|---|---|
+| `g5-c1-translate-boat` / `-fish` | `dir` 平移方向 | 向右 / 向下 / 向左 / 向上 |
+| `g5-c1-rotate-lever` / `-triangle` | `dir` 旋转方向 | 顺时针 / 逆时针 |
+| `g5-c1-axis-polygon` | `sym` 对称轴位置 | 偏左 / 正中 / 偏右 |
+| `g5-c8-views3d-blocks` / `-move` | `view` 观察方向 | 从前面看 / 从右面看 / 从上面看 |
+| `g5-pinboard-area` | `shape` 多边形 | 长方形 / 三角形 / L 形 / 五边形 / 凹多边形 |
+| `g5-c4-dmul-paper` | `power` 张数 | ×10（100 张）… ×1000000（10000000 张） |
+| `g5-c4-ddiv-sugarcane` | `power` 甘蔗质量 | ÷10（100 千克）… ÷1000000（0.001 千克） |
+
+数据层 `validate.ts`（五、六年级都加）现在会校验：`options` 非空、选项值唯一、`label` 非空、值在 `min~max` 内、**默认值必须落在选项中**。
+
+**③ 转盘「三等分（可能性相等）」预设**
+
+`ChanceLab` 新增按钮，一键把红/蓝/黄都置为 30（各占 1/3）并高亮；这正好对上 tip 里「各区域面积相等时可能性相等」这句结论——
+原来只能靠手动把三个滑块拖成同一个值。预设写入普通对象（测试场景）也能重渲染：用 `paramRev` 版本号把依赖显式写进 `computed`。
+
+### 6.3 验证结果（本轮实测）
+
+| 项目 | 结果 |
+|---|---|
+| `cd g5/game && npx vitest run` | **210 用例全绿**（19 文件；新增 `concept-tip` 4、`param-control` 8，`labs.test` +1 转盘三等分，`compute.test` +2 转盘并列） |
+| `cd g6/game && npx vitest run` | **356 用例全绿**（26 文件；新增 `concept-tip` 4、`param-control` +1） |
+| `npx vue-tsc --noEmit`（两侧） | exit 0（既有 `vue-router/volar/sfc-route-blocks` 插件告警为基线，与本次改动无关） |
+| `nuxt build`（两侧） | exit 0；生产预览下 `g5-c1-translate-boat`、`g5-pinboard-area`、`g6-c5-circle-area` 三页实测：概念卡默认收起（正文 0 节点）、点开后正文出现、选项按钮渲染为词、**控制台 0 报错** |
+| 全量截图回归 | **g5 33/33 + g6 47/47，0 个页面有问题**（控制台报错 / 错误页 / main 为空），截图已刷新到 `docs/visual-review-screenshots/` |
+| 覆盖率 | g6 四指标 99.34 / 97.43 / 96.61 / 99.34（≥95 ✅）；g5 97.65 / **89.45** / 95.23 / 97.65 —— **branches 未达 95 是既有基线问题**：用 `git stash -u` 回到 HEAD 实测为 **89.17%**，本轮反而 +0.28pt（已复核，非本轮引入） |
+
+### 6.4 仍未做（如实记录）
+
+- **g5 分支覆盖率 89.45% 未达 95% 阈值**（基线 89.17%）。缺口集中在 `ChartLab`（48%）、`FormulaLab`（79%）、`ChanceLab`（84%）、`lib/labs/decimal.ts`（78%）等组件的防御分支，属于既有技术债，本轮未处理。
+- `docs/research/五六年级例题重点概念清单.md` 的「常见误区」来自教材与课标层面的教学经验，**未经本轮联网教案资料交叉验证**（原因见 6.0）。
+
+## 7. 第 32 轮：按「重点概念」调整操作（多智能体，7 个不重叠工作包）
+
+### 7.1 组织方式
+
+Lead 先按「每道例题的重点概念 → 学生必须能动手做的那个动作」把 25 个 Lab 组件文件切成 **7 个互不重叠的工作包**，
+写成共享任务 `task-1…task-7`（每个任务带写入范围、必做改动、验收命令、报告格式），再为每个任务派一个专属队友：
+
+| 任务 | 队友 | 写入范围（组件） | 覆盖 Lab |
+|---|---|---|---|
+| task-1 | g5-motion | MotionLab、Views3DLab | c1×5 + c8×2 |
+| task-2 | g5-stats-decimal | ChartLab、DecimalLab | c2×2 + c4×5 |
+| task-3 | g5-area-number | AreaLab、MeasureLab、NumberLab、PinboardLab | c3×6 + c6×6 + 钉子板 |
+| task-4 | g5-chance-formula | ChanceLab、FormulaLab | c5×2 + c7×4 |
+| task-5 | g6-c1c2 | g6 DecimalLab、MixCalcLab、SegmentLab、ExerciseC1/C2 | c1 + c2 |
+| task-6 | g6-c3c4 | g6 NumberLab、RatioLab、ExerciseC3/C4 | c3 + c4 |
+| task-7 | g6-c5c6c7 | g6 CircleLab、ScaleLab、PositionLab、ExerciseC5/C6/C7 | c5 + c6 + c7 |
+
+每个队友只建**自己的**新测试文件（`ops-g5-*.test.ts` / `ops-g6-*.test.ts`），共享的 `labs.test.ts`、审计锁定测试
+（`ratio-lab.audit.test.ts`、`circle-lab.audit.test.ts`）、`test/unit/**`、`shared/**`、`pages/**`、`data/upper/schema/**`
+一律禁止改动；并要求只跑 `vitest` + `vue-tsc`，**不跑 `nuxt build/dev/prepare`**（避免并发改写生成的 `components.d.ts`）。
+构建与截图回归统一由 Lead 在全部队友停止后执行。
+
+### 7.2 运行实况（如实记录，含失败与接管）
+
+本次多智能体**基础设施不稳定**：7 个队友的**首轮批量启动全部失败**（无收尾消息、磁盘无任何写入），
+后续 `send_message` 逐个唤醒才跑起来；长回合的队友中途反复断线（g5 的 Motion/Views3D/Chance 与 g6 的多个回合都出现过）。
+应对与结果：
+
+| 现象 | 处置 |
+|---|---|
+| 7 个首批回合全部失败，但成员已创建、任务已被认领 | 改用 `send_message` 逐个唤醒（此时链路可用） |
+| 队友回合中途断线 | 按**磁盘实际进度**续跑：把 g6 的范围从「每包 5~8 个 Lab」砍到「每包 2~3 个最扣概念的 Lab」，并要求**做完就 complete、做不完也要 complete 并如实说明**，避免留 `in_progress` |
+| task-1（g5-motion）已把 3 条操作全部实现、测试也写好，但没来得及 complete | Lead 复核其测试与全量套件后由 Lead 代 complete |
+| task-4（g5-chance-formula）只改了 ChanceLab 就断线，FormulaLab 完全没动 | **Lead 接管**：补 FormulaLab 的「代入求值」「a² 与 2a 对照」「知二求一」与 ChanceLab 的摸球配比/多轮对照，并补自己的测试文件 |
+| g6 覆盖率一度被在飞改动拖到 functions 94.07% | 等最后一个 g6 队友收尾后由 Lead 复测，恢复到 97.03%（≥95 ✅） |
+
+**这不是"全自动跑完"，而是"多智能体 + Lead 接管 + Lead 统一验收"的混合交付**——过程中的失败与接管都已记在案。
+
+### 7.3 新增/调整的操作（逐 Lab）
+
+**五年级（33 个 Lab 全部覆盖）**
+
+| 组件 | Lab | 新增操作（动作 → 对应的重点概念） |
+|---|---|---|
+| MotionLab | `g5-c1-translate-boat` / `-fish` | 「换一组对应点」在 A→A′/B→B′/C→C′ 间轮换高亮并实时写出「这一组相距 N 格」→ 每一组对应点距离都相等 |
+| MotionLab | `g5-c1-rotate-lever` / `-triangle` | 「一步一步转（每次 +15°）」＋「量一量 OA 与 OA′」（两条线段等长）→ 对应点到旋转中心距离不变、转过同一角度 |
+| MotionLab | `g5-c1-axis-polygon` | 「标出对应点到对称轴的距离」（左右成对且相等，换对称轴自动重算）→ 对应点到轴距离相等 |
+| Views3DLab | `g5-c8-views3d-blocks` / `-move` | 「换一种摆法」并提示**哪个方向看到的图形不变、哪个变了** → 同一视图可由不同摆法得到 |
+| ChartLab | `g5-c2-stats-table` | 「看全部 / 只看男生 / 只看女生」筛选（表格与条形图同源）＋「验算合计」逐格给行/列合计算式并互证 → 复式统计表便于比较、合计要算准 |
+| ChartLab | `g5-c2-stats-bar` | 「先只看一组直条 → 再叠加第二组」分步揭示＋DOM 图例 → 看图先看颜色对应的图例 |
+| DecimalLab | `g5-c4-dmul-pencil` / `-ballpen` | 「一步一步算」：部分积（按位左移对齐）→ 求和 → 点小数点 → 先按整数乘法算、再看小数位数点小数点 |
+| DecimalLab | `g5-c4-ddiv-eraser` | 「一步一步除」显示当前余数与「余数添 0 → 下一级单位数」＋`每份×份数+余数=总数` 自检 → 商的小数点与被除数对齐、余数添 0 继续除 |
+| DecimalLab | `g5-c4-dmul-paper` / `-ddiv-sugarcane` | 「移动一位」逐位步进（数位表高亮随位移滑动、位数不够显式补 0）→ 小数点移动引起大小变化 |
+| AreaLab | `g5-c3-area-parallelogram` / `-triangle` / `-trapezoid` | 「显示对应关系」（底↔底、高↔高，同色标注＋虚线连线，梯形标「上底+下底」）＋三角形/梯形「倍拼」两步 → 转化与找对应 |
+| AreaLab | `g5-c3-area-mcfield` | 平方米→公顷进率提示 → 单位与进率 |
+| MeasureLab | `g5-c3-hectare-field` | 「换一种割法」三法轮换＋三法结果对照条 → 三种割补方法结果相同 |
+| MeasureLab | `g5-c3-hectare-square` | 「再铺一行 / 铺满看进率」逐行铺 100 个 1 公顷 → 1 平方千米 = 100 公顷 |
+| NumberLab | `g5-c6-factors-12` / `-16` | 「成对找因数」步进（相同两因数只算一个）→ 因数成对出现 |
+| NumberLab | `g5-c6-prime-sieve` | 「筛完看剩下的」统计（已划掉/剩余 + 剩下恰好是质数）→ 质数的判据 |
+| NumberLab | `g5-c6-gcdlcm-8-12` / `-6-9` | 「只看公有的」分步揭示＋交集高亮＋最大/最小加外框 → 集合（交集）观点 |
+| PinboardLab | `g5-pinboard-area` | 「只数边上钉子 n」→「再数内部钉子 b」两步后代入公式 → 皮克定理 |
+| ChanceLab | `g5-c5-marble-bag` | 「换一种配比（1:9 / 5:5 / 9:1）」＋「再摸一轮（50 次）」＋实验频率与理论的差值行 → 球越多可能性越大、次数越多越接近 |
+| ChanceLab | `g5-c5-spinner-rotate` | 「三等分（可能性相等）」（§6 已加） |
+| FormulaLab | `g5-c7-frog-song` | 「代入求值」三步：关系式 2n → 代入 2×n → 结果 → 字母式既能表示关系也能求值 |
+| FormulaLab | `g5-c7-square-formula` | 「对比 a² 与 2a」（a=2 时数值相同但含义不同，不硬说 ≠）→ 破 a² 与 2a 的混淆 |
+| FormulaLab | `g5-c7-speed-car` / `-train` | 「知二求一」三问法（求路程/速度/时间，各自带单位）→ s = v × t 是模型 |
+
+**六年级（8 个核心组件各补 1 条，覆盖全部 7 个单元）**
+
+| 组件 | Lab | 新增操作 |
+|---|---|---|
+| g6 DecimalLab | `g6-c1-round-life` | 「三法并排对照」：去尾 / 进一 / 四舍五入 三行结果 + 各自适用情境 → 按实际意义选方法 |
+| g6 MixCalcLab | `g6-c2-piecewise` | 「逐段计费」三步：起步价段 → 超出段 → 「不足 1 千米按 1 千米」进位提示与总额 |
+| g6 SegmentLab | `g6-c2-work-together` | 「效率条相加」三步（全程最简分数：1/6 + 1/3 = 1/2 → 2 小时）→ 总量看作单位「1」 |
+| g6 NumberLab | `g6-c3-place-value` | 「满十进一」现场：本位写 0、向前一位进 1，进率条同步滑动（字符串拆位避免浮点噪声） |
+| g6 RatioLab | `g6-c4-golden-ratio` | 「一键吸附到黄金比」＋实时「当前比值与 0.618 的差」（新增「长」参数） |
+| g6 CircleLab | `g6-c5-circle-area` | 「逐级翻倍」8→16→32→64＋「现在的长与 πr 的差」→ 等分越多越接近长方形 |
+| g6 ScaleLab | `g6-c6-scale-shape` | 「逐个对应边量一量」：逐条量出对应边、比恒等＋面积 ×(n/d)² → 形状不变、面积按平方变 |
+| g6 PositionLab | `g6-c7-coordinate` | 「按数对走一格」（向东只 +第一个数、向北只 +第二个数，到边界禁用）→ 先列后行 |
+
+**队友顺手修掉的 3 个真问题**：① ChartLab 在 happy-dom 下 chart.js 失败实例**仍有 `data`**（只有 `ctx` 为 null），
+原 watch 据此调用 `update()` 会抛 `Cannot read properties of null (reading 'ownerDocument')`——滑块一拖就触发，改为按 `ctx` 判定；
+② 同一处 watch 按下标改写 datasets，数据集个数变化（筛选/分步揭示）时删不掉多余的一组，改为整体替换；
+③ CircleLab 的「宽与 πr 的差」用 `PI = 3.14` 复算，64 份时差会显示成负数，改用真 π 复算后恒为正且逐级变小。
+
+### 7.4 验证结果（Lead 在全部队友停止后统一执行）
+
+| 项目 | 结果 |
+|---|---|
+| `cd g5/game && npx vitest run` | **260 用例全绿**（24 文件；新增 `ops-g5-motion` 14、`ops-g5-area-number` 13、`ops-g5-stats-decimal` 15、`ops-g5-chance-formula` 8） |
+| `cd g6/game && npx vitest run` | **380 用例全绿**（29 文件；新增 `ops-g6-c1c2` 7、`ops-g6-c3c4` 8、`ops-g6-c5c6c7` 8） |
+| `npx vue-tsc --noEmit`（两侧） | exit 0 |
+| `nuxt build`（两侧） | exit 0；生产预览 80 个 Lab 路由可访问 |
+| 全量截图回归 | **g5 33/33 + g6 47/47，0 个页面有问题** |
+| g6 覆盖率 | 99.34 / **97.58** / **97.03** / 99.34（四指标 ≥95 ✅；分支由基线 97.43 升到 97.58，函数由 96.61 升到 97.03） |
+| g5 覆盖率 | 98.29 / **92.98** / 95.89 / 98.29。**functions 已回到门槛之上**；branches 仍 <95，但这是既有基线问题（实测 HEAD 为 **89.17%**，本轮反而 **+3.81pt**——ChartLab/DecimalLab 等组件的防御分支仍未覆盖） |
+| 锁定测试未被破坏 | `ratio-lab.audit.test.ts`（9）、`circle-lab.audit.test.ts`（18）、`labs.test.ts`（g5 37 / g6 55）、各 `exercise-c*.test.ts` 全绿 |
+
+### 7.5 本轮**没有**做到的（如实记录）
+
+- **g5 分支覆盖率仍是 92.98%（<95）**：这是仓库既有技术债（基线 89.17%），本轮把新增的操作都补了测试、并顺带把分支拉高 3.81pt，但没有专门去补 `FormulaLab`、`ChartLab` 等组件的既有防御分支。
+- **g6 只做到「每个核心组件 1 条最扣概念的操作」**，不是每个 Lab 一条。原 task-5/6/7 里被砍掉、尚未实现的还有：
+  `g6-c1-mul-compare`（三档对照）、`g6-c1-div-decimal`（逐步转化）、`g6-c1-mul-approx`/`div-approx`（看下一位）、`g6-c1-mul-decimal`（为什么变小）、
+  `g6-c2` 的 `frac-mix`/`estimate-shop`/`segment`/`segment-more`、
+  `g6-c3-compare-unit`/`op-consistency`/`binary`、
+  `g6-c4` 其余 6 个 Lab、
+  `g6-c5-circle-feature`/`sector`/`circumference`/`annulus`/`circle-composite`、
+  `g6-c6-map-scale`、`g6-c7-direction`。
+  这些 Lab 的**既有**操作仍然可用（前几轮已建），只是本轮没有再叠加新操作。
+- **14 个六年级练习题 Lab 本轮只做了核对**（其可操作过程态在第 8~27 轮已补齐并有测试锁定），没有新增操作。
+- 队友断线导致 task-1 由 Lead 代 complete、task-4 由 Lead 接管完成；`ChanceLab` 的断线残留（只有 +44 行）由 Lead 续做。
+
+> **§7.5 的这批缺口已在第 33 轮全部销掉**，见下面的 §8。
+
+## 8. 第 33 轮：5 个智能体补完六年级剩余 24 个操作（销掉 §7.5 全部缺口）
+
+### 8.1 组织方式
+
+Lead 先把 §7.5 里「未做」的清单逐条对照**当前磁盘代码**核实（避免把已做的算成没做），确认真正剩余的是
+**7 个 g6 组件 / 24 个例题操作**（`g6-c6-map-scale` 本就有「求实际距离 / 求图上距离 / 求比例尺」三分支流程，
+14 个练习题 Lab 也已有过程态，都不再计入）。然后切成 5 个互不重叠的工作包：
+
+| 任务 | 队友 | 写入范围 | 覆盖 Lab | 结果 |
+|---|---|---|---|---|
+| task-8 | g6-c1-ops | g6 DecimalLab | c1 剩余 5 个 | 5/5 ✅ |
+| task-9 | g6-c3c4（复用） | g6 RatioLab | c4 剩余 6 个 | 6/6 ✅ |
+| task-10 | g6-c5c6c7（复用） | g6 CircleLab | c5 剩余 5 个 | 5/5 ✅ |
+| task-11 | g6-c1c2（复用） | g6 MixCalcLab + SegmentLab | c2 剩余 4 个 | 4/4 ✅ |
+| task-12 | g5-area-number（复用） | g6 NumberLab + PositionLab | c3 剩余 3 + c7 剩余 1 | 4/4 ✅ |
+
+**运行实况**：团队人数上限为 **8**（上一轮的 7 位队友是持久成员，未提供移除工具），
+所以新任务**没有重新 spawn**，而是用 `team_task_update action=reassign`（Lead 专用）把 task-9…task-12
+指派给已存在的空闲队友、再用 `send_message` 唤醒；task-8 用最后一个空位新建了 `g6-c1-ops`。
+首轮唤醒后 `g6-c1c2` 断线一次，按磁盘进度续跑后完成。**结果比上一轮明显稳**：5 个任务全部 100% 完成、无未做项。
+
+### 8.2 新增的 24 个操作（逐 Lab）
+
+**一 小数乘法和除法（二）**（g6 DecimalLab，task-8）
+
+| Lab | 操作 |
+|---|---|
+| `g6-c1-mul-compare` | 「三档一键对照」：乘数 0.99 / 1 / 1.01 三行同屏，每行给积与「积 ? 第一个乘数」的符号——**符号由参数算出，不写死方向** |
+| `g6-c1-div-decimal` | 「一步一步转化」3 步：原式 → 被除数与除数同时 ×10ⁿ 且「商不变」 → 整数除法得商 |
+| `g6-c1-mul-approx` | 「看下一位」：保留位与**下一位**分色高亮 + 「≥5 进 1 / <5 舍去」判据 |
+| `g6-c1-div-approx` | 单位换算链显式化（40 千米 = 40000 米 → ÷60 分）+「看下一位」→ 666.67 米/分 |
+| `g6-c1-mul-decimal` | 「为什么变小」同屏：乘数↔1、积↔第一个乘数 + 方格「列 × 行 = 格数 → 格数/100 = 积」三处自洽 |
+
+**二 混合运算与数量关系（三）**（g6 MixCalcLab + SegmentLab，task-11）
+
+| Lab | 操作 |
+|---|---|
+| `g6-c2-frac-mix` | 「1 米彩绳从哪来」：把 2/5 + 3/5 两条分率拼成整根 1 米（宽度合计 100%），给出 `(2/5 + 3/5) × 18 = 1 × 18` |
+| `g6-c2-estimate-shop` | 「推到临界值」：面粉 99/98 元、大米 104/103 元四档一键推向结论翻转处，三值结论卡（绿/红/黄）同步；`c2.ts` 的 budget `step 5→1` 让「无法确定」档能拖到 |
+| `g6-c2-segment` | 线段图分率刻度（0 / 2/5 / 单位「1」，left = 分率）+ 两种解法切换时同步高亮男段/女段 |
+| `g6-c2-segment-more` | 「两步步进」：先算增减量（14 × 2/7 = 4 天）→ 再 ±（18 天）+ 联排 `14 × (1 + 2/7)`；小数天数给「注意实际意义」提示 |
+
+**三 数与运算的再认识**（g6 NumberLab，task-12）
+
+| Lab | 操作 |
+|---|---|
+| `g6-c3-compare-unit` | 「统一计数单位再比较」：把两数化成同一个计数单位的个数（2/3 与 3/5 → 1/15 的 10 个 vs 9 个）再比个数，符号走 `numberSys.greaterThan` 精确比值 |
+| `g6-c3-op-consistency` | 「换一个计数单位看同一个运算」：同一结果在多种单位间轮换（4.65 = 465 个 0.01 = 4650 个 0.001），面板明示「个数 × 单位值 = 结果」 |
+| `g6-c3-binary` | 「逐位改写」：÷2 取余一步一揭示，走完把余数**倒序**拼成二进制 |
+| （`g6-c3-place-value` 满十进一为第 32 轮已做） | |
+
+**四 比和比例**（g6 RatioLab，task-9）
+
+| Lab | 操作 |
+|---|---|
+| `g6-c4-ratio-intro` | 「互换前项与后项」：两个比的比值互为倒数、但「谁与谁比」变了；后项为 0 时比值显示「—」 |
+| `g6-c4-ratio-value` | 「等值比 → 形状相同」：最简比 ×1 / ×2 / ×3 三张共用格子边长的图（5:3 / 10:6 / 15:9） |
+| `g6-c4-ratio-simplify` | 「同乘 / 同除」分步轨迹（4 组示例），每步显示改写后的比 + 不变的比值，终点恒为最简整数比 |
+| `g6-c4-ratio-distribute` | 显式三层步进：总份数 → 每份 → 各部分（+ 合计 = 总数）；除不尽自动走「总数 × 几分之几」 |
+| `g6-c4-proportion-basic` | SVG「交叉相乘」：外项 a–d 与内项 b–c 两条对角线 + 两行乘积 + 高亮切换 |
+| `g6-c4-solve-proportion` | 「代入 → 交叉相乘 → 求解」三步；**除尽写 `=`、除不尽写 `≈` 并附最简分数**（判据与 compute 同源） |
+
+**五 圆**（g6 CircleLab，task-10）
+
+| Lab | 操作 |
+|---|---|
+| `g6-c5-circle-feature` | 「多画几条半径」：逐条画出并标注长度，画满后给「无数条、都相等 + d = 2r」 |
+| `g6-c5-sector` | 「对折成四分之一」：两条过圆心的对折线，显示圆心角 90°、占比 1/4，可取消恢复滑块 |
+| `g6-c5-circumference` | 「不同直径对照表」：直径 1 / 2 / 4 / 8 米 → C、C÷d、比 3 多，配「都是 3 倍多一些」 |
+| `g6-c5-annulus` | 「外圆减内圆」三步扣减：画外圆 → 挖内圆 → 剩环（含 π(R²−r²) 写法） |
+| `g6-c5-circle-composite` | 分块高亮 + 三步累加：正方形 → 半圆 → 相加（各部分之和 = 总面积） |
+
+**七 确定位置**（g6 PositionLab，task-12）
+
+| Lab | 操作 |
+|---|---|
+| `g6-c7-direction` | 「换一个观测点再描述同一位置」：位置坐标不变、描述随观测点改变（独立 atan2/hypot 复算）；另加「只说方向不说距离」→ 同射线 3 个候选点 + 「还不能确定位置」提示 |
+
+**队友顺手修掉的真问题**：`estimate-shop` 的「无法确定」理由把区间写反了（原「19 ~ 16 之间」→「16 ~ 19 之间」，最少剩在前）。
+
+### 8.3 Lead 修掉的真 bug：`compute.ts` 的「看下一位」用四舍五入取值
+
+g6-c1-ops 在实现时发现并上报：`compute.ts` 的 `mul-approx` 用 `Number(fixedN(exact, digits+1).slice(-1))` 取判定位，
+而 `fixedN` 会**先四舍五入**到 `digits+1` 位——默认参数 6.25 × 1.5 = 9.375 保留 1 位时，
+`fixedN(9.375, 2) = '9.38'` 于是读到「8」，而正确的「看下一位」应该是截取第 2 位小数的 **7**。
+组件侧（`DecimalLab`）实现是对的，于是**右侧 compute 面板与左侧图形文案自相矛盾**。
+
+Lead 的修法：在 `compute.ts` 新增 `digitAt(v, pos)`——把数值 `toFixed(10)` 后**只截取**第 pos 位小数的数字（不足补 0），
+`mul-approx` 改用它；并补了锁定测试（9.375→7 不得为 8、9.99→9 进位得 10、1.234 保留 2 位看「4」舍、整数看「0」）。
+
+### 8.4 验证结果（Lead 在全部队友停止后**串行**执行）
+
+| 项目 | 结果 |
+|---|---|
+| `cd g6/game && npx vitest run --coverage` | **34 文件 / 443 用例全绿**；四指标 **99.42 / 98.11 / 97.67 / 99.42**（≥95 ✅） |
+| `cd g5/game && npx vitest run --coverage` | **23 文件 / 260 用例全绿**；98.29 / **92.98** / 95.89 / 98.29（branches 为§7.5 记录的既有基线问题，见下） |
+| `npx vue-tsc --noEmit`（两侧） | exit 0 |
+| `nuxt build`（两侧） | exit 0；生产预览下 80 个 Lab 路由可访问 |
+| 全量截图回归 | **g5 33/33 + g6 47/47，0 个页面有问题** |
+| 生产构建里的操作抽检 | 9 个新操作逐一在真实构建上点击：`mul-compare`（三档）、`mul-approx`（看下一位）、`ratio-simplify`（分步轨迹）、`proportion-basic`（两条对角线与两个相等的积 16 = 16）、`annulus`（三步扣减）、`sector`（90°/1/4）、`segment`（看法二 3/5）、`binary`（余数）、`direction`（观测点）全部通过，**控制台 0 报错** |
+| 锁定测试未被破坏 | `ratio-lab.audit`（9）、`circle-lab.audit`（18）、`labs.test`（g5 37 / g6 55）、各 `exercise-c*.test.ts`、`data-params.test.ts` 全绿 |
+
+**并发踩坑（记录备查）**：队友并行跑 `vitest --coverage` 时共用的 `coverage/.tmp` 会互相删除，
+出现 `ENOENT coverage/.tmp/coverage-*.json`（**测试本身全绿，只是报告收尾报错**）；
+5 位队友都改用了独立 `--coverage.reportsDirectory`，Lead 收尾时串行跑一次即稳定。
+另外整包测试在队友并行写入期间会出现彼此文件的瞬时失败，重跑即恢复——这类"并发噪声"不能当成真失败。
+
+### 8.5 现在还剩什么（如实记录）
+
+- **g5 分支覆盖率 92.98%（<95）**：§7.5 就记录过，是仓库既有技术债——实测 HEAD 基线为 **89.17%**，
+  本轮开始前为 92.98%（第 32 轮已经从 89.17 拉到 92.98），本轮未再专门补 g5 的既有防御分支。
+  g5 的 statements / functions / lines 三项均已达标。
+- **`g6-c6-map-scale`**：本轮核实其**已有**「求实际距离 / 求图上距离 / 求比例尺」三分支流程与单位换算步骤，
+  按"不为改而改"原则未再叠加（它此前被列在 §7.5，属**误列**）。
+- **14 个六年级练习题 Lab**：本轮只做核对；它们的过程态在第 8~27 轮已补齐并有 `exercise-c*.test.ts` 锁定。
+- 5 位队友中有 1 位（task-11）中途断线一次，按磁盘进度续跑后完成；其余 4 位一次跑完。

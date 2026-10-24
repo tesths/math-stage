@@ -5,6 +5,7 @@
 import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { digitsOf } from '@/lib/engine/math'
+import { quotientText, trialDivide } from '@/lib/labs/divTry'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -38,7 +39,9 @@ const penSteps = computed(() => {
       out.push({ col: i, qd, sub: 0, rem, started: false, curVal })
     }
   }
-  return out
+  // 商如果是两位数、被除数是三位数，最前面"不够商 1"的那一位不写商，也不该画空格子
+  const firstStarted = out.findIndex((x) => x.started)
+  return firstStarted <= 0 ? out : out.slice(firstStarted)
 })
 
 /* ---------- 口算分组 ---------- */
@@ -78,19 +81,45 @@ const roundNotes = computed(() => {
 })
 const activeRound = computed(() => roundNotes.value[cur.value])
 const digitX = (col: number) => 72 + col * 34
+/** 数位名：商写在哪一位上面必须与列号对应 */
+function placeName(col: number): string {
+  const total = String(dividend.value).length
+  const place = total - 1 - col
+  return place === 0 ? '个位' : place === 1 ? '十位' : place === 2 ? '百位' : '千位'
+}
 
-/* ---------- 试商流程 ---------- */
-const tryFlow = computed(() => {
-  const est = Math.floor(divisor.value / 10) * 10
-  const qd = Math.floor(dividend.value / divisor.value)
-  const sub = qd * divisor.value
-  return [
-    { label: `估除数≈${est}` },
-    { label: `试商 ${qd}` },
-    { label: `${qd} × ${divisor.value} = ${sub}` },
-    { label: `${dividend.value} − ${sub} = ${dividend.value - sub}${dividend.value - sub >= 0 ? ' ✓' : ' ✗ 调商'}` },
-  ]
-})
+/**
+ * 试商流程（本轮重写）：真正按课本走
+ * 把除数四舍五入看成整十数 → 试商 → 乘积超过被除数就调小 / 余数不小于除数就调大 → 定商。
+ * 旧实现直接用精确商，"验算"必然通过，学生学不到试商（P1 空转）。
+ */
+const tryResult = computed(() => trialDivide(dividend.value, divisor.value))
+const tryFlow = computed(() => tryResult.value.rounds.flatMap((round) => round.steps.map((step) => ({ ...step, place: round.place }))))
+const tryIdx = ref(-1)
+const tryShown = computed(() => tryFlow.value.slice(0, Math.max(0, tryIdx.value + 1)))
+function nextTry() {
+  tryIdx.value = Math.min(tryIdx.value + 1, tryFlow.value.length - 1)
+}
+function resetTry() {
+  tryIdx.value = -1
+}
+const tryDone = computed(() => tryIdx.value >= tryFlow.value.length - 1)
+const trySummary = computed(() => quotientText(tryResult.value))
+
+/* ---------- 口算：一包一包地分 ---------- */
+const packedPiles = ref(0)
+function nextPile() {
+  packedPiles.value = packedPiles.value >= groupCount.value.length ? 0 : packedPiles.value + 1
+}
+
+/* ---------- 连除：两步 ---------- */
+const routeStep = ref(0)
+function nextRoute() {
+  routeStep.value = Math.min(routeStep.value + 1, 2)
+}
+function resetRoute() {
+  routeStep.value = 0
+}
 </script>
 
 <template>
@@ -98,7 +127,7 @@ const tryFlow = computed(() => {
     <!-- 口算除法 -->
     <template v-if="kind === 'div-oral'">
       <div class="piles">
-        <div v-for="(g, i) in groupCount" :key="i" class="pile">
+        <div v-for="(g, i) in groupCount" :key="i" class="pile" :class="{ dim: i >= packedPiles }">
           <div class="rod-block">
             <span v-for="j in Math.min(g, 10)" :key="j" class="ten-rod" />
           </div>
@@ -108,6 +137,11 @@ const tryFlow = computed(() => {
       <div class="formula-row">
         <span class="chip big">{{ base }} ÷ {{ oralDiv }} =</span>
         <span class="chip op">{{ base / oralDiv }}</span>
+      </div>
+      <div class="try-buttons">
+        <button type="button" class="round-btn primary" data-test="pile-next" @click="nextPile">
+          试一试：一包一包地分（已分 {{ packedPiles }} / {{ groupCount.length }} 包）
+        </button>
       </div>
       <p class="note">
         {{ base }} 是 {{ tensBase }} 个十，每 {{ tensDiv }} 个十为 1 份，能分
@@ -178,12 +212,25 @@ const tryFlow = computed(() => {
         </template>
       </svg>
 
-      <!-- 试商流程条 -->
-      <div v-if="kind === 'div-try'" class="try-bar">
-        <template v-for="(f, i) in tryFlow" :key="i">
-          <span class="try-chip">{{ f.label }}</span>
-          <span v-if="i < tryFlow.length - 1" class="try-arrow">→</span>
-        </template>
+      <!-- 试商流程条：真实试商/调商 -->
+      <div v-if="kind === 'div-try'" class="try-block">
+        <p class="try-head" data-test="try-head">
+          把除数 {{ divisor }} {{ tryResult.method === '四舍' ? '四舍' : '五入' }}看成 <b>{{ tryResult.rounded }}</b>
+          （{{ tryResult.method }}法）
+        </p>
+        <div class="try-bar">
+          <template v-for="(f, i) in tryShown" :key="i">
+            <span class="try-chip" :class="f.kind">{{ f.text }}</span>
+          </template>
+          <span v-if="!tryShown.length" class="try-empty">还没开始试商</span>
+        </div>
+        <div class="try-buttons">
+          <button type="button" class="round-btn primary" data-test="try-next" :disabled="tryDone" @click="nextTry">
+            试一试：一步一步试商
+          </button>
+          <button type="button" class="round-btn ghost" data-test="try-reset" @click="resetTry">重来</button>
+          <span class="try-summary" data-test="try-summary">{{ tryDone ? trySummary : `已进行 ${tryShown.length} / ${tryFlow.length} 步` }}</span>
+        </div>
       </div>
 
       <div class="step-bar">
@@ -198,8 +245,22 @@ const tryFlow = computed(() => {
           {{ i + 1 }}
         </button>
       </div>
-      <p v-if="activeRound" class="round-note">
-        第 {{ cur + 1 }} 轮：{{ activeRound.curVal }} ÷ {{ divisor }} = {{ activeRound.qd }}……{{ activeRound.rem }}（商写 {{ activeRound.qd }}，乘积 {{ activeRound.sub }}）
+      <div class="try-buttons">
+        <button type="button" class="round-btn" data-test="div-prev" :disabled="cur === 0" @click="setCur(cur - 1)">上一轮</button>
+        <button
+          type="button"
+          class="round-btn primary"
+          data-test="div-next"
+          :disabled="cur >= roundNotes.length - 1"
+          @click="setCur(cur + 1)"
+        >
+          开始下一轮
+        </button>
+        <button type="button" class="round-btn ghost" data-test="div-reset" @click="setCur(0)">重来</button>
+      </div>
+      <p v-if="activeRound" class="round-note" data-test="div-round-note">
+        第 {{ cur + 1 }} 轮：{{ activeRound.curVal }} ÷ {{ divisor }} = {{ activeRound.qd }}……{{ activeRound.rem }}，商
+        {{ activeRound.qd }} 写在{{ placeName(activeRound.col) }}上面，乘积 {{ activeRound.sub }}（共 {{ roundNotes.length }} 轮）
       </p>
 
       <div class="formula-row">
@@ -227,9 +288,20 @@ const tryFlow = computed(() => {
           </div>
         </div>
       </div>
-      <div class="formula-row">
-        <span class="chip">{{ total }} ÷ {{ shelf }} = {{ perShelf }}</span>
-        <span class="chip op">{{ perShelf }} ÷ {{ floor }} = {{ perFloor }}</span>
+      <div class="try-buttons">
+        <button type="button" class="round-btn primary" data-test="route-next" :disabled="routeStep >= 2" @click="nextRoute">
+          试一试：两步算下去
+        </button>
+        <button type="button" class="round-btn ghost" data-test="route-reset" @click="resetRoute">重来</button>
+        <span class="try-summary" data-test="route-progress">第 {{ routeStep }} / 2 步</span>
+      </div>
+      <div class="route-steps">
+        <p class="route-line" :class="{ on: routeStep >= 1 }">
+          {{ total }} ÷ {{ shelf }} = {{ perShelf }}（每个书架放 {{ perShelf }} 本）
+        </p>
+        <p class="route-line" :class="{ on: routeStep >= 2 }">
+          {{ perShelf }} ÷ {{ floor }} = {{ perFloor }}（平均每层放 {{ perFloor }} 本）
+        </p>
       </div>
       <p class="note">平均每层放 <b>{{ perFloor }}</b> 本</p>
     </template>
@@ -425,6 +497,83 @@ const tryFlow = computed(() => {
 }
 .note b {
   color: var(--ui-primary);
+}
+.dim {
+  opacity: 0.35;
+}
+.try-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+  max-width: 40rem;
+}
+.try-head {
+  font-size: 0.85rem;
+  color: var(--ui-text-toned);
+}
+.try-head b {
+  color: var(--ui-primary);
+}
+.try-bar {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.try-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--ui-text-toned);
+  background: var(--ui-bg-muted);
+}
+.try-chip.trial {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+.try-chip.bigger,
+.try-chip.smaller {
+  border-color: var(--ui-warning, #f59e0b);
+  color: var(--ui-warning, #f59e0b);
+  font-weight: 700;
+}
+.try-chip.settle {
+  border-color: var(--ui-success, #16a34a);
+  color: var(--ui-success, #16a34a);
+  font-weight: 700;
+}
+.try-empty {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+.try-buttons {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.try-summary {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted);
+}
+.route-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: center;
+}
+.route-line {
+  font-size: 0.85rem;
+  color: var(--ui-text-muted);
+  opacity: 0.35;
+}
+.route-line.on {
+  opacity: 1;
+  color: var(--ui-primary);
+  font-weight: 700;
 }
 .shelf-tree {
   display: flex;

@@ -174,7 +174,7 @@ const tmStepNote = computed(() =>
         <!-- 过程态：一级一级地放大，看边长 ×k 时面积格子变 k² 倍 -->
         <div class="sa-steps">
           <UButton size="sm" color="primary" :disabled="stepAtFull" @click="growOnce">再放大 1 倍</UButton>
-          <UButton size="sm" variant="outline" color="neutral" :disabled="stepAtFirst" @click="backToFirst">
+          <UButton size="sm" variant="outline" color="neutral" :disabled="stepAtFirst" @click="backToFirst" data-act>
             回到 1×
           </UButton>
           <span class="sa-step-note">{{ stepNote }}</span>
@@ -327,7 +327,7 @@ const tmStepNote = computed(() =>
 
         <!-- 过程态：先把 B 图换成实际距离，再揭示换画到 A 图 -->
         <div class="tm-steps">
-          <UButton size="sm" color="primary" :disabled="!showStep2" @click="onlyStep1">先只看第 1 步</UButton>
+          <UButton size="sm" color="primary" :disabled="!showStep2" @click="onlyStep1" data-act>先只看第 1 步</UButton>
           <UButton size="sm" variant="outline" color="neutral" :disabled="showStep2" @click="showBothSteps">
             揭示第 2 步
           </UButton>

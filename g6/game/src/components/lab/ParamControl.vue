@@ -43,6 +43,7 @@ function pick(v: number) {
         :key="o.value"
         type="button"
         class="param-option"
+        :data-act="o.value === modelValue ? null : ''"
         :class="{ active: o.value === modelValue }"
         :aria-pressed="o.value === modelValue"
         @click="pick(o.value)"
@@ -69,6 +70,12 @@ function pick(v: number) {
 </template>
 
 <style scoped>
+/* 滑块样式必须写在组件内：页面的 scoped 样式不会作用到子组件内部的 input */
+.lab-range {
+  width: 100%;
+  accent-color: var(--ui-primary);
+  cursor: pointer;
+}
 .param-options {
   display: flex;
   flex-wrap: wrap;

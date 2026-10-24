@@ -24,6 +24,29 @@ describe('computeLab 一 小数乘法和除法', () => {
     expect(r.text).toContain('9.4')
   })
 
+  it('mul-approx：看下一位是「截取」而不是四舍五入到那一位（9.375 → 7 不是 8）', () => {
+    // 6.25 × 1.5 = 9.375，保留 1 位时应看第 2 位小数「7」；
+    // 若先 fixedN(9.375, 2) 会得 9.38，读到 8（错）。
+    const r1 = computeLab('mul-approx', { price: 6.25, count: 1.5, digits: 1 })
+    expect(r1.steps[1]!.expr).toContain('「7」')
+    expect(r1.steps[1]!.expr).not.toContain('「8」')
+    expect(r1.steps[1]!.expr).toContain('≥5，向保留位进 1')
+
+    // 9.99 × 1 = 9.99 保留 1 位 → 看第 2 位「9」→ 入，得 10.0
+    const r2 = computeLab('mul-approx', { price: 9.99, count: 1, digits: 1 })
+    expect(r2.steps[1]!.expr).toContain('「9」')
+    expect(r2.text).toContain('10')
+
+    // 足够位时不会被下一位进位干扰：1.234 保留 2 位 → 看第 3 位「4」→ 舍
+    const r3 = computeLab('mul-approx', { price: 1.234, count: 1, digits: 2 })
+    expect(r3.steps[1]!.expr).toContain('「4」')
+    expect(r3.steps[1]!.expr).toContain('<5，直接舍去')
+
+    // 整数没有小数位时按 0 处理
+    const r4 = computeLab('mul-approx', { price: 2, count: 1, digits: 1 })
+    expect(r4.steps[1]!.expr).toContain('「0」')
+  })
+
   it('div-decimal：三个例题转化', () => {
     expect(computeLab('div-decimal', { sel: 0 }).value).toBe(2)
     expect(computeLab('div-decimal', { sel: 1 }).value).toBe(5)

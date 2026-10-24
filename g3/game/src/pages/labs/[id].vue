@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { animate } from 'animejs'
 import { findLabById, labsOfChapter, chapters } from '@data'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import ConceptTip from '@shared/components/ConceptTip.vue'
 import { labComponentFor } from '@/lib/labs/registry'
 import { computeLab } from '@/lib/labs/compute'
 import { playClick } from '@/lib/sound'
@@ -24,6 +25,15 @@ const values = reactive<ParamValues>({})
 for (const p of lab.value.params) values[p.key] = p.default
 if (lab.value.fixed) for (const [k, v] of Object.entries(lab.value.fixed)) values[k] = v
 const shapeKey = ref(0)
+
+function setParam(key: string, value: number) {
+  values[key] = value
+  playClick()
+}
+
+function paramDisplay(p: LabDef['params'][number]): number | string {
+  return p.choices?.find((choice) => choice.value === values[p.key])?.label ?? values[p.key] ?? ''
+}
 
 function resetParams() {
   for (const p of lab.value!.params) values[p.key] = p.default
@@ -153,20 +163,34 @@ watch(labId, () => {
                 <label class="text-sm font-medium text-(--ui-text-highlighted)">
                   {{ p.label }} <span class="text-xs text-(--ui-text-muted)">{{ p.unit }}</span>
                 </label>
-                <strong class="text-(--ui-primary)">{{ values[p.key] }}</strong>
+                <strong class="text-(--ui-primary)">{{ paramDisplay(p) }}</strong>
               </div>
-              <input
-                v-model.number="values[p.key]"
-                type="range"
-                class="lab-range"
-                :min="p.min"
-                :max="p.max"
-                :step="p.step"
-                @input="playClick"
-              />
-              <div class="mt-0.5 flex justify-between text-[11px] text-(--ui-text-muted)">
-                <span>{{ p.min }}</span><span>{{ p.max }}</span>
+              <div v-if="p.choices" class="choice-group" role="group" :aria-label="p.label">
+                <button
+                  v-for="choice in p.choices"
+                  :key="choice.value"
+                  type="button"
+                  class="choice-btn"
+                  :class="{ active: values[p.key] === choice.value }"
+                  @click="setParam(p.key, choice.value)"
+                >
+                  {{ choice.label }}
+                </button>
               </div>
+              <template v-else>
+                <input
+                  v-model.number="values[p.key]"
+                  type="range"
+                  class="lab-range"
+                  :min="p.min"
+                  :max="p.max"
+                  :step="p.step"
+                  @input="playClick"
+                />
+                <div class="mt-0.5 flex justify-between text-[11px] text-(--ui-text-muted)">
+                  <span>{{ p.min }}</span><span>{{ p.max }}</span>
+                </div>
+              </template>
             </div>
 
             <div ref="resultBoxRef" class="result-box">
@@ -197,6 +221,9 @@ watch(labId, () => {
           <p class="mt-3 rounded-lg bg-(--ui-bg-muted) px-3 py-2 text-sm text-(--ui-text-toned)">
             💡 {{ result.conclusion }}
           </p>
+          <div class="mt-3">
+            <ConceptTip :tip="lab.tip" :page="lab.page" :source="lab.source" />
+          </div>
         </div>
       </UCard>
     </div>
@@ -220,6 +247,32 @@ watch(labId, () => {
   width: 100%;
   accent-color: var(--ui-primary);
   cursor: pointer;
+}
+.choice-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+.choice-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.choice-btn:hover {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+.choice-btn.active {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 14%, transparent);
+  color: var(--ui-primary);
+  font-weight: 800;
 }
 .result-box {
   border: 1px dashed var(--ui-border-accented);

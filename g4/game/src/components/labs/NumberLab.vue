@@ -2,9 +2,10 @@
 /**
  * 多位数的认识 Lab：计数单位 / 数位顺序表 / 多位数组成 / 四舍五入 / 数字编码
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { COUNT_UNITS, digitsOf, formatBig } from '@/lib/engine/math'
+import { COUNT_UNITS, formatBig } from '@/lib/engine/math'
+import { fourDigitGroups, roundToWan } from '@/lib/labs/number'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -13,13 +14,20 @@ const kind = computed(() => props.lab.kind)
 /* ---------- 计数单位 ---------- */
 const v = computed(() => Math.round(props.values.v ?? 10000))
 const vUnits = computed(() => {
-  if (v.value >= 1e8) return { unit: '亿', k: v.value / 1e8, prev: '10 个千万是一亿' }
-  if (v.value >= 1e7) return { unit: '千万', k: v.value / 1e7, prev: '10 个百万是一千万' }
-  if (v.value >= 1e6) return { unit: '百万', k: v.value / 1e6, prev: '10 个十万是一百万' }
-  if (v.value >= 1e5) return { unit: '十万', k: v.value / 1e5, prev: '10 个一万是十万' }
-  if (v.value >= 1e4) return { unit: '万', k: v.value / 1e4, prev: '10 个一千是一万' }
-  if (v.value >= 1e3) return { unit: '千', k: v.value / 1e3, prev: '10 个一百是一千' }
-  return { unit: '百', k: v.value / 100, prev: '10 个十是一百' }
+  const table = [
+    { size: 1e8, unit: '亿', prev: '10 个千万是一亿' },
+    { size: 1e7, unit: '千万', prev: '10 个百万是一千万' },
+    { size: 1e6, unit: '百万', prev: '10 个十万是一百万' },
+    { size: 1e5, unit: '十万', prev: '10 个一万是十万' },
+    { size: 1e4, unit: '万', prev: '10 个一千是一万' },
+    { size: 1e3, unit: '千', prev: '10 个一百是一千' },
+    { size: 100, unit: '百', prev: '10 个十是一百' },
+  ]
+  const hit = table.find((x) => v.value >= x.size) ?? table[table.length - 1]!
+  // 不是整份数时如实写成"几个 + 余数"，不能出现 2.5 个万
+  const whole = Math.floor(v.value / hit.size)
+  const rest = v.value - whole * hit.size
+  return { unit: hit.unit, k: whole, rest, prev: hit.prev }
 })
 
 /* ---------- 数位顺序表 ---------- */
@@ -37,13 +45,44 @@ const valueDigits = computed(() => String(value.value).split('').reverse())
 
 /* ---------- 四舍五入 ---------- */
 const approxV = computed(() => Math.round(props.values.v ?? 384204))
-const wanDigit = computed(() => digitsOf(approxV.value)[3] ?? 0)
-const approxWan = computed(() => Math.round(approxV.value / 10000))
+/** 千位上的数字与四舍五入结果都走纯函数（旧实现取成了百位，判断进不进会错） */
+const approxR = computed(() => roundToWan(approxV.value))
+const wanDigit = computed(() => approxR.value.digit)
+const approxWan = computed(() => approxR.value.wan)
+/** 四位分级 */
+const groups = computed(() => fourDigitGroups(value.value))
 
 /* ---------- 身份证 ---------- */
 const year = computed(() => Math.round(props.values.year ?? 2016))
 const month = computed(() => Math.round(props.values.month ?? 2))
 const day = computed(() => Math.round(props.values.day ?? 18))
+/* ---------- 过程态 ---------- */
+/** 计数单位：一个一个地数上去 */
+const countShown = ref(0)
+function nextUnit() {
+  countShown.value = countShown.value >= vUnits.value.k ? 1 : countShown.value + 1
+}
+/** 数位顺序表：从高位往低位一位一位看 */
+const placeCursor = ref(13 - 1)
+function nextPlace() {
+  placeCursor.value = placeCursor.value <= 1 ? 12 : placeCursor.value - 1
+}
+/** 多位数：四位一级分组 */
+const grouped = ref(true)
+function toggleGroup() {
+  grouped.value = !grouped.value
+}
+/** 四舍五入：点一下看千位决定进不进 */
+const approxShown = ref(true)
+function toggleApprox() {
+  approxShown.value = !approxShown.value
+}
+/** 身份证：一段一段读 */
+const idStep = ref(3)
+function nextId() {
+  idStep.value = idStep.value >= 3 ? 1 : idStep.value + 1
+}
+
 const dateCode = computed(() => `${year.value}${String(month.value).padStart(2, '0')}${String(day.value).padStart(2, '0')}`)
 </script>
 
@@ -55,8 +94,16 @@ const dateCode = computed(() => `${year.value}${String(month.value).padStart(2, 
         <span class="count-arrow">← {{ vUnits.prev }}</span>
       </div>
       <p class="big-num">{{ formatBig(v) }}</p>
-      <p class="note">
-        {{ formatBig(v) }} 里有 <b>{{ vUnits.k }}</b> 个{{ vUnits.unit }}
+      <div class="unit-blocks">
+        <span v-for="i in vUnits.k" :key="'u' + i" class="unit-block" :class="{ dim: i > countShown }" />
+      </div>
+      <div class="op-bar">
+        <button type="button" class="op-btn primary" data-test="count-next" @click="nextUnit">
+          试一试：一个一个数（已数 {{ countShown }} / {{ vUnits.k }} 个{{ vUnits.unit }}）
+        </button>
+      </div>
+      <p class="note" data-test="count-note">
+        {{ formatBig(v) }} 里有 <b>{{ vUnits.k }}</b> 个{{ vUnits.unit }}{{ vUnits.rest ? `，还剩 ${formatBig(vUnits.rest)}` : '' }}
       </p>
     </template>
 
@@ -80,6 +127,11 @@ const dateCode = computed(() => `${year.value}${String(month.value).padStart(2, 
           </span>
         </div>
       </div>
+      <div class="op-bar">
+        <button type="button" class="op-btn primary" data-test="place-next" @click="nextPlace">
+          试一试：从高位往低位一位一位看（当前第 {{ placeCursor }} 位）
+        </button>
+      </div>
       <p class="note">
         <b>{{ digit }}</b> 写在{{ unitName }}位上，表示 <b>{{ digit }} 个{{ unitName }}</b>
       </p>
@@ -100,8 +152,17 @@ const dateCode = computed(() => `${year.value}${String(month.value).padStart(2, 
           :class="{ zero: d === '0' }"
         >{{ d }}</span>
       </div>
+      <div class="op-bar">
+        <button type="button" class="op-btn primary" data-test="group-next" @click="toggleGroup">
+          试一试：四位一级分组（{{ grouped ? '已分组' : '未分组' }}）
+        </button>
+      </div>
       <p class="note">
         由 {{ wan }} 个万{{ yi > 0 ? `和 ${yi} 个亿` : '' }}组成，写作 {{ formatBig(value) }}
+        <template v-if="grouped">
+          ；从右边起四位一级：
+          {{ groups.map((g) => `${g.digits}（${g.name}）`).reverse().join(' | ') }}
+        </template>
       </p>
     </template>
 
@@ -118,9 +179,14 @@ const dateCode = computed(() => `${year.value}${String(month.value).padStart(2, 
           />
         </div>
         <p class="approx-label">
-          {{ formatBig(approxV) }} 的千位是 <b>{{ wanDigit }}</b>，
-          {{ wanDigit >= 5 ? '向万位进 1' : '舍去千位及后面' }} → 约 <b>{{ approxWan }} 万</b>
+          {{ formatBig(approxV) }} 的千位是 <b data-test="wan-digit">{{ wanDigit }}</b>，
+          {{ wanDigit >= 5 ? '满 5 向万位进 1' : '不满 5，舍去千位及后面' }} → 约 <b>{{ approxWan }} 万</b>
         </p>
+        <div class="op-bar">
+          <button type="button" class="op-btn primary" data-test="approx-next" @click="toggleApprox">
+            试一试：看千位决定进不进（{{ approxShown ? '已标出千位' : '未标出' }}）
+          </button>
+        </div>
       </div>
     </template>
 
@@ -136,6 +202,11 @@ const dateCode = computed(() => `${year.value}${String(month.value).padStart(2, 
         <div class="id-digits">
           <span v-for="(ch, i) in dateCode" :key="i" class="id-digit">{{ ch }}</span>
         </div>
+        <div class="op-bar">
+          <button type="button" class="op-btn primary" data-test="id-next" @click="nextId">
+            试一试：一段一段读（已读 {{ idStep }} / 3 段）
+          </button>
+        </div>
         <p class="note">
           第 7~14 位是<b>出生日期码</b>：{{ year }} 年 {{ month }} 月 {{ day }} 日 → {{ dateCode }}
         </p>
@@ -145,6 +216,45 @@ const dateCode = computed(() => `${year.value}${String(month.value).padStart(2, 
 </template>
 
 <style scoped>
+.unit-blocks {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 34rem;
+}
+.unit-block {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ui-primary) 50%, white);
+  border: 1px solid var(--ui-primary);
+}
+.unit-block.dim {
+  opacity: 0.28;
+}
+.op-bar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.op-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  cursor: pointer;
+}
+.op-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
 .num-wrap {
   display: flex;
   flex-direction: column;

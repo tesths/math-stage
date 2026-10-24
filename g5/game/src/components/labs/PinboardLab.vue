@@ -4,7 +4,7 @@
  * 皮克定理：S = n ÷ 2 + b - 1（n 边上钉子，b 内部钉子）
  * 顶点在格点上，边界/内部钉子数由程序精确计算
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { PINBOARD_SHAPES, pickCheck, pointStatus as pinStatus } from '@/lib/labs/pinboard'
 
@@ -46,6 +46,22 @@ const boardPins = computed(() => {
   }
   return out
 })
+
+/* ---------------- 两步数钉子：先只数边上，再数内部，最后代入公式 ---------------- */
+const step = ref(0)
+function nextStep() {
+  if (step.value >= 2) return
+  step.value++
+}
+function resetStep() {
+  step.value = 0
+}
+/** 某一步是否要把这类钉子高亮出来（分类本身始终可见，避免图上信息消失） */
+function pinLit(st: 'boundary' | 'inside' | 'outside') {
+  if (step.value === 1) return st === 'boundary'
+  if (step.value >= 2) return st === 'boundary' || st === 'inside'
+  return false
+}
 </script>
 
 <template>
@@ -54,7 +70,13 @@ const boardPins = computed(() => {
       <!-- 钉子板 -->
       <rect x="20" y="20" width="350" height="290" rx="8" class="board" />
       <g v-for="(pin, i) in boardPins" :key="i">
-        <circle :cx="pin.x" :cy="pin.y" r="4" class="pin-plain" :class="pin.st" />
+        <circle
+          :cx="pin.x"
+          :cy="pin.y"
+          r="4"
+          class="pin-plain"
+          :class="[pin.st, { lit: pinLit(pin.st) }]"
+        />
       </g>
       <!-- 多边形 -->
       <polygon :points="polyPoints" class="poly-fill" />
@@ -76,6 +98,19 @@ const boardPins = computed(() => {
       <span><i class="legend-dot inside" />内部钉子 b：在多边形内部</span>
       <span><i class="legend-dot outside" />不计入：在图形外部</span>
     </div>
+
+    <!-- 两步数钉子 -->
+    <div class="step-bar">
+      <UButton size="sm" color="primary" variant="soft" :disabled="step >= 2" @click="nextStep" data-act>
+        {{ step === 0 ? '只数边上钉子 n' : step === 1 ? '再数内部钉子 b' : '两步都数完了' }}
+      </UButton>
+      <UButton v-if="step > 0" size="sm" variant="outline" color="neutral" @click="resetStep">复位</UButton>
+      <span v-if="step >= 1" class="step-chip" data-count="n">边上钉子 n = <b>{{ n }}</b> 个</span>
+      <span v-if="step >= 2" class="step-chip" data-count="b">内部钉子 b = <b>{{ b }}</b> 个</span>
+    </div>
+    <p v-if="step >= 2" class="step-formula" :data-n="n" :data-b="b" :data-area="area">
+      两步都数出来了：n = {{ n }}、b = {{ b }} —— 代入 S = n ÷ 2 + b − 1 得 {{ pickArea }}，正好等于鞋带公式算出的面积 {{ area }}
+    </p>
 
     <div class="pick-box">
       <div class="pick-stat">
@@ -129,6 +164,40 @@ svg {
 .pin-plain.inside {
   fill: color-mix(in srgb, var(--ui-primary) 70%, white);
   opacity: 0.9;
+}
+.pin-plain.lit {
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 1.6;
+}
+.step-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.step-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.84rem;
+  padding: 0.2rem 0.6rem;
+}
+.step-chip b {
+  color: var(--ui-primary);
+  font-size: 1rem;
+}
+.step-formula {
+  margin: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  text-align: center;
+  max-width: 40rem;
 }
 .poly-fill {
   fill: color-mix(in srgb, var(--ui-primary) 20%, transparent);

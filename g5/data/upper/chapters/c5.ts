@@ -21,10 +21,11 @@ export const c5Labs: LabDef[] = [
   {
     id: 'g5-c5-marble-bag',
     chapter: 'c5',
-    page: 68,
+    page: 66,
     source: '例题',
     title: '可能性 · 摸球实验',
-    prompt: '盒子里有红球和黄球，任意摸出一个。调整两种球的数量，点击“摸一次”或“摸 30 次”，统计摸球结果。',
+    prompt:
+      '从袋中任意摸出一个球：袋里没有黄球时，摸出的一定是红球；红球、黄球都有时，可能摸到红球也可能摸到黄球。调整两种球的数量，点「摸 1 次」「摸 30 次」，比较摸到的频率与理论可能性。',
     kind: 'marble',
     params: [
       { key: 'red', label: '红球个数', min: 1, max: 9, step: 1, default: 4, unit: '个' },

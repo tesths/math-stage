@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { animate } from 'animejs'
 import { findLabById, labsOfChapter, chapters } from '@data'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import ConceptTip from '@shared/components/ConceptTip.vue'
 import { labComponentFor } from '@/lib/labs/registry'
 import { computeLab } from '@/lib/labs/compute'
 import { playClick } from '@/lib/sound'
@@ -220,6 +221,9 @@ watch(labId, () => {
           <p class="mt-3 rounded-lg bg-(--ui-bg-muted) px-3 py-2 text-sm text-(--ui-text-toned)">
             💡 {{ result.conclusion }}
           </p>
+          <div class="mt-3">
+            <ConceptTip :tip="lab.tip" :page="lab.page" :source="lab.source" />
+          </div>
         </div>
       </UCard>
     </div>

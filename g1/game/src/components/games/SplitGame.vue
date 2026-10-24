@@ -41,6 +41,7 @@
         type="button"
         class="split-move"
         :disabled="!canMoveToRight || done"
+        data-act
         @click="moveOneToRight"
       >把 1 个移到右边 ▶</button>
       <button

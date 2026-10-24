@@ -24,6 +24,7 @@ export const c6Labs: LabDef[] = [
     kind: 'factors',
     params: [{ key: 'n', label: '数', min: 1, max: 48, step: 1, default: 16, unit: '' }],
     formula: '因数是成对出现的：1×16、2×8、4×4',
+    tip: '因数是成对出现的：找出一个因数，就用它去除这个数，得到与它配对的那个因数；两个因数相同（如 4×4）时只算一个。16 的因数有 1、2、4、8、16 共 5 个。',
   },
   {
     id: 'g5-c6-multiples-3',
@@ -65,6 +66,7 @@ export const c6Labs: LabDef[] = [
       { key: 'b', label: '第二个数', min: 2, max: 30, step: 1, default: 12, unit: '' },
     ],
     formula: '最大公因数 = 两个数公有的因数中最大的一个',
+    tip: '两个数公有的因数叫公因数，其中最大的一个叫最大公因数；两个数只有公因数 1 时，它们互质。8 和 12 的公因数是 1、2、4，最大公因数是 4。',
   },
   {
     id: 'g5-c6-gcdlcm-6-9',
@@ -79,5 +81,6 @@ export const c6Labs: LabDef[] = [
       { key: 'b', label: '第二个数', min: 2, max: 20, step: 1, default: 9, unit: '' },
     ],
     formula: '最小公倍数 = 两个数公有的倍数中最小的一个',
+    tip: '两个数公有的倍数叫公倍数，其中最小的一个叫最小公倍数（公倍数有无数个，最小公倍数的倍数都是公倍数）。6 和 9 的最小公倍数是 18，18 的倍数 36、54……也都是公倍数。',
   },
 ]

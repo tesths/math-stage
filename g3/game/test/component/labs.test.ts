@@ -11,6 +11,9 @@ import MotionLab from '@/components/labs/MotionLab.vue'
 import LengthLab from '@/components/labs/LengthLab.vue'
 import TallyLab from '@/components/labs/TallyLab.vue'
 import ViewsLab from '@/components/labs/ViewsLab.vue'
+import WeightLab from '@/components/labs/WeightLab.vue'
+import IntervalLab from '@/components/labs/IntervalLab.vue'
+import ConceptTip from '@shared/components/ConceptTip.vue'
 import { labsOfChapter, findLabById } from '@data'
 
 describe('Lab 组件渲染', () => {
@@ -123,7 +126,7 @@ describe('Lab 组件渲染', () => {
     expect(wrapper.findAll('.v-result .result-digit').map((x) => x.text())).toEqual(['4', '0', '8'])
     await wrapper.findAll('.step-chip')[1]!.trigger('click')
     expect(wrapper.text()).toContain('0 × 4')
-    expect(wrapper.text()).toContain('该位写 0')
+    expect(wrapper.text()).toContain('这一位写 0')
   })
 
   it('DivLab：笔算除法（42 ÷ 3）', () => {
@@ -194,5 +197,185 @@ describe('Lab 组件渲染', () => {
     for (const c of ids) {
       expect(labsOfChapter(c as never).length).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('第 4 轮：过程态与形数同帧', () => {
+  it('ConceptTip：默认收起，点开后显示概念提示与课本出处', async () => {
+    const wrapper = mount(ConceptTip, { props: { tip: '1 米 = 10 分米', page: 53, source: '例题' } })
+    expect(wrapper.find('[data-test="concept-text"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="concept-toggle"]').exists()).toBe(true)
+    await wrapper.find('[data-test="concept-toggle"]').trigger('click')
+    expect(wrapper.find('[data-test="concept-text"]').text()).toContain('1 米 = 10 分米')
+    expect(wrapper.text()).toContain('课本第 53 页')
+  })
+
+  it('TimeLab：24 时钟面内外圈同时高亮，20 时对应内圈 8', () => {
+    const lab = findLabById('g3-c2-time24')!
+    const wrapper = mount(TimeLab, { props: { lab, values: { hour: 20, min: 0 } } })
+    expect(wrapper.findAll('.clock-num24')).toHaveLength(12)
+    expect(wrapper.find('.clock-num24.active').text()).toBe('20')
+    expect(wrapper.find('.clock-num.active').text()).toBe('8')
+    expect(wrapper.find('.map-link').attributes('d')).toMatch(/^M .* L /)
+  })
+
+  it('TimeLab：点"转动一圈"，24 时读数 +12、内圈读数不变', async () => {
+    const lab = findLabById('g3-c2-time24')!
+    const wrapper = mount(TimeLab, { props: { lab, values: { hour: 8, min: 0 } } })
+    expect(wrapper.text()).toContain('8时')
+    await wrapper.find('[data-test="walk-turn"]').trigger('click')
+    expect(wrapper.text()).toContain('20时')
+    expect(wrapper.find('.clock-num.active').text()).toBe('8')
+    expect(wrapper.find('[data-test="walk-state"]').text()).toContain('12 小时')
+  })
+
+  it('MulLab：没算到的数位不显示，点"演示下一步"才逐位出现', async () => {
+    const lab = findLabById('g3-c3-mul-pen')!
+    const wrapper = mount(MulLab, { props: { lab, values: { tens: 1, ones: 4, multi: 3 } } })
+    const digit0 = () => wrapper.find('[data-test="result-digit-0"]')
+    // 第 1 步只算个位：个位数字先出现，十位还没算到
+    expect(digit0().classes()).toContain('pending')
+    expect(wrapper.find('[data-test="result-digit-1"]').classes()).toContain('shown')
+    expect(wrapper.find('[data-test="mul-progress"]').text()).toContain('已写出 1 / 2 位')
+    await wrapper.find('[data-test="mul-next"]').trigger('click')
+    expect(digit0().classes()).toContain('shown')
+    expect(wrapper.find('[data-test="mul-progress"]').text()).toContain('已写出 2 / 2 位')
+  })
+
+  it('LengthLab：米→千米 的进率写成 ×1000（不是 ×10）', () => {
+    const lab = findLabById('g3-c6-length-mix')!
+    const wrapper = mount(LengthLab, { props: { lab, values: { value: 3, from: 3, to: 4 } } })
+    const rates = wrapper.findAll('.unit-rate').map((x) => x.text())
+    expect(rates).toContain('×1000')
+    expect(wrapper.text()).toContain('换算路径：米 → 千米')
+    expect(wrapper.text()).toContain('3 米 = 0.003 千米')
+  })
+
+  it('LengthLab：点"开始换算"逐步走到目标单位', async () => {
+    const lab = findLabById('g3-c6-length-mix')!
+    const wrapper = mount(LengthLab, { props: { lab, values: { value: 45, from: 0, to: 1 } } })
+    expect(wrapper.find('[data-test="mix-step"]').exists()).toBe(false)
+    await wrapper.find('[data-test="mix-next"]').trigger('click')
+    expect(wrapper.find('[data-test="mix-step"]').text()).toContain('45 毫米 ÷ 10 = 4.5 厘米')
+  })
+
+  it('LengthLab：千米路段 1 千米画 10 小段（每段 100 米）', () => {
+    const lab = findLabById('g3-c6-km-m')!
+    const wrapper = mount(LengthLab, { props: { lab, values: { value: 2, to: 0 } } })
+    expect(wrapper.findAll('.road-seg')).toHaveLength(20)
+  })
+
+  it('ViewsLab：点"再放一块"后三视图格数随之变化', async () => {
+    const lab = findLabById('g3-c11-views-match')!
+    const wrapper = mount(ViewsLab, { props: { lab, values: { shape: 1 } } })
+    const before = wrapper.findAll('.proj-cell.on').length
+    await wrapper.find('[data-test="place-one"]').trigger('click')
+    const after = wrapper.findAll('.proj-cell.on').length
+    expect(after).toBeLessThan(before)
+    expect(wrapper.findAll('.proj-cell.fresh').length).toBeGreaterThan(0)
+  })
+
+  it('IntervalLab：点"数一数间隔"，间隔弧线一条一条出现', async () => {
+    const lab = findLabById('g3-c9-interval')!
+    const wrapper = mount(IntervalLab, { props: { lab, values: { count: 6, end: 0 } } })
+    expect(wrapper.findAll('.gap-arc')).toHaveLength(0)
+    await wrapper.find('[data-test="gap-count"]').trigger('click')
+    expect(wrapper.findAll('.gap-arc')).toHaveLength(1)
+    await wrapper.find('[data-test="gap-count"]').trigger('click')
+    expect(wrapper.findAll('.gap-arc')).toHaveLength(2)
+    expect(wrapper.find('[data-test="gap-state"]').text()).toContain('已数 2 个间隔')
+  })
+
+  it('WeightLab：一块一块放石头，放到刻线时给出象重', async () => {
+    const lab = findLabById('g3-c4-equivalent')!
+    const wrapper = mount(WeightLab, { props: { lab, values: { mass: 2000, each: 200 } } })
+    expect(wrapper.find('[data-test="stone-status"]').text()).toContain('还差')
+    await wrapper.find('[data-test="stone-fill"]').trigger('click')
+    expect(wrapper.find('[data-test="stone-status"]').text()).toContain('2000 千克')
+    expect(wrapper.text()).toContain('10 块 × 200 千克 = 2000 千克')
+  })
+
+describe('第 4 轮补：静态图变真过程（-act 截图必须与初始态不同）', () => {
+  it('TimesLab 几个几：一盒一盒地数，没数到的盒子变淡', async () => {
+    const lab = findLabById('g3-c12-times-concept')!
+    const wrapper = mount(TimesLab, { props: { lab, values: { each: 2, groups: 3 } } })
+    expect(wrapper.findAll('.group-box.dim')).toHaveLength(0) // 初始态全部可见
+    const btn = wrapper.find('[data-test=concept-next]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    expect(wrapper.findAll('.group-box.dim')).toHaveLength(2) // 只剩第一盒
+    expect(btn.text()).toContain('已数 1 / 3 盒 = 2 人')
+  })
+
+  it('TimesLab 几倍：一组一组摆出来，第 2 组起变淡', async () => {
+    const lab = findLabById('g3-c12-times-mul')!
+    const wrapper = mount(TimesLab, { props: { lab, values: { base: 4, times: 3 } } })
+    expect(wrapper.findAll('.mul-row.dim')).toHaveLength(0)
+    const btn = wrapper.find('[data-test=row-next]')
+    await btn.trigger('click')
+    expect(wrapper.findAll('.mul-row.dim')).toHaveLength(2)
+    expect(btn.text()).toContain('已摆 1 / 3 组 = 4 个')
+  })
+
+  it('MulLab 口算：一捆一捆地数小棒', async () => {
+    const lab = findLabById('g3-c3-mul-oral')!
+    const wrapper = mount(MulLab, { props: { lab, values: { base: 40, count: 3 } } })
+    expect(wrapper.findAll('.ten-rod.dim')).toHaveLength(0)
+    const btn = wrapper.find('[data-test=rod-next]')
+    await btn.trigger('click')
+    expect(wrapper.findAll('.ten-rod.dim')).toHaveLength(3) // 4 捆里只剩 1 捆亮
+    expect(btn.text()).toContain('已数 1 / 4 捆')
+  })
+
+  it('MulLab 估算：先估大、再估小、最后精算，逐条出现', async () => {
+    const lab = findLabById('g3-c3-mul-estimate')!
+    const wrapper = mount(MulLab, { props: { lab, values: { price: 24, count: 9, money: 180 } } })
+    expect(wrapper.find('[data-test=estimate-verdict]').exists()).toBe(true) // 初始三步全在
+    const btn = wrapper.find('[data-test=est-next]')
+    await btn.trigger('click')
+    expect(wrapper.find('[data-test=estimate-verdict]').exists()).toBe(false)
+    expect(wrapper.findAll('.est-line:not(.muted)')).toHaveLength(1) // 只剩"估大"一条
+    expect(wrapper.find('[data-test=est-progress]').text()).toContain('1 / 3')
+    await btn.trigger('click')
+    expect(wrapper.findAll('.est-line:not(.muted)')).toHaveLength(2) // 估大 + 估小
+    await btn.trigger('click')
+    expect(wrapper.findAll('.est-line:not(.muted)')).toHaveLength(3) // 再加上精算
+  })
+
+  it('LengthLab 分米行：一格一格地量，没量到的格子变淡', async () => {
+    const lab = findLabById('g3-c6-dm-m')!
+    const wrapper = mount(LengthLab, { props: { lab, values: { m: 1, cm: 90 } } })
+    const btn = wrapper.find('[data-test=dm-next]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click') // 19 格 → 1 格
+    expect(btn.text()).toContain('已量 1 / 19 格')
+    expect(wrapper.findAll('.dm-seg.counted')).toHaveLength(1)
+  })
+
+  it('DivLab 口算：一份一份地分，答案在分完后才给出', async () => {
+    const lab = findLabById('g3-c8-div-oral')!
+    const wrapper = mount(DivLab, { props: { lab, values: { num: 60, div: 2 } } })
+    const btn = wrapper.find('[data-test=oral-next]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    expect(btn.text()).toContain('已分 1 /')
+    expect(wrapper.find('[data-test=oral-answer]').text()).toContain('已分 1 份')
+  })
+})
+
+  it('TimesLab 混合：爸爸年龄先空着，点第一步才出现；倍数如实给余数', async () => {
+    const lab = findLabById('g3-c12-times-mix')!
+    const wrapper = mount(TimesLab, { props: { lab, values: { mom: 32, more: 3, son: 7 } } })
+    const btn = wrapper.find('[data-test=mix-next]')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click') // 2 → 1：只剩第一步亮
+    expect(wrapper.findAll('.age-chip.dad.dim')).toHaveLength(0) // 爸爸这一步是亮的
+    expect(wrapper.find('[data-test=mix-rate]').classes()).toContain('dim')
+    expect(btn.text()).toContain('第 1 / 2 步')
+    expect(wrapper.find('[data-test=mix-rate]').text()).toContain('35 ÷ 7 = 5 倍')
+    // 不能整除时不许写"≈ 几倍"
+    const w2 = mount(TimesLab, { props: { lab, values: { mom: 32, more: 3, son: 6 } } })
+    expect(w2.find('[data-test=mix-rate]').text()).toContain('余 5')
+    expect(w2.text()).not.toContain('≈')
   })
 })

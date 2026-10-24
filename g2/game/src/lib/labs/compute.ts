@@ -140,22 +140,29 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
     /* ============ 奇妙的七巧板 ============ */
     case 'tangram': {
       const sel = Math.round(p.sel ?? 0)
+      // 图案表与 lib/labs/tangram.ts 的 ASSEMBLIES 一一对应，用哪几块板由真实拼法决定
       const defs = [
-        { name: '正方形', desc: '用③号、④号、⑤号板拼成' },
-        { name: '长方形', desc: '用③号、④号、⑤号板拼成' },
-        { name: '平行四边形', desc: '用③号、④号、⑤号板拼成' },
-        { name: '三角形', desc: '用①号、③号、⑤号、⑦号板拼成' },
+        { name: '正方形（7 块）', used: [1, 2, 3, 4, 5, 6, 7] as number[], area: 64 },
+        { name: '长方形（③⑤④）', used: [3, 4, 5], area: 16 },
+        { name: '正方形（③⑤）', used: [3, 5], area: 8 },
+        { name: '平行四边形（③⑤）', used: [3, 5], area: 8 },
+        { name: '三角形（③⑤）', used: [3, 5], area: 8 },
+        { name: '三角形（③⑤⑦，和①一样大）', used: [3, 5, 7], area: 16 },
       ]
-      const d = defs[sel]!
+      const d = defs[Math.min(defs.length - 1, Math.max(0, sel))]!
+      const names = d.used.map((n) => `${n}号板`).join('、')
       return {
-        value: sel,
-        text: `${d.name}`,
+        value: d.area,
+        text: d.name,
         steps: [
-          { expr: `七巧板的组成`, result: `7 块板：2 个大三角形、1 个中三角形、2 个小三角形、1 个正方形、1 个平行四边形` },
-          { expr: `拼成的图形`, result: `${d.name}` },
-          { expr: `拼法`, result: `${d.desc}` },
+          {
+            expr: `七巧板的组成`,
+            result: `7 块板：2 个大三角形、1 个中三角形、2 个小三角形、1 个正方形、1 个平行四边形`,
+          },
+          { expr: `用哪几块板`, result: `${names}（共 ${d.used.length} 块）` },
+          { expr: `面积验算`, result: `这几块板的面积加起来 = ${d.area}，和目标图形的面积一样大` },
         ],
-        conclusion: `七巧板能拼出许多图形：①号板和②号板完全一样，③号板和⑤号板可以拼成④号板。`,
+        conclusion: `同样的几块板能拼成不同的图形：③号和⑤号两块完全一样的三角形，既能拼成④号正方形，也能拼成⑥号平行四边形、⑦号中三角形。`,
       }
     }
 
@@ -266,30 +273,51 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       }
     }
     case 'twodigit-sub': {
-      const a = (p.ta ?? 5) * 10 + (p.oa ?? 4)
-      const b = (p.tb ?? 3) * 10 + (p.ob ?? 6)
-      const swap = a < b
-      const big = swap ? b : a
-      const small = swap ? a : b
-      const bt = Math.floor(big / 10)
-      const bo = big % 10
-      const st = Math.floor(small / 10)
-      const so = small % 10
-      const borrow = bo < so
-      const oRes = borrow ? bo + 10 - so : bo - so
-      const tRes = borrow ? bt - 1 - st : bt - st
-      const value = big - small
+      const ta = p.ta ?? 5
+      const oa = p.oa ?? 4
+      const tb = p.tb ?? 3
+      const ob = p.ob ?? 6
+      const a = ta * 10 + oa
+      const b = tb * 10 + ob
+      // 旧实现：a < b 时悄悄把两个数调换再相减，还教「大数减小数」——
+      // 54 − 36 与 36 − 54 是两个不同的减法，调换后算出来的差是错的（P0）。
+      if (a < b) {
+        return {
+          value: a - b,
+          text: `${fmt(a)} - ${fmt(b)} = ？（本册不学负数）`,
+          steps: [
+            { expr: `先比大小`, result: `${fmt(a)} < ${fmt(b)}，被减数比减数小` },
+            { expr: `怎么办`, result: `被减数要大于或等于减数才能用退位减法，先把被减数调大再算` },
+          ],
+          conclusion: `被减数 ${fmt(a)} 比减数 ${fmt(b)} 小：本册不学负数，请先把被减数调大一些再减。`,
+        }
+      }
+      const borrow = oa < ob
+      const oBorrowed = borrow ? oa + 10 : oa
+      const oRes = borrow ? oa + 10 - ob : oa - ob
+      const tRes = ta - (borrow ? 1 : 0) - tb
+      const value = a - b
       return {
         value,
         text: `${fmt(a)} - ${fmt(b)} = ${fmt(value)}`,
         steps: [
-          { expr: swap ? `被减数比减数小，交换后比较` : `个位相减`, result: swap ? `比较 ${fmt(big)} 和 ${fmt(small)} 的大小` : `${fmt(bo)} - ${fmt(so)} = ${fmt(borrow ? oRes : oRes)}${borrow ? '（不够减，从十位退 1 当 10）' : ''}` },
-          { expr: `十位相减`, result: `${fmt(tRes)} 个十` },
+          {
+            expr: `个位相减`,
+            result: borrow
+              ? `${fmt(oa)} 不够减 ${fmt(ob)}，从十位退 1 当 10：${fmt(oBorrowed)} - ${fmt(ob)} = ${fmt(oRes)}`
+              : `${fmt(oa)} - ${fmt(ob)} = ${fmt(oRes)}`,
+          },
+          {
+            expr: `十位相减`,
+            result: borrow
+              ? `${fmt(ta)} 退 1 得 ${fmt(ta - 1)}，${fmt(ta - 1)} - ${fmt(tb)} = ${fmt(tRes)}`
+              : `${fmt(ta)} - ${fmt(tb)} = ${fmt(tRes)}`,
+          },
           { expr: `合起来`, result: `${fmt(tRes)} 个十 + ${fmt(oRes)} 个一 = ${fmt(value)}` },
         ],
-        conclusion: swap
-          ? `被减数不够减时，就改比较大小、大数减小数：${fmt(big)} - ${fmt(small)} = ${fmt(value)}。`
-          : `个位不够减时从十位退 1 当 10。${fmt(a)} - ${fmt(b)} = ${fmt(value)}。`,
+        conclusion: borrow
+          ? `个位不够减，从十位退 1 当 10。${fmt(a)} - ${fmt(b)} = ${fmt(value)}。`
+          : `个位够减，直接相减。${fmt(a)} - ${fmt(b)} = ${fmt(value)}。`,
       }
     }
 

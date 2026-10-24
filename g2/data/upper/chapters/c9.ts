@@ -16,7 +16,7 @@ export const c9Labs: LabDef[] = [
       { key: 'per', label: '每份几个', min: 2, max: 6, step: 1, default: 3, unit: '个' },
     ],
     formula: '总数 ÷ 每份几个 = 份数 …… 余数',
-    tip: '剩下的瓶数比每只小熊分得的瓶数少，余数都比除数小。',
+    tip: '把物体每几个一份地分，分不完剩下的部分就是余数，商是分成的份数：总数 ÷ 每份几个 = 份数 …… 余数。易错点：剩下的够再分一份时要继续分，余数一定比除数小。',
   },
   {
     id: 'g2-c9-remainder-rule',
@@ -29,6 +29,6 @@ export const c9Labs: LabDef[] = [
     kind: 'remainder-rule',
     params: [{ key: 'd', label: '除数', min: 2, max: 7, step: 1, default: 3, unit: '' }],
     formula: '最大余数 = 除数 - 1',
-    tip: '余数都比除数小，余数最大是除数减 1。',
+    tip: '余数都比除数小，所以除以 d 时余数只可能是 0、1、…、d − 1，最大余数是 d − 1。易错点：算出余数等于除数，说明还能再分一份，商要加 1、余数是 0。',
   },
 ]

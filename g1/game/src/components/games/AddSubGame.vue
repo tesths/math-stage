@@ -69,6 +69,7 @@
       <button
         type="button"
         class="as-step"
+        data-act
         :disabled="stage >= 2 || done"
         @click="nextStage"
       >{{ stage === 0 ? (isRemove ? '拿走 ▶' : '加进来 ▶') : stage === 1 ? '看结果 ▶' : '✓' }}</button>

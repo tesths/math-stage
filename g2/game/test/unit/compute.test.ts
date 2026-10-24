@@ -68,12 +68,24 @@ describe('computeLab 二 表内除法', () => {
 })
 
 describe('computeLab 综合实践（七巧板 / 方向）', () => {
-  it('tangram：四种图案', () => {
-    expect(computeLab('tangram', { sel: 0 }).text).toBe('正方形')
-    expect(computeLab('tangram', { sel: 1 }).text).toBe('长方形')
-    expect(computeLab('tangram', { sel: 2 }).text).toBe('平行四边形')
-    expect(computeLab('tangram', { sel: 3 }).text).toBe('三角形')
+  it('tangram：六种拼法，用哪几块板与真实拼法一致', () => {
+    expect(computeLab('tangram', { sel: 0 }).text).toBe('正方形（7 块）')
+    expect(computeLab('tangram', { sel: 1 }).text).toBe('长方形（③⑤④）')
+    expect(computeLab('tangram', { sel: 2 }).text).toBe('正方形（③⑤）')
+    expect(computeLab('tangram', { sel: 3 }).text).toBe('平行四边形（③⑤）')
+    expect(computeLab('tangram', { sel: 4 }).text).toBe('三角形（③⑤）')
+    expect(computeLab('tangram', { sel: 5 }).text).toBe('三角形（③⑤⑦，和①一样大）')
     expect(computeLab('tangram', { sel: 0 }).steps[0]!.result).toContain('7 块板')
+  })
+
+  it('tangram：长方形与平行四边形不再用同一组板（旧实现两块都写 3、4、5 是错的）', () => {
+    const rect = computeLab('tangram', { sel: 1 })
+    const para = computeLab('tangram', { sel: 3 })
+    expect(rect.steps[1]!.result).toContain('4号板')
+    expect(para.steps[1]!.result).not.toContain('4号板')
+    // 面积验算：长方形 4+4+8=16、平行四边形 4+4=8
+    expect(rect.value).toBe(16)
+    expect(para.value).toBe(8)
   })
 
   it('direction：面向东，后西左北右南', () => {
@@ -143,10 +155,20 @@ describe('computeLab 五 两位数加减', () => {
     expect(r.steps[0]!.result).toContain('退 1')
   })
 
-  it('twodigit-sub：被减数小于减数时交换比较', () => {
+  it('twodigit-sub：被减数小于减数时给出真值并明确提示（不再偷偷调换两个数）', () => {
+    // 旧实现把 36 − 54 换成 54 − 36 得出 18，那是另一道题的答案（P0）。
     const r = computeLab('twodigit-sub', { ta: 3, oa: 6, tb: 5, ob: 4 })
-    expect(r.value).toBe(18)
-    expect(r.conclusion).toContain('比较大小')
+    expect(r.value).toBe(-18)
+    expect(r.value).not.toBe(18)
+    expect(r.conclusion).toContain('本册不学负数')
+    expect(r.text).toContain('36 - 54')
+    expect(r.steps.some((st) => st.result.includes('被减数要大于或等于减数'))).toBe(true)
+  })
+
+  it('twodigit-sub：被减数等于减数时差为 0，且走正常退位流程', () => {
+    const r = computeLab('twodigit-sub', { ta: 5, oa: 4, tb: 5, ob: 4 })
+    expect(r.value).toBe(0)
+    expect(r.conclusion).toContain('54 - 54 = 0')
   })
 
   it('twodigit-sub：不退位', () => {

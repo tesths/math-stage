@@ -51,6 +51,8 @@ export interface LabParam {
   default: number
   /** 单位（元/米/千克/格/°…） */
   unit?: string
+  /** 离散选项标签：0/1/2 这类参数用按钮显示成词，避免学生先翻译编号 */
+  choices?: { value: number; label: string }[]
 }
 
 /** 可视化 Lab 类型 */

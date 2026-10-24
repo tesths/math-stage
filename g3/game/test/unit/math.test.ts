@@ -29,7 +29,8 @@ describe('math 工具（三年级）', () => {
   })
 
   it('time12Text 时段边界', () => {
-    expect(time12Text(0)).toEqual({ period: '凌晨', display: 12 })
+    // 课本 p11：一天从「晚上 12:00」开始，所以 0 时读作晚上 12 时（不是"凌晨 12 时"）
+    expect(time12Text(0)).toEqual({ period: '晚上', display: 12 })
     expect(time12Text(5)).toEqual({ period: '凌晨', display: 5 })
     expect(time12Text(6)).toEqual({ period: '上午', display: 6 })
     expect(time12Text(11)).toEqual({ period: '上午', display: 11 })

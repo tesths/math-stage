@@ -31,7 +31,79 @@ const MODELS: Record<string, [number, number, number][]> = {
     [2, 0, 1],
   ],
 }
-const cubes = computed(() => MODELS[props.lab.id] ?? MODELS['g5-c8-views3d-blocks']!)
+/**
+ * 另一种摆法（只会换掉部分方块的位置），用于「同一视图可以由不同摆法得到」：
+ * 每个备选摆法与基本摆法的「前面」投影完全相同，但另外的视图会变——
+ * 学生换一种摆法后可以亲眼看到哪个视图不变、哪个视图变了。
+ */
+const ALT_MODELS: Record<string, [number, number, number][][]> = {
+  'g5-c8-views3d-blocks': [
+    // 前面轮廓不变（仍是 4 格），上面 / 右面的投影都变了
+    [
+      [0, 0, 0],
+      [1, 0, 0],
+      [2, 0, 1],
+      [2, 0, 2],
+      [2, 1, 1],
+    ],
+  ],
+  'g5-c8-views3d-move': [
+    // 前面、右面轮廓不变（右面看到的图形不变），上面变了
+    [
+      [0, 0, 0],
+      [1, 0, 0],
+      [2, 0, 0],
+      [1, 0, 1],
+      [2, 0, 1],
+    ],
+  ],
+}
+/** 所有可选摆法：第 0 个是数据层给定的基本摆法 */
+const arrangements = computed(() => {
+  const base = MODELS[props.lab.id] ?? MODELS['g5-c8-views3d-blocks']!
+  const alts = ALT_MODELS[props.lab.id] ?? []
+  return alts.length ? [base, ...alts] : [base]
+})
+const arrangement = ref(0)
+const arrangementCount = computed(() => arrangements.value.length)
+/** 当前摆法下实际用到的方块 */
+const cubes = computed(() => arrangements.value[arrangement.value % arrangements.value.length]!)
+
+/** 三个方向的投影轮廓（只关心"占了哪些格子"，与用的哪块方块无关） */
+function signatureOf(cs: [number, number, number][]) {
+  const front = new Set<string>()
+  const right = new Set<string>()
+  const top = new Set<string>()
+  for (const [x, y, z] of cs) {
+    front.add(`${x},${y}`)
+    right.add(`${z},${y}`)
+    top.add(`${x},${z}`)
+  }
+  return { front, right, top }
+}
+const sameCells = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].every((k) => b.has(k))
+/** 相对基本摆法，哪些视图的投影轮廓变了 / 没变 */
+const changedViewNames = computed(() => {
+  if (arrangement.value % arrangementCount.value === 0) return []
+  const now = signatureOf(cubes.value)
+  const base = signatureOf(arrangements.value[0]!)
+  return views.filter((v) => !sameCells(now[v.dir], base[v.dir])).map((v) => v.name)
+})
+const keptViewNames = computed(() =>
+  views.filter((v) => !changedViewNames.value.includes(v.name)).map((v) => v.name),
+)
+const arrangeText = computed(() => {
+  if (arrangementCount.value <= 1) return ''
+  if (arrangement.value % arrangementCount.value === 0) return '当前是课本上的基本摆法：点「换一种摆法」试一试，看哪个视图不变'
+  const kept = keptViewNames.value.join('、')
+  const changed = changedViewNames.value.join('、')
+  return `换了一种摆法：${kept}看到的图形不变${changed ? `，${changed}看到的图形变了` : '，三个方向看到的图形都不变'}`
+})
+function nextArrangement() {
+  if (arrangementCount.value <= 1) return
+  arrangement.value = (arrangement.value + 1) % arrangementCount.value
+  playClick()
+}
 
 /* ---------- 过程态：一块一块地搭，三视图同步长出来 ---------- */
 const shown = ref(cubes.value.length)
@@ -45,6 +117,13 @@ const views = [
 ] as const
 const view = computed(() => Math.round(props.values.view ?? 0))
 const currentView = computed(() => views.find((v) => v.key === view.value) ?? views[0]!)
+
+/** 单方向看 / 三方向同屏对照 */
+const singleView = ref(false)
+function toggleSingleView() {
+  singleView.value = !singleView.value
+  playClick()
+}
 
 /** 三个方向的投影（2D 网格点集） */
 const projections = computed(() => {
@@ -78,6 +157,10 @@ const projectionCards = computed(() => [
   { ...views[1]!, cells: projRight.value },
   { ...views[2]!, cells: projTop.value },
 ])
+/** 三方向同屏对照（默认）或只看当前观察方向 */
+const visibleCards = computed(() =>
+  singleView.value ? projectionCards.value.filter((card) => card.key === currentView.value.key) : projectionCards.value,
+)
 /** 刚刚放上那块之前的三视图（用于高亮"这一块新占了哪几格"） */
 const prevProjections = computed(() => {
   const cs = cubes.value.slice(0, Math.max(0, shown.value - 1))
@@ -245,6 +328,14 @@ watch(cubes, () => {
   shown.value = cubes.value.length
   fillCubeGroup()
 })
+// 换 Lab（另一个观察物体例题）时回到基本摆法和三方向对照
+watch(
+  () => props.lab.id,
+  () => {
+    arrangement.value = 0
+    singleView.value = false
+  },
+)
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(raf)
@@ -286,7 +377,7 @@ onBeforeUnmount(() => {
 
     <div class="proj-row">
       <div
-        v-for="card in projectionCards"
+        v-for="card in visibleCards"
         :key="card.key"
         class="proj-box"
         :class="{ active: view === card.key }"
@@ -314,9 +405,26 @@ onBeforeUnmount(() => {
       <UButton size="sm" variant="outline" color="neutral" :disabled="shown <= 1" @click="resetBuild">
         只剩一块
       </UButton>
+      <UButton
+        v-if="arrangementCount > 1"
+        size="sm"
+        variant="outline"
+        color="primary"
+        data-act
+        @click="nextArrangement"
+      >
+        换一种摆法
+      </UButton>
+      <UButton size="sm" variant="outline" color="neutral" @click="toggleSingleView">
+        {{ singleView ? '三方向同屏对照' : '只看当前方向' }}
+      </UButton>
       <span class="build-note">
         已放 <b>{{ shown }}</b> / {{ cubes.length }} 块{{ shown < cubes.length ? '：再放一块，看哪几个视图会多出格子' : '：模型搭好了，橙色格子是最后一块新占的位置' }}
       </span>
+    </div>
+    <div v-if="arrangementCount > 1" class="arrange-bar">
+      <span class="arrange-tag">摆法 {{ (arrangement % arrangementCount) + 1 }} / {{ arrangementCount }}</span>
+      <span class="arrange-note">{{ arrangeText }}</span>
     </div>
     <p class="note">🖱️ 拖拽旋转 3D 场景 · 点击按钮切换观察方向 · 从不同方向看，看到的图形可能不同</p>
   </div>
@@ -374,6 +482,28 @@ onBeforeUnmount(() => {
 }
 .build-note b {
   color: var(--ui-primary);
+}
+.arrange-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.arrange-tag {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.1rem 0.55rem;
+}
+.arrange-note {
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+  max-width: 34rem;
+  text-align: center;
 }
 .proj-cell.fresh {
   fill: #f59e0b;

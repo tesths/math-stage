@@ -2,7 +2,7 @@
 /**
  * 数据收集与整理 Lab：画"正"字记录、统计表与统计图
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
@@ -41,6 +41,35 @@ function zheng(count: number): { full: string; left: number } {
 function barHeight(count: number): number {
   return Math.round((count / chartScale.value) * 120)
 }
+
+/**
+ * 过程态 1（画正字）：一笔一笔地画。
+ * 原来一次就把所有"正"字摆出来，学生看不到"5 画一个正字、边数边记"的过程。
+ */
+const strokes = ref(total.value)
+const allocated = computed(() => {
+  let rest = strokes.value
+  return data.value.map((d) => {
+    const show = Math.min(d.count, Math.max(0, rest))
+    rest -= show
+    return show
+  })
+})
+function nextStroke() {
+  strokes.value = strokes.value >= total.value ? 0 : strokes.value + 1
+}
+function resetStrokes() {
+  strokes.value = total.value
+}
+
+/** 过程态 2（统计图）：一格一格把人数涂成条形 */
+const paint = ref(1)
+function nextPaint() {
+  paint.value = paint.value >= 1 ? 0.25 : Math.min(1, Math.round((paint.value + 0.25) * 100) / 100)
+}
+function resetPaint() {
+  paint.value = 1
+}
 </script>
 
 <template>
@@ -52,11 +81,17 @@ function barHeight(count: number): number {
           <span class="zheng-emoji">{{ d.emoji }}</span>
           <span class="zheng-name">{{ d.name }}</span>
           <span class="zheng-chars">
-            <span class="zheng-full">{{ zheng(d.count).full }}</span>
-            <span class="zheng-left">{{ '一'.repeat(zheng(d.count).left) }}</span>
+            <span class="zheng-full">{{ zheng(allocated[data.indexOf(d)] ?? d.count).full }}</span>
+            <span class="zheng-left">{{ '一'.repeat(zheng(allocated[data.indexOf(d)] ?? d.count).left) }}</span>
           </span>
           <span class="zheng-num">{{ d.count }} 人</span>
         </div>
+      </div>
+      <div class="tally-bar">
+        <button type="button" class="tl-btn primary" data-test="tally-next" @click="nextStroke">
+          数一数：一笔一笔画正字（{{ strokes }} / {{ total }} 画）
+        </button>
+        <button type="button" class="tl-btn ghost" data-test="tally-reset" @click="resetStrokes">重来</button>
       </div>
       <p class="total-line">
         一个"正"字表示 5 人。合计调查 <b>{{ total }}</b> 人，最喜欢<b>{{ max.name }}</b>的人最多
@@ -105,10 +140,20 @@ function barHeight(count: number): number {
         <div class="bar" v-for="d in data" :key="d.name">
           <span class="bar-value">{{ d.count }}</span>
           <div class="bar-track">
-            <div class="bar-fill" :style="{ height: barHeight(d.count) + 'px' }" />
+            <div
+              class="bar-fill"
+              :style="{ height: Math.round(barHeight(d.count) * paint) + 'px' }"
+              :data-test="'bar-' + d.name"
+            />
           </div>
           <span class="bar-label">{{ d.name }}</span>
         </div>
+      </div>
+      <div class="tally-bar">
+        <button type="button" class="tl-btn primary" data-test="paint-next" @click="nextPaint">
+          试一试：一格一格涂条形图（{{ Math.round(paint * 100) }}%）
+        </button>
+        <button type="button" class="tl-btn ghost" data-test="paint-reset" @click="resetPaint">重来</button>
       </div>
       <p class="total-line">每个小圆点表示 1 人，统计表中的人数直接决定条形高度：<b>{{ max.name }}</b>的人数最多（{{ max.count }} 人）</p>
     </template>
@@ -125,6 +170,34 @@ function barHeight(count: number): number {
   min-height: 320px;
   width: 100%;
   padding: 0.5rem;
+}
+.tally-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tl-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  cursor: pointer;
+}
+.tl-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.tl-btn.ghost {
+  color: var(--ui-text-muted);
+}
+.bar-fill {
+  transition: height 0.25s ease;
 }
 .zheng-grid {
   display: flex;

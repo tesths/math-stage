@@ -20,6 +20,22 @@ export function validateLabs(): string[] {
       if (p.default < p.min || p.default > p.max) {
         errors.push(`${lab.id}: 参数 ${p.key} 默认值超出范围`)
       }
+      if (p.step <= 0) errors.push(`${lab.id}: 参数 ${p.key} step 必须大于 0`)
+      if (p.choices) {
+        if (p.choices.length === 0) errors.push(`${lab.id}: 参数 ${p.key} choices 为空`)
+        const seenValues = new Set<number>()
+        for (const choice of p.choices) {
+          if (!choice.label) errors.push(`${lab.id}: 参数 ${p.key} choice 缺 label`)
+          if (seenValues.has(choice.value)) errors.push(`${lab.id}: 参数 ${p.key} choice ${choice.value} 重复`)
+          seenValues.add(choice.value)
+          if (choice.value < p.min || choice.value > p.max) {
+            errors.push(`${lab.id}: 参数 ${p.key} choice ${choice.value} 超出范围`)
+          }
+        }
+        if (!p.choices.some((choice) => choice.value === p.default)) {
+          errors.push(`${lab.id}: 参数 ${p.key} 默认值不在 choices 中`)
+        }
+      }
     }
     const chapterOk = byChapter.some((c) => c.meta.id === lab.chapter)
     if (!chapterOk) errors.push(`${lab.id}: 未知单元 ${lab.chapter}`)

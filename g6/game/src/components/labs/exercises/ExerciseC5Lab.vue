@@ -277,7 +277,7 @@ const areaMore = computed(() => byArea.value > discCount.value)
           <UButton size="sm" color="primary" :disabled="placedRows >= rows" @click="placeRow">
             再排一行
           </UButton>
-          <UButton size="sm" variant="outline" color="neutral" :disabled="placedRows === 0" @click="resetRows">
+          <UButton size="sm" variant="outline" color="neutral" :disabled="placedRows === 0" @click="resetRows" data-act>
             全部收回
           </UButton>
           <span class="pack-note">

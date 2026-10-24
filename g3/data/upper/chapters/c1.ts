@@ -17,7 +17,7 @@ export const c1Labs: LabDef[] = [
       { key: 'bag', label: '书包单价', min: 10, max: 100, step: 1, default: 50, unit: '元' },
     ],
     formula: '单价 × 数量 + 书包价',
-    tip: '算式中有乘法和加法，应该先算乘法，再算加法。',
+    tip: '算式里既有乘法又有加法，要先算乘法、再算加法（先乘除后加减）。易错点：从左往右依次算，先算了 5 + 50。',
   },
   {
     id: 'g3-c1-mix-divadd',
@@ -34,7 +34,7 @@ export const c1Labs: LabDef[] = [
       { key: 'stapler', label: '订书机价', min: 2, max: 30, step: 1, default: 12, unit: '元' },
     ],
     formula: '盒价 ÷ 支数 + 订书机价',
-    tip: '算式中有除法和加法，应该先算除法，再算加法。',
+    tip: '算式里既有除法又有加法，要先算除法、再算加法。易错点：把 40 ÷ 5 + 12 算成 40 ÷ (5 + 12)。',
   },
   {
     id: 'g3-c1-mix-order',
@@ -50,7 +50,7 @@ export const c1Labs: LabDef[] = [
       { key: 'c', label: '数 c', min: 1, max: 20, step: 1, default: 5, unit: '' },
     ],
     formula: 'a + b × c 与 (a + b) × c',
-    tip: '有小括号的算式，先算小括号里面的；没有小括号，先算乘除再算加减。',
+    tip: '小括号能改变运算顺序：12 + 8 × 5 先乘后加，而（12 + 8）× 5 先算括号。易错点：以为带不带括号结果一样。',
   },
   {
     id: 'g3-c1-mix-bracket',
@@ -67,6 +67,6 @@ export const c1Labs: LabDef[] = [
       { key: 'notebook', label: '笔记本价', min: 1, max: 20, step: 1, default: 5, unit: '元' },
     ],
     formula: '(带的钱 − 书包价) ÷ 笔记本价',
-    tip: '要先算减法，综合算式中必须添上小括号，小括号里的算式先算。',
+    tip: '要先算「剩下的钱」，综合算式里就必须添小括号：（100 − 50）÷ 5。易错点：写成 100 − 50 ÷ 5，先算了除法。',
   },
 ]

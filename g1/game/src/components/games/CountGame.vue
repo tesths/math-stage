@@ -14,6 +14,7 @@
                 class="finger-dot"
                 :class="{ lit: h * 5 - 5 + f <= litCount }"
                 :disabled="done"
+                data-act
                 @click="onCell(h * 5 - 5 + f)"
               >{{ h * 5 - 5 + f }}</button>
             </div>
@@ -34,6 +35,7 @@
             class="source-item"
             :class="{ lit: i < litCount || done }"
             :disabled="done"
+            data-act
             @click="onCell(i + 1)"
           >
             <span class="source-obj">{{ c }}</span>
@@ -58,6 +60,7 @@
             class="count-item"
             :class="{ lit: i < litCount }"
             :disabled="done"
+            data-act
             @click="onCell(i + 1)"
           >
             <span class="item-obj">{{ c }}</span>
@@ -85,7 +88,11 @@
               <div class="counter-frame">
                 <div class="counter-col" aria-label="十位">
                   <div class="counter-beads">
-                    <span v-for="i in tens" :key="i" class="counter-bead">
+                    <span
+                      v-for="i in tens"
+                      :key="i"
+                      class="counter-bead"
+                    >
                       <span class="counter-hole"></span>
                     </span>
                   </div>
@@ -94,7 +101,12 @@
                 <div class="counter-rail"></div>
                 <div class="counter-col" aria-label="个位">
                   <div class="counter-beads">
-                    <span v-for="i in ones" :key="i" class="counter-bead">
+                    <span
+                      v-for="i in ones"
+                      :key="i"
+                      class="counter-bead"
+                      :class="{ dim: probing && probeStep < 2 }"
+                    >
                       <span class="counter-hole"></span>
                     </span>
                   </div>
@@ -105,10 +117,26 @@
           </div>
           <div class="write-box digit-box">
             <p class="box-label">最后写数字</p>
-            <p class="digit">{{ number }}</p>
+            <p class="digit" :class="{ dim: probing && probeStep < 2 }">{{ number }}</p>
+          </div>
+          <div class="write-bar">
+            <button type="button" class="probe-btn" data-act @click="nextProbe">拨一拨</button>
+            <span class="probe-say" data-test="probe-say">
+              {{ probing ? probeSay : '点「拨一拨」：先数十位，再数个位，最后写数' }}
+            </span>
           </div>
         </div>
       </template>
+    </div>
+    <div v-if="isZeroCase" class="zero-stage">
+      <p class="zero-title">套圈：一共扔 {{ RINGS }} 个圈，看套中几个</p>
+      <div class="ring-row">
+        <span v-for="i in RINGS" :key="i" class="ring" :class="{ thrown: i <= thrown }">⭕</span>
+      </div>
+      <p class="zero-say" data-test="zero-say">
+        扔了 {{ thrown }} 个圈，套中 <b>{{ 0 }}</b> 个 —— 一个也没有，就用 <b>0</b> 表示
+      </p>
+      <button type="button" class="probe-btn" data-act @click="throwRing">套一圈</button>
     </div>
     <AnswerPad
       :options="options"
@@ -122,7 +150,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { GameQuestion } from '@data/schema/example'
 import { isAnswerCorrect } from '@/lib/engine/checker'
 import { visibleUnits, countUnits, tensOf, onesOf } from '@/lib/engine/count'
@@ -144,8 +172,33 @@ const answer = computed(() => (cfg.value as { answer: number }).answer)
 const options = computed(() => (cfg.value as { options: number[] }).options)
 const hint = computed(() => (cfg.value as { hint: string }).hint)
 const number = computed(() => (isWrite.value ? (cfg.value as { number: number }).number : 0))
+/* 过程态：0 = 三块都亮（结果状态）；1 = 只拨十位；2 = 拨完个位；3 = 写出数字 */
+/** 认识 0：这一题图上一个物体也没有，过程就是「一圈一圈扔，一个也没套中」 */
+const RINGS = 5
+const isZeroCase = computed(() => isCount.value && units.value.length === 0)
+const thrown = ref(0)
+function throwRing() {
+  thrown.value = thrown.value >= RINGS ? 0 : thrown.value + 1
+}
+
+const probeStep = ref(0)
+const probing = computed(() => probeStep.value > 0)
+const probeSay = computed(() => {
+  if (probeStep.value === 1) return `先拨十位：${tens.value} 颗珠，表示 ${tens.value} 个十`
+  if (probeStep.value === 2)
+    return `再拨个位：${ones.value} 颗珠，${tens.value} 个十和 ${ones.value} 个一合起来是 ${number.value}`
+  return `写数：十位 ${tens.value}、个位 ${onesValue.value}，写作 ${number.value}`
+})
+function nextProbe() {
+  probeStep.value = probeStep.value >= 3 ? 0 : probeStep.value + 1
+}
+watch(number, () => {
+  probeStep.value = 0
+})
+
 const tens = computed(() => (isWrite.value ? tensOf(number.value) : 0))
 const ones = computed(() => (isWrite.value ? onesOf(number.value) : 0))
+const onesValue = ones
 
 const visual = computed(() => (cfg.value as { visual?: { variant?: string; unitLabel?: string } }).visual)
 const isTwoHands = computed(() => visual.value?.variant === 'two-hands')
@@ -194,6 +247,64 @@ function onSelect(value: number | string) {
 </script>
 
 <style scoped>
+.zero-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.zero-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+}
+.ring-row {
+  display: flex;
+  gap: 0.6rem;
+}
+.ring {
+  font-size: 1.8rem;
+  opacity: 0.2;
+  transition: opacity 0.2s;
+}
+.ring.thrown {
+  opacity: 1;
+}
+.zero-say {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ui-text-toned);
+}
+.zero-say b {
+  color: var(--ui-primary);
+  font-size: 1.1rem;
+}
+.dim {
+  opacity: 0.22;
+}
+.write-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.probe-btn {
+  border: 1px solid var(--ui-primary);
+  background: var(--ui-bg);
+  color: var(--ui-primary);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.22rem 0.9rem;
+  cursor: pointer;
+}
+.probe-say {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+}
 .count-game {
   display: flex;
   flex-direction: column;

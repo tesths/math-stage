@@ -12,7 +12,7 @@ import { c8Labs, pinboardLabs } from './chapters/c8'
 export { chapters } from './chapters/meta'
 export type { ChapterMeta, LabDef, LabParam, LabKind, ParamValues, SourceKind } from './schema/lab'
 
-/** 全部 Lab（按单元顺序；探索规律归入 c6 单元尾部） */
+/** 全部 Lab（按单元与页码顺序；书末「探索规律·钉子板上的多边形」归入七单元末） */
 export const allLabs: LabDef[] = [
   ...c1Labs,
   ...c2Labs,
@@ -20,8 +20,8 @@ export const allLabs: LabDef[] = [
   ...c4Labs,
   ...c5Labs,
   ...c6Labs,
-  ...pinboardLabs,
   ...c7Labs,
+  ...pinboardLabs,
   ...c8Labs,
 ]
 
@@ -37,8 +37,8 @@ export const byChapter: ChapterLabs[] = [
   { meta: chapters[2]!, labs: c3Labs },
   { meta: chapters[3]!, labs: c4Labs },
   { meta: chapters[4]!, labs: c5Labs },
-  { meta: chapters[5]!, labs: [...c6Labs, ...pinboardLabs] },
-  { meta: chapters[6]!, labs: c7Labs },
+  { meta: chapters[5]!, labs: c6Labs },
+  { meta: chapters[6]!, labs: [...c7Labs, ...pinboardLabs] },
   { meta: chapters[7]!, labs: c8Labs },
 ]
 

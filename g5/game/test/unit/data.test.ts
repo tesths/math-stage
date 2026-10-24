@@ -18,10 +18,13 @@ describe('五年级 Lab 数据', () => {
     }
   })
 
-  it('每个 Lab 都有公式与提示', () => {
+  it('每个 Lab 都有公式、标题与「重点概念」提示（页面 ConceptTip 卡的数据来源）', () => {
     for (const l of allLabs) {
       expect(l.formula.length).toBeGreaterThan(0)
       expect(l.title.length).toBeGreaterThan(0)
+      expect((l.tip ?? '').trim().length).toBeGreaterThan(0)
+      expect(l.page).toBeGreaterThan(0)
+      expect(l.source.length).toBeGreaterThan(0)
     }
   })
 

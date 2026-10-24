@@ -2,10 +2,12 @@
 /**
  * 人民币 Lab：认识人民币面额 / 购物付钱与找零
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
+import { changeOf, exchangeYuan } from '@/lib/labs/process'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
+const emit = defineEmits<{ acted: [] }>()
 
 const kind = computed(() => props.lab.kind)
 const list = (n: number) => Array.from({ length: n }, (_, i) => i)
@@ -25,8 +27,47 @@ const denom = computed(() => DENOMS[sel.value]!)
 /* ---------- 购物找零 ---------- */
 const price = computed(() => props.values.price ?? 6)
 const paid = computed(() => props.values.paid ?? 10)
-const change = computed(() => paid.value - price.value)
-const enough = computed(() => change.value >= 0)
+const changeInfo = computed(() => changeOf(price.value, paid.value))
+const change = computed(() => changeInfo.value.change)
+const enough = computed(() => changeInfo.value.enough)
+
+/* ---------- 过程态 ---------- */
+/** 认识人民币：数到第几张（0 = 全部摆好） */
+const counted = ref(0)
+const doingCount = computed(() => counted.value > 0)
+const curCount = computed(() => (doingCount.value ? counted.value : denom.value.bills))
+/** 换钱：把 k 张 1 元换成 10k 个 1 角 */
+const exchanged = ref(0)
+const ex = computed(() => exchangeYuan(denom.value.bills, exchanged.value))
+/** 购物：付钱 3 步 */
+const step = ref(0)
+const doingShop = computed(() => step.value > 0)
+const shopSay = computed(() => {
+  if (step.value === 1) return `先看价格：这件商品 ${price.value} 元`
+  if (step.value === 2) return `再数付出的钱：付了 ${paid.value} 元`
+  if (step.value === 3)
+    return enough.value
+      ? `最后找零：${paid.value} − ${price.value} = ${change.value} 元`
+      : `钱不够：还差 ${changeInfo.value.short} 元`
+  return ''
+})
+function nextStep() {
+  step.value = step.value >= 3 ? 0 : step.value + 1
+  if (step.value > 0) emit('acted')
+}
+function nextCount() {
+  counted.value = counted.value >= denom.value.bills ? 0 : counted.value + 1
+  if (counted.value > 0) emit('acted')
+}
+function doExchange() {
+  exchanged.value = exchanged.value >= denom.value.bills ? 0 : exchanged.value + 1
+  if (exchanged.value > 0) emit('acted')
+}
+watch([sel, price, paid, kind], () => {
+  counted.value = 0
+  exchanged.value = 0
+  step.value = 0
+})
 </script>
 
 <template>
@@ -45,9 +86,31 @@ const enough = computed(() => change.value >= 0)
         </button>
       </div>
       <div class="bill-line">
-        <span v-for="n in list(denom.bills)" :key="n" class="bill">{{ denom.icon }}</span>
+        <span
+          v-for="n in list(denom.bills)"
+          :key="n"
+          class="bill"
+          :class="{ dim: doingCount && n > curCount }"
+          :data-lit="!doingCount || n <= curCount"
+        >{{ denom.icon }}</span>
       </div>
       <p class="note">{{ denom.note }}</p>
+      <div class="step-bar">
+        <button type="button" class="step-btn" data-test="money-next" @click="nextCount">数一张</button>
+        <span class="step-say" data-test="money-say">
+          {{
+            doingCount
+              ? `数到第 ${curCount} 张：${curCount} 个 ${denom.name}`
+              : `点「数一张」，一张一张数出 ${denom.bills} 个 ${denom.name}`
+          }}
+        </span>
+      </div>
+      <div v-if="sel === 0" class="step-bar">
+        <button type="button" class="step-btn" data-test="money-exchange" @click="doExchange">换一换</button>
+        <span class="step-say" data-test="money-exchange-say">
+          {{ exchanged > 0 ? ex.say + `（手上还有 ${ex.kept} 张 1 元）` : '点「换一换」：把 1 元换成 10 个 1 角' }}
+        </span>
+      </div>
     </template>
 
     <!-- 购物找零 -->
@@ -63,15 +126,47 @@ const enough = computed(() => change.value >= 0)
             <span v-for="n in list(paid)" :key="n" class="bill">💵</span>
           </div>
         </div>
-        <p class="shop-result" :class="{ no: !enough }">
-          {{ enough ? `应找回 ${change} 元` : `钱不够，还差 ${-change} 元` }}
+        <p class="shop-result" :class="{ no: !enough, dim: doingShop && step < 3 }">
+          {{ enough ? `应找回 ${change} 元` : `钱不够，还差 ${changeInfo.short} 元` }}
         </p>
+      </div>
+      <div class="step-bar">
+        <button type="button" class="step-btn" data-test="money-next" @click="nextStep">付钱</button>
+        <span class="step-say" data-test="money-say">
+          {{ doingShop ? shopSay : '点「付钱」，先看价格、再数付出的钱、最后算找零' }}
+        </span>
       </div>
     </template>
   </div>
 </template>
 
 <style scoped>
+.dim {
+  opacity: 0.22;
+}
+.step-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.step-btn {
+  border: 1px solid var(--ui-primary);
+  background: var(--ui-bg);
+  color: var(--ui-primary);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.22rem 0.9rem;
+  cursor: pointer;
+}
+.step-say {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  max-width: 24rem;
+  line-height: 1.4;
+}
 .money-wrap {
   display: flex;
   flex-direction: column;

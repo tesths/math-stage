@@ -20,6 +20,22 @@ export function validateLabs(): string[] {
       if (p.default < p.min || p.default > p.max) {
         errors.push(`${lab.id}: 参数 ${p.key} 默认值超出范围`)
       }
+      // 离散选项（如平移方向、观察方向、多边形形状）：值唯一、在范围内、默认值必须是其中一个
+      if (p.options) {
+        if (p.options.length === 0) errors.push(`${lab.id}: 参数 ${p.key} 的 options 为空`)
+        const values = new Set<number>()
+        for (const o of p.options) {
+          if (!o.label) errors.push(`${lab.id}: 参数 ${p.key} 选项缺 label`)
+          if (values.has(o.value)) errors.push(`${lab.id}: 参数 ${p.key} 选项值重复 ${o.value}`)
+          values.add(o.value)
+          if (o.value < p.min || o.value > p.max) {
+            errors.push(`${lab.id}: 参数 ${p.key} 选项 ${o.label} 超出范围`)
+          }
+        }
+        if (!values.has(p.default)) {
+          errors.push(`${lab.id}: 参数 ${p.key} 默认值不在选项中`)
+        }
+      }
     }
     const chapterOk = byChapter.some((c) => c.meta.id === lab.chapter)
     if (!chapterOk) errors.push(`${lab.id}: 未知单元 ${lab.chapter}`)

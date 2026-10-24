@@ -2,7 +2,7 @@
 /**
  * 混合运算 Lab：乘加/除加混合运算、小括号的作用
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { OP_SYMBOL, applyOp, toFixed2, type MixOp } from '@/lib/engine/math'
 
@@ -34,6 +34,46 @@ const bagP = computed(() => props.values.bag ?? 0)
 const notebook = computed(() => props.values.notebook ?? 1)
 
 const notebookCount = computed(() => Math.min(count.value, 9))
+
+/**
+ * 过程态：一步一步算（先乘除、后加减；有小括号先算括号）
+ * 原来四条分步是"一次全写出来"的静态文字，学生没有可操作的过程（L3）。
+ */
+const stepTexts = computed<string[]>(() => {
+  if (kind.value === 'mix-calc' && !isDivAdd.value) {
+    return [
+      `先算乘法：${price.value} × ${count.value} = ${price.value * count.value}（买笔记本的钱）`,
+      `再算加法：${price.value * count.value} + ${bag.value} = ${price.value * count.value + bag.value}（一共要付的钱）`,
+    ]
+  }
+  if (kind.value === 'mix-calc') {
+    return [
+      `先算除法：${box.value} ÷ ${each.value} = ${box.value / each.value}（1 支钢笔的钱）`,
+      `再算加法：${box.value / each.value} + ${stapler.value} = ${box.value / each.value + stapler.value}（一共要付的钱）`,
+    ]
+  }
+  if (isOrder.value) {
+    return [
+      `没有小括号：先算乘法 ${b.value} × ${c.value} = ${b.value * c.value}，再算加法 ${a.value} + ${b.value * c.value} = ${a.value + b.value * c.value}`,
+      `有小括号：先算括号 ${a.value} + ${b.value} = ${a.value + b.value}，再算乘法 ${a.value + b.value} × ${c.value} = ${(a.value + b.value) * c.value}`,
+      `两种算法的结果相差 ${Math.abs(a.value + b.value * c.value - (a.value + b.value) * c.value)}，说明小括号真的改变了运算顺序`,
+    ]
+  }
+  return [
+    `先求剩下的钱：${money.value} − ${bagP.value} = ${money.value - bagP.value}（元）`,
+    `再看剩下的钱里有几个 ${notebook.value} 元：${money.value - bagP.value} ÷ ${notebook.value} = ${Math.floor((money.value - bagP.value) / notebook.value)}（本）`,
+    `写成综合算式必须加小括号：（${money.value} − ${bagP.value}）÷ ${notebook.value}`,
+  ]
+})
+const step = ref(0)
+const maxStep = computed(() => stepTexts.value.length)
+function nextCalcStep() {
+  step.value = Math.min(step.value + 1, maxStep.value)
+}
+function resetCalcStep() {
+  step.value = 0
+}
+const stepsDone = computed(() => step.value >= maxStep.value)
 </script>
 
 <template>
@@ -110,10 +150,71 @@ const notebookCount = computed(() => Math.min(count.value, 9))
       </div>
       <p class="warn-line">⚠️ 不加小括号会变成 {{ money }} − {{ bagP }} ÷ {{ notebook }} = {{ money - bagP / notebook }}，所以必须先加小括号</p>
     </template>
+
+    <!-- 过程态：一步一步算 -->
+    <div class="calc-bar">
+      <button type="button" class="calc-btn primary" data-test="mix-next" :disabled="stepsDone" @click="nextCalcStep">
+        开始一步一步算
+      </button>
+      <button type="button" class="calc-btn ghost" data-test="mix-reset" @click="resetCalcStep">重来</button>
+      <span class="calc-progress" data-test="mix-progress">第 {{ step }} / {{ maxStep }} 步</span>
+    </div>
+    <div v-if="step > 0" class="calc-live" data-test="mix-live">
+      <p v-for="(t, i) in stepTexts.slice(0, step)" :key="i" class="live-line" :class="{ cur: i === step - 1 }">
+        {{ i + 1 }}. {{ t }}
+      </p>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.calc-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.calc-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  cursor: pointer;
+}
+.calc-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.calc-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.calc-btn.ghost {
+  color: var(--ui-text-muted);
+}
+.calc-progress {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+.calc-live {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: 38rem;
+}
+.live-line {
+  font-size: 0.85rem;
+  color: var(--ui-text-toned);
+}
+.live-line.cur {
+  color: var(--ui-primary);
+  font-weight: 800;
+}
 .mix-wrap {
   display: flex;
   flex-direction: column;

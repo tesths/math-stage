@@ -14,10 +14,21 @@ export const c6Labs: LabDef[] = [
     params: [
       { key: 'cm', label: '厘米', min: 1, max: 30, step: 1, default: 18, unit: '厘米' },
       { key: 'mm', label: '毫米', min: 0, max: 9, step: 1, default: 6, unit: '毫米' },
-      { key: 'to', label: '换算成', min: 0, max: 1, step: 1, default: 0, unit: '' },
+      {
+        key: 'to',
+        label: '换算成',
+        min: 0,
+        max: 1,
+        step: 1,
+        default: 0,
+        choices: [
+          { value: 0, label: '毫米' },
+          { value: 1, label: '厘米' },
+        ],
+      },
     ],
     formula: '1 厘米 = 10 毫米',
-    tip: '1 厘米 = 10 毫米，18 厘米 = 180 毫米，再加 6 毫米是 186 毫米。',
+    tip: '1 厘米 = 10 毫米。18 厘米 6 毫米 = 180 + 6 = 186 毫米。易错点：把 18 厘米 6 毫米写成 186 厘米。',
   },
   {
     id: 'g3-c6-dm-m',
@@ -31,10 +42,21 @@ export const c6Labs: LabDef[] = [
     params: [
       { key: 'm', label: '米', min: 0, max: 9, step: 1, default: 1, unit: '米' },
       { key: 'cm', label: '厘米', min: 0, max: 99, step: 1, default: 90, unit: '厘米' },
-      { key: 'to', label: '换算成', min: 0, max: 1, step: 1, default: 1, unit: '' },
+      {
+        key: 'to',
+        label: '换算成',
+        min: 0,
+        max: 1,
+        step: 1,
+        default: 1,
+        choices: [
+          { value: 0, label: '分米' },
+          { value: 1, label: '厘米' },
+        ],
+      },
     ],
     formula: '1 米 = 10 分米 = 100 厘米',
-    tip: '10 厘米是 1 分米，90 厘米是 9 分米；1 米 90 厘米 = 10 分米 + 9 分米 = 19 分米。',
+    tip: '1 米 = 10 分米 = 100 厘米，所以 10 厘米就是 1 分米。1 米 90 厘米 = 10 + 9 = 19 分米。易错点：以为 90 厘米是 90 分米。',
   },
   {
     id: 'g3-c6-km-m',
@@ -50,7 +72,7 @@ export const c6Labs: LabDef[] = [
       { key: 'to', label: '换算成', min: 0, max: 1, step: 1, default: 0, unit: '' },
     ],
     formula: '1 千米 = 1000 米',
-    tip: '计量较长的路程用千米，10 个 100 米是 1000 米，1000 米就是 1 千米。',
+    tip: '1 千米 = 1000 米，10 个 100 米就是 1 千米；量较长的路程用千米。易错点：把 1 千米当成 100 米。',
   },
   {
     id: 'g3-c6-length-mix',
@@ -63,10 +85,38 @@ export const c6Labs: LabDef[] = [
     kind: 'length-convert',
     params: [
       { key: 'value', label: '长度数值', min: 1, max: 200, step: 1, default: 45, unit: '毫米' },
-      { key: 'from', label: '原单位', min: 0, max: 4, step: 1, default: 0, unit: '' },
-      { key: 'to', label: '目标单位', min: 0, max: 4, step: 1, default: 1, unit: '' },
+      {
+        key: 'from',
+        label: '原单位',
+        min: 0,
+        max: 4,
+        step: 1,
+        default: 0,
+        choices: [
+          { value: 0, label: '毫米' },
+          { value: 1, label: '厘米' },
+          { value: 2, label: '分米' },
+          { value: 3, label: '米' },
+          { value: 4, label: '千米' },
+        ],
+      },
+      {
+        key: 'to',
+        label: '目标单位',
+        min: 0,
+        max: 4,
+        step: 1,
+        default: 1,
+        choices: [
+          { value: 0, label: '毫米' },
+          { value: 1, label: '厘米' },
+          { value: 2, label: '分米' },
+          { value: 3, label: '米' },
+          { value: 4, label: '千米' },
+        ],
+      },
     ],
     formula: '长度 = 数值 × 原单位进率 ÷ 目标单位进率',
-    tip: '单位表：1 千米 = 1000 米，1 米 = 10 分米 = 100 厘米 = 1000 毫米。大单位化小单位乘进率。',
+    tip: '换算先看进率：毫米↔厘米↔分米↔米 相邻进率都是 10，米↔千米进率是 1000；大单位化小单位乘进率。易错点：米与千米之间也乘 10。',
   },
 ]

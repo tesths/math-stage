@@ -233,6 +233,24 @@ describe('computeLab 分支覆盖', () => {
     expect(computeLab('spinner', { red: 20, blue: 30, yellow: 50 }).text).toContain('黄')
   })
 
+  it('spinner：三等分时不能说「某色区域最大」，结论要落在「可能性相等」', () => {
+    const r = computeLab('spinner', { red: 30, blue: 30, yellow: 30 })
+    expect(r.text).toBe('三个区域一样大')
+    expect(r.text).not.toContain('最大')
+    expect(r.conclusion).toContain('面积相等')
+    expect(r.conclusion).toContain('可能性都相等')
+  })
+
+  it('spinner：两个区域并列最大时用「并列」，不谎称唯一最大', () => {
+    const r = computeLab('spinner', { red: 40, blue: 40, yellow: 20 })
+    expect(r.text).toBe('红、蓝色并列最大')
+    expect(r.conclusion).toContain('并列最大')
+    expect(r.conclusion).toContain('相等')
+    // 另外两种并列组合也要认对
+    expect(computeLab('spinner', { red: 40, blue: 20, yellow: 40 }).text).toBe('红、黄色并列最大')
+    expect(computeLab('spinner', { red: 20, blue: 40, yellow: 40 }).text).toBe('蓝、黄色并列最大')
+  })
+
   it('marble：红多 / 一样多', () => {
     const redMore = computeLab('marble', { red: 6, yellow: 4 })
     expect(redMore.conclusion).toContain('红球多')

@@ -16,7 +16,7 @@ export const c12Labs: LabDef[] = [
       { key: 'groups', label: '组数', min: 1, max: 9, step: 1, default: 3, unit: '组' },
     ],
     formula: '几个几 = 每份数 × 份数',
-    tip: '几个几相加就是"几的几倍"：3 个 2 是 2 的 3 倍，写成 2 × 3 = 6。',
+    tip: '几个几相加就是「几的几倍」：3 个 2 是 2 的 3 倍，写成 2 × 3 = 6。易错点：把「2 的 3 倍」写成 2 + 3。',
   },
   {
     id: 'g3-c12-times-mul',
@@ -32,7 +32,7 @@ export const c12Labs: LabDef[] = [
       { key: 'times', label: '几倍', min: 2, max: 9, step: 1, default: 2, unit: '' },
     ],
     formula: '几倍是多少 = 每份数 × 倍数',
-    tip: '求一个数的几倍是多少，就是求几个几是多少，用乘法：4 × 2 = 8（人）。',
+    tip: '求一个数的几倍是多少，就是求几个几是多少，用乘法。易错点：把 4 的 2 倍算成 4 + 2 = 6（应是 8）。',
   },
   {
     id: 'g3-c12-times-div',
@@ -48,7 +48,7 @@ export const c12Labs: LabDef[] = [
       { key: 'base', label: '绿枫叶', min: 1, max: 15, step: 1, default: 3, unit: '片' },
     ],
     formula: '几倍 = 一个数 ÷ 另一个数',
-    tip: '求一个数是另一个数的几倍，就是求一个数里面有几个另一个数，用除法：6 ÷ 3 = 2（倍）。',
+    tip: '求一个数是另一个数的几倍，就是求这个数里有几个另一个数，用除法。易错点：答句里把「倍」当单位写成「2 倍个」。',
   },
   {
     id: 'g3-c12-times-mix',
@@ -65,6 +65,6 @@ export const c12Labs: LabDef[] = [
       { key: 'son', label: '小阳年龄', min: 1, max: 12, step: 1, default: 7, unit: '岁' },
     ],
     formula: '爸爸 = 妈妈 + 大；爸爸 ÷ 小阳 = 几倍',
-    tip: '先求爸爸年龄：32 + 3 = 35 岁；再求爸爸年龄是小阳的几倍：35 ÷ 7 = 5（倍）。',
+    tip: '先求爸爸年龄（加法），再求爸爸年龄是小阳的几倍（除法）。易错点：拿妈妈的年龄去除。',
   },
 ]

@@ -13,6 +13,6 @@ export const c3Labs: LabDef[] = [
     kind: 'peri-area-change',
     params: [{ key: 'rows', label: '行数', min: 1, max: 6, step: 1, default: 4, unit: '行' }],
     formula: '面积一定，周长随长宽变化',
-    tip: '面积相同的长方形中，长和宽越接近，周长越短；拼成正方形时周长最短。',
+    tip: '面积相同的长方形，长和宽越接近，周长越短；拼成正方形时周长最短。易错点：以为面积不变周长就不变。',
   },
 ]

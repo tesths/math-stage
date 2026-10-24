@@ -306,6 +306,22 @@ describe('Lab 组件渲染', () => {
     expect(after1).toContain('rotate(')
   })
 
+  it('ChanceLab：三等分预设让三块面积相等，直接验证「面积相等 → 可能性相等」', async () => {
+    const lab = findLabById('g5-c5-spinner-rotate')!
+    const values = { red: 50, blue: 30, yellow: 20 }
+    const wrapper = mount(ChanceLab, { props: { lab, values } })
+    // 初始不等分：三个扇区占比不同
+    expect(wrapper.findAll('.sector-label').map((n) => n.text())).toEqual(['红50%', '蓝30%', '黄20%'])
+    const preset = wrapper.findAll('button').find((b) => b.text().includes('三等分'))!
+    expect(preset.attributes('aria-pressed')).toBe('false')
+    await preset.trigger('click')
+    // 写回三个参数 → 各占三分之一，扇区标注与理论概率都变成 33%
+    expect(values).toEqual({ red: 30, blue: 30, yellow: 30 })
+    expect(preset.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.sector-label').map((n) => n.text())).toEqual(['红33%', '蓝33%', '黄33%'])
+    expect(wrapper.text()).toContain('当前红 33% / 蓝 33% / 黄 33%')
+  })
+
   it('ChanceLab：摸球显示实验频率与理论概率', async () => {
     const lab = findLabById('g5-c5-marble-bag')!
     const wrapper = mount(ChanceLab, { props: { lab, values: { red: 4, yellow: 6 } } })

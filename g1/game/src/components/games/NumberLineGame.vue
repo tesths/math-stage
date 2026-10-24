@@ -8,8 +8,14 @@
         </div>
         <span class="model-op">+</span>
         <div class="ones-bundle">
-          <span v-for="i in onesValue" :key="i" class="one-unit"></span>
-          <b>{{ onesValue }}个一</b>
+          <span
+            v-for="i in onesValue"
+            :key="i"
+            class="one-unit"
+            :class="{ dim: stepping && i > shownOnes }"
+            :data-lit="!stepping || i <= shownOnes"
+          ></span>
+          <b>{{ shownOnes }}个一</b>
         </div>
         <span class="model-op">=</span>
         <span class="model-value">{{ value }}</span>
@@ -22,7 +28,15 @@
           :class="tickClass(t)"
         >{{ t }}</span>
       </div>
-      <p class="numline-note">从 10 再往后数 {{ onesValue }} 步，停在 <b>{{ value }}</b></p>
+      <p class="numline-note" data-test="numline-note">
+        从 10 再往后数 {{ shownOnes }} 步，停在 <b>{{ 10 + shownOnes }}</b>
+      </p>
+      <div class="step-bar">
+        <button type="button" class="step-btn" data-test="step-next" @click="nextStep">数一数</button>
+        <span class="step-say" data-test="step-say">
+          {{ stepping ? `从 10 起往右跳 ${shownOnes} 格：10 + ${shownOnes} = ${10 + shownOnes}` : '点「数一数」，从 10 开始一格一格往右数' }}
+        </span>
+      </div>
     </template>
     <template v-else>
       <div class="seq-track" aria-label="已排好的顺序">
@@ -92,11 +106,22 @@ const done = ref(false)
 const feedback = ref<'idle' | 'correct' | 'wrong'>('idle')
 const picked = ref<number[]>([])
 
+/* ---------- 过程态：从 10 一格一格往右数（原来整条数轴一次全亮） ---------- */
+const stepIdx = ref(0)
+const stepping = computed(() => stepIdx.value > 0)
+const shownOnes = computed(() => (stepping.value ? Math.min(stepIdx.value, onesValue.value) : onesValue.value))
+
+function nextStep() {
+  stepIdx.value = stepIdx.value >= onesValue.value ? 0 : stepIdx.value + 1
+}
+
 function tickClass(t: number): Record<string, boolean> {
+  const cur = 10 + shownOnes.value
   return {
     ten: t === 10,
-    between: t > 10 && t < value.value,
-    active: t === value.value,
+    between: t > 10 && t < cur,
+    active: t === cur,
+    dim: stepping.value && t > cur && t <= value.value,
   }
 }
 

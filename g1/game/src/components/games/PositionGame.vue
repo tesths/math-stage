@@ -33,6 +33,7 @@
                 type="button"
                 :data-item="item"
                 :disabled="done"
+                data-act
                 @click="onItem(item)"
               >
                 <span v-if="item === target" class="target-badge">参照</span>
@@ -71,6 +72,7 @@
                   dim: !done && item !== target,
                 }"
                 :data-item="item"
+                data-act
                 @click="onItem(item)"
               >
                 <span class="ordinal-rank">{{ i + 1 }}</span>
@@ -95,7 +97,8 @@
             class="pos-item"
             :class="{ picked: done && item === correctItem }"
             :data-item="item"
-            @click="onItem(item)"
+            data-act
+                @click="onItem(item)"
           >{{ item }}</span>
         </div>
         <AnswerPad

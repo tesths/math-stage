@@ -12,11 +12,11 @@ export const c2Labs: LabDef[] = [
       '长方形儿童画长 36 厘米、宽 24 厘米，做画框需要多长的装饰条？拖动长和宽，观察 C=(a+b)×2 的推导。',
     kind: 'peri-rect',
     params: [
-      { key: 'a', label: '长', min: 1, max: 20, step: 1, default: 12, unit: '厘米' },
-      { key: 'b', label: '宽', min: 1, max: 16, step: 1, default: 8, unit: '厘米' },
+      { key: 'a', label: '长', min: 1, max: 40, step: 1, default: 36, unit: '厘米' },
+      { key: 'b', label: '宽', min: 1, max: 32, step: 1, default: 24, unit: '厘米' },
     ],
     formula: 'C = (长 + 宽) × 2',
-    tip: '长方形的周长 = (长 + 宽) × 2；两条长加两条宽。',
+    tip: '长方形的周长 = (长 + 宽) × 2，因为两条长加两条宽。易错点：只算一条长加一条宽（36 + 24 = 60），忘了 ×2 → 应是 120 厘米。',
   },
   {
     id: 'g4-c2-peri-square',
@@ -26,9 +26,9 @@ export const c2Labs: LabDef[] = [
     title: '正方形的周长',
     prompt: '正方形儿童画边长 25 厘米，做画框需要多少厘米的装饰条？拖动边长，观察 C = a × 4。',
     kind: 'peri-square',
-    params: [{ key: 'a', label: '边长', min: 1, max: 20, step: 1, default: 12, unit: '厘米' }],
+    params: [{ key: 'a', label: '边长', min: 1, max: 30, step: 1, default: 25, unit: '厘米' }],
     formula: 'C = a × 4',
-    tip: '正方形的周长 = 边长 × 4，用字母表示 C = a × 4。',
+    tip: '正方形的周长 = 边长 × 4，用字母表示 C = a × 4。易错点：和面积公式 a × a 混用，把周长算成 25 × 25。',
   },
   {
     id: 'g4-c2-area-grid',
@@ -44,7 +44,7 @@ export const c2Labs: LabDef[] = [
       { key: 'b', label: '宽', min: 1, max: 8, step: 1, default: 5, unit: '格' },
     ],
     formula: '面积 = 每排个数 × 排数',
-    tip: '小正方形的个数 = 每排小正方形的个数 × 排数，这就是长方形的面积。',
+    tip: '小正方形的个数 = 每排的个数 × 排数，这就是长方形的面积。易错点：把"每排几个"和"排数"相加，或只数一排就当面积。',
   },
   {
     id: 'g4-c2-area-rect',
@@ -60,7 +60,7 @@ export const c2Labs: LabDef[] = [
       { key: 'b', label: '宽', min: 1, max: 16, step: 1, default: 5, unit: '厘米' },
     ],
     formula: 'S = a × b',
-    tip: '长方形的面积 = 长 × 宽，用字母表示 S = a × b。',
+    tip: '长方形的面积 = 长 × 宽，用字母表示 S = a × b。易错点：和周长公式搞混，用 (长 + 宽) × 2 去算面积。',
   },
   {
     id: 'g4-c2-area-square',
@@ -72,7 +72,7 @@ export const c2Labs: LabDef[] = [
     kind: 'area-square',
     params: [{ key: 'a', label: '边长', min: 1, max: 20, step: 1, default: 6, unit: '厘米' }],
     formula: 'S = a × a',
-    tip: '正方形的面积 = 边长 × 边长，用字母表示 S = a × a。',
+    tip: '正方形的面积 = 边长 × 边长，用字母表示 S = a × a。易错点：把"边长 × 4"当面积（那是周长）。',
   },
   {
     id: 'g4-c2-area-unit',
@@ -111,6 +111,6 @@ export const c2Labs: LabDef[] = [
       },
     ],
     formula: '1 平方分米 = 100 平方厘米；1 平方米 = 100 平方分米',
-    tip: '相邻面积单位之间的进率是 100：用 n 个大单位和 100n 个相邻小单位互化，结果都是整数。',
+    tip: '相邻面积单位之间的进率是 100（长度单位才是 10）：1 平方分米 = 100 平方厘米，1 平方米 = 100 平方分米。易错点：把面积进率也当成 10。',
   },
 ]

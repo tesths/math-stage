@@ -13,10 +13,23 @@ export const c9Labs: LabDef[] = [
     kind: 'interval',
     params: [
       { key: 'count', label: '两端物体的个数', min: 2, max: 12, step: 1, default: 6, unit: '个' },
-      { key: 'end', label: '两端物体', min: 0, max: 2, step: 1, default: 0, unit: '' },
+      {
+        key: 'end',
+        label: '两端物体',
+        min: 0,
+        max: 2,
+        step: 1,
+        default: 0,
+        choices: [
+          { value: 0, label: '两端都是□' },
+          { value: 1, label: '两端不同' },
+          { value: 2, label: '两端都是○' },
+        ],
+      },
     ],
     formula: '两端相同：个数差 1；两端不同：个数相等',
-    tip: '间隔排列的两种物体，两端相同多 1 个，两端不同就一样多。一组一组圈一圈就能发现。',
+    tip:
+      '间隔排列的两种物体：两端相同时，两端那种物体多 1 个；两端不同时，两种一样多。一组一组圈一圈就能发现。易错点：把"两端不同"也当成多 1 个。',
   },
   {
     id: 'g3-c9-interval-circle',

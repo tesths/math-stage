@@ -14,10 +14,38 @@ const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 const kind = computed(() => props.lab.kind)
 
 /* ---------- 转盘 ---------- */
-const red = computed(() => props.values.red ?? 50)
-const blue = computed(() => props.values.blue ?? 30)
-const yellow = computed(() => props.values.yellow ?? 20)
+/**
+ * 预设按钮写入参数后递增这个版本号。
+ * 父级传入的 `values` 一般是响应式对象，但测试/特殊用法可能传普通对象，
+ * 此时原地改属性不会触发重算——把 rev 读进 computed 的依赖里就能兜住。
+ */
+const paramRev = ref(0)
+
+const red = computed(() => {
+  void paramRev.value
+  return props.values.red ?? 50
+})
+const blue = computed(() => {
+  void paramRev.value
+  return props.values.blue ?? 30
+})
+const yellow = computed(() => {
+  void paramRev.value
+  return props.values.yellow ?? 20
+})
 const sum = computed(() => red.value + blue.value + yellow.value)
+/** 三个区域面积相等（各占 1/3）：用来验证「面积相等 → 可能性相等」 */
+const isEqualThirds = computed(() => red.value === blue.value && blue.value === yellow.value)
+
+/** 一键三等分：课本「各区域面积相等时可能性相等」这个关键结论要靠它才拖得出来 */
+function presetEqualThirds() {
+  props.values.red = 30
+  props.values.blue = 30
+  props.values.yellow = 30
+  paramRev.value++
+  playClick()
+}
+
 const sectors = computed(() => {
   const fracs = normalizeFractions([red.value, blue.value, yellow.value])
   return [
@@ -80,8 +108,14 @@ function sectorPath(cx: number, cy: number, r: number, startFrac: number, frac: 
 }
 
 /* ---------- 摸球 ---------- */
-const redBalls = computed(() => Math.round(props.values.red ?? 4))
-const yellowBalls = computed(() => Math.round(props.values.yellow ?? 6))
+const redBalls = computed(() => {
+  void paramRev.value
+  return Math.round(props.values.red ?? 4)
+})
+const yellowBalls = computed(() => {
+  void paramRev.value
+  return Math.round(props.values.yellow ?? 6)
+})
 const ballTotal = computed(() => redBalls.value + yellowBalls.value)
 const results = ref<('red' | 'yellow')[]>([])
 const draws = computed(() => results.value.length)
@@ -104,6 +138,25 @@ function resetDraws() {
 const tallyChars = tallyOf
 /** 理论概率 */
 const theory = computed(() => ballProbability(redBalls.value, yellowBalls.value))
+
+/** 已完成的「50 次一轮」轮数：用来体验「次数越多，频率越接近理论可能性」 */
+const rounds = computed(() => Math.floor(draws.value / 50))
+/** 实验频率与理论可能性之差（百分点），随试验次数增加应当变小 */
+const gapPercent = computed(() => Math.abs((tally.value.red / Math.max(1, draws.value)) * 100 - theory.value.red * 100))
+
+/** 对比配比（红:黄）：让「球越多，摸到的可能性越大」一眼看出差别 */
+const RATIOS = [
+  { label: '1 : 9', red: 1, yellow: 9 },
+  { label: '5 : 5', red: 5, yellow: 5 },
+  { label: '9 : 1', red: 9, yellow: 1 },
+] as const
+function presetRatio(red: number, yellow: number) {
+  props.values.red = red
+  props.values.yellow = yellow
+  paramRev.value++
+  results.value = []
+  playClick()
+}
 </script>
 
 <template>
@@ -137,6 +190,16 @@ const theory = computed(() => ballProbability(redBalls.value, yellowBalls.value)
         </svg>
         <div class="spinner-side">
           <UButton color="primary" :disabled="spinning" @click="spin">转动转盘</UButton>
+          <UButton
+            size="sm"
+            :variant="isEqualThirds ? 'solid' : 'outline'"
+            :color="isEqualThirds ? 'primary' : 'neutral'"
+            :disabled="spinning"
+            :aria-pressed="isEqualThirds"
+            @click="presetEqualThirds"
+          >
+            三等分（可能性相等）
+          </UButton>
           <div class="spin-stats">
             <p
               v-for="s in sectors"
@@ -187,9 +250,27 @@ const theory = computed(() => ballProbability(redBalls.value, yellowBalls.value)
             <UButton size="sm" color="primary" variant="soft" @click="drawOnce">摸 1 次</UButton>
             <UButton size="sm" color="primary" variant="soft" @click="drawTimes(10)">摸 10 次</UButton>
             <UButton size="sm" color="primary" variant="soft" @click="drawTimes(30)">摸 30 次</UButton>
+            <UButton size="sm" color="primary" variant="soft" data-test="draw-round" @click="drawTimes(50)">
+              再摸一轮（50 次）
+            </UButton>
             <UButton size="sm" variant="outline" color="neutral" @click="resetDraws">清空</UButton>
           </div>
-          <p class="draw-count">已摸 {{ draws }} 次</p>
+          <p class="draw-count">已摸 {{ draws }} 次 · 已完成 {{ rounds }} 轮（每轮 50 次）</p>
+          <!-- 换一种配比：课本要建立的是「球越多可能性越大」，用对比配比最直观 -->
+          <div class="ratio-btns" data-test="marble-ratios">
+            <span class="ratio-cap">换一种配比：</span>
+            <UButton
+              v-for="r in RATIOS"
+              :key="r.label"
+              size="sm"
+              :variant="redBalls === r.red && yellowBalls === r.yellow ? 'solid' : 'outline'"
+              :color="redBalls === r.red && yellowBalls === r.yellow ? 'primary' : 'neutral'"
+              :aria-pressed="redBalls === r.red && yellowBalls === r.yellow"
+              @click="presetRatio(r.red, r.yellow)"
+            >
+              {{ r.label }}
+            </UButton>
+          </div>
         </div>
       </div>
 
@@ -217,6 +298,9 @@ const theory = computed(() => ballProbability(redBalls.value, yellowBalls.value)
         <p class="note">
           摸到红球的可能性 ≈ {{ ((tally.red / Math.max(1, draws)) * 100).toFixed(1) }}%（理论上
           {{ ((redBalls / ballTotal) * 100).toFixed(1) }}%）· 摸的次数越多越接近
+        </p>
+        <p v-if="rounds > 0" class="note" data-test="marble-gap">
+          已完成 {{ rounds }} 轮：实验频率与理论可能性的差 = {{ gapPercent.toFixed(1) }} 个百分点——轮数越多，这个差一般越小
         </p>
       </div>
     </template>
@@ -328,6 +412,18 @@ const theory = computed(() => ballProbability(redBalls.value, yellowBalls.value)
   gap: 0.4rem;
   flex-wrap: wrap;
   justify-content: center;
+}
+.ratio-btns {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+.ratio-cap {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted);
 }
 .draw-count {
   font-size: 0.85rem;

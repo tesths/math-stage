@@ -9,13 +9,13 @@
         <div v-for="(col, i) in pairCols" :key="i" class="pair-col" :class="{ extra: col.extra, compact: isCompact }">
           <div v-if="col.top" class="pair-cell" :class="['top', { 'cell-empty': !col.paired }]">
             <span class="pair-obj">{{ col.top }}</span>
-            <span v-if="col.extraTop" class="extra-badge">多</span>
+            <span v-if="col.extraTop && i + 1 <= shownPairs" class="extra-badge">多</span>
           </div>
           <div v-else class="pair-cell cell-placeholder"></div>
-          <div class="pair-line" :class="{ on: col.paired }"></div>
+          <div class="pair-line" :class="{ on: col.paired && i + 1 <= shownPairs }"></div>
           <div v-if="col.bottom" class="pair-cell" :class="['bottom', { 'cell-empty': !col.paired }]">
             <span class="pair-obj">{{ col.bottom }}</span>
-            <span v-if="col.extraBottom" class="extra-badge">多</span>
+            <span v-if="col.extraBottom && i + 1 <= shownPairs" class="extra-badge">多</span>
           </div>
           <div v-else class="pair-cell cell-placeholder"></div>
         </div>
@@ -45,11 +45,19 @@
         </div>
       </div>
 
-      <p v-if="pairCols.length > 0" class="pair-note">
-        <template v-if="done">一一配对后：{{ a }} {{ answer }} {{ b }}</template>
+      <p v-if="pairCols.length > 0" class="pair-note" data-test="pair-note">
+        <template v-if="counting">配到第 {{ shownPairs }} 对：{{ shownPairs < maxCount ? '还没配完，先别急着下结论' : extraCount > 0 ? `配完多出 ${extraCount} 个，所以 ${a} ${answer} ${b}` : `配完正好一样多，所以 ${a} = ${b}` }}</template>
+        <template v-else-if="done">一一配对后：{{ a }} {{ answer }} {{ b }}</template>
         <template v-else-if="extraCount > 0">一一配对，红点表示多出的部分</template>
         <template v-else>一一配对，两组同样多</template>
       </p>
+
+      <div v-if="pairCols.length > 0" class="pair-bar">
+        <button type="button" class="pair-btn" data-test="pair-next" @click="nextPair">配对</button>
+        <span class="pair-hint" data-test="pair-hint">
+          {{ counting ? `一个对着一个，已经配了 ${shownPairs} 对` : '点「配对」，一个对着一个地配起来' }}
+        </span>
+      </div>
 
       <div v-if="pairCols.length > 0" class="cmp-symbols row">
         <button
@@ -121,6 +129,16 @@ const isCompact = computed(() => Math.max(a.value, b.value) > 7)
 const pairColW = computed(() => (isCompact.value ? '1.9rem' : '2.7rem'))
 
 const extraCount = computed(() => Math.abs(a.value - b.value))
+const maxCount = computed(() => Math.max(a.value, b.value))
+
+/* ---------- 过程态：一一配对，一对一对地配（原来 8 条连线一次全亮，等于没有过程） ---------- */
+const pairStep = ref(0)
+const counting = computed(() => pairStep.value > 0)
+const shownPairs = computed(() => (counting.value ? pairStep.value : maxCount.value))
+
+function nextPair() {
+  pairStep.value = pairStep.value >= maxCount.value ? 0 : pairStep.value + 1
+}
 const symbols: ('>' | '<' | '=')[] = ['>', '<', '=']
 
 const attempts = ref(1)
@@ -261,6 +279,27 @@ function onSelect(sym: '>' | '<' | '=') {
   align-items: center;
   justify-content: center;
   padding: 0 0.2rem;
+}
+.pair-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.pair-btn {
+  border: 1px solid var(--ui-primary);
+  background: var(--ui-bg);
+  color: var(--ui-primary);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.22rem 0.9rem;
+  cursor: pointer;
+}
+.pair-hint {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
 }
 .pair-note {
   font-size: 0.95rem;

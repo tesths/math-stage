@@ -57,6 +57,8 @@ export interface BaseQuestion {
   title: string
   /** 题干文字 */
   prompt: string
+  /** 这道例题要建立的核心概念 + 一句易错点（缺省时按题型兜底，见 lib/engine/tips.ts） */
+  tip?: string
 }
 
 /** 题源小节类型（对应课本小标题） */

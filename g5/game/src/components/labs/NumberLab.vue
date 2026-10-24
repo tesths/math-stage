@@ -9,7 +9,7 @@
  * - 质数筛：按 2→3→5→7 逐轮划掉倍数（可点「筛一轮」），被划掉的数标出理由，
  *   并断言「筛完剩下的恰好是质数」。
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { factorsOf, lcm, primesUpTo } from '@/lib/engine/math'
 import { SIEVE_PRIMES, axisTicks, factorPairs, multiples, sieveReasons, sieveRemaining } from '@/lib/labs/number'
@@ -36,6 +36,35 @@ const pairShapes = computed(() =>
   })),
 )
 
+/* ---------- 成对找因数（一次找出一对；两个因数相同只算一个） ---------- */
+const pairStep = ref(0)
+const pairStepMax = computed(() => pairs.value.length)
+const pairDone = computed(() => pairStep.value >= pairStepMax.value)
+const revealedPairs = computed(() => pairs.value.slice(0, pairStep.value))
+/** 已经找到的因数：同一对里两个因数相同时只算一个 */
+const revealedFactors = computed(() => {
+  const out: number[] = []
+  for (const [x, y] of revealedPairs.value) {
+    if (!out.includes(x)) out.push(x)
+    if (!out.includes(y)) out.push(y)
+  }
+  return out.sort((p, q) => p - q)
+})
+const samePair = computed(() => revealedPairs.value.find(([x, y]) => x === y) ?? null)
+const revealedPairsText = computed(() => revealedPairs.value.map(([x, y]) => `${x}×${y}`).join('、'))
+function nextPair() {
+  if (pairDone.value) return
+  pairStep.value++
+  playClick()
+}
+function resetPair() {
+  pairStep.value = 0
+  playClick()
+}
+watch(n, () => {
+  pairStep.value = 0
+})
+
 /* ---------- 倍数 ---------- */
 const mBase = computed(() => Math.round(props.values.n ?? 3))
 const mCount = computed(() => Math.round(props.values.k ?? 10))
@@ -46,6 +75,38 @@ const lineTicks = computed(() => axisTicks(lineMax.value, lineStep.value))
 const LINE_X0 = 26
 const LINE_W = 408
 const lineX = (v: number) => LINE_X0 + (v * LINE_W) / lineMax.value
+/**
+ * 逐次跳跃（第 4 轮 agent C 补的 L3 过程态）：
+ * 初始把这条数轴上的倍数点全部画出来，但「跳了几次、每次从哪加到哪」需要学生自己点出来——
+ * 每点一次就点亮一段跳跃弧、把落点放大，并给出「3 → 6（+3）：第 2 个倍数」这样的中间读数。
+ * 原来这一页只有滑块，没有任何操作按钮（截图前后逐字节相同），属于静态图当过程。
+ */
+const mJump = ref(0)
+const mJumpMax = computed(() => Math.max(0, mList.value.length - 1))
+const mJumpFrom = computed(() => mList.value[Math.max(0, mJump.value - 1)] ?? 0)
+const mJumpTo = computed(() => mList.value[Math.min(mJump.value, mList.value.length - 1)] ?? mBase.value)
+const mJumpDone = computed(() => mJump.value >= mJumpMax.value)
+const mJumpStatus = computed(() =>
+  mJump.value === 0
+    ? `还没开始跳：从 0 出发，第一步落到 ${mBase.value}`
+    : `第 ${mJump.value} 次跳跃：${mJumpFrom.value} → ${mJumpTo.value}（+${mBase.value}），落在第 ${mJump.value + 1} 个倍数 ${mJumpTo.value}`,
+)
+function nextJump() {
+  if (mJumpDone.value) return
+  mJump.value++
+  playClick()
+}
+function jumpAll() {
+  mJump.value = mJumpMax.value
+  playClick()
+}
+function resetJump() {
+  mJump.value = 0
+  playClick()
+}
+watch(mBase, () => {
+  mJump.value = 0
+})
 
 /* ---------- 质数 ---------- */
 const primeN = computed(() => Math.round(props.values.n ?? 50))
@@ -82,6 +143,13 @@ function cellReason(v: number) {
   const reasons = sieveReasons(v)
   return reasons.length ? `${reasons.join('、')} 的倍数` : ''
 }
+/* ---------- 筛完看剩下的：已划掉个数 / 剩余个数 ---------- */
+/** 2..n 一共 n-1 个数 */
+const sieveTotal = computed(() => Math.max(0, primeN.value - 1))
+const crossedCount = computed(() => sieveTotal.value - remaining.value.length)
+watch(primeN, () => {
+  primeStep.value = 0
+})
 
 /* ---------- 公因数公倍数 ---------- */
 const a = computed(() => Math.round(props.values.a ?? 8))
@@ -100,12 +168,52 @@ const lcmLine = computed(() => {
   const mb = multiples(b.value, Math.floor(60 / b.value))
   return { ma, mb, common: ma.filter((x) => mb.includes(x)) }
 })
+
+/* ---------- 只看公有的：分步揭示（先分别列举，再高亮交集） ---------- */
+const revealStep = ref(0)
+const revealListA = computed(() => (isLcmMode.value ? lcmLine.value.ma : fa.value))
+const revealListB = computed(() => (isLcmMode.value ? lcmLine.value.mb : fb.value))
+const commonList = computed(() => (isLcmMode.value ? lcmLine.value.common : common.value))
+const commonExtreme = computed(() => (isLcmMode.value ? lcmVal.value : gcdVal.value))
+function nextReveal() {
+  if (revealStep.value >= 2) return
+  revealStep.value++
+  playClick()
+}
+function resetReveal() {
+  revealStep.value = 0
+  playClick()
+}
+watch([a, b], () => {
+  revealStep.value = 0
+})
 </script>
 
 <template>
   <div class="number-wrap">
     <!-- 因数：按同一比例尺真的拼出长方形 -->
     <template v-if="kind === 'factors'">
+      <div class="pair-step-bar">
+        <UButton size="sm" color="primary" variant="soft" :disabled="pairDone" @click="nextPair" data-act>
+          {{ pairStep === 0 ? '成对找因数 · 一次找一对' : pairDone ? '因数找齐了' : '再找一对' }}
+        </UButton>
+        <UButton v-if="pairStep > 0" size="sm" variant="outline" color="neutral" @click="resetPair">复位</UButton>
+        <span class="pair-step-status">已找到 <b>{{ revealedFactors.length }}</b> 个因数</span>
+      </div>
+      <div v-if="pairStep > 0" class="pair-step-panel" aria-label="成对找因数的过程">
+        <span
+          v-for="p in revealedPairs"
+          :key="`${p[0]}x${p[1]}`"
+          class="pair-step-chip"
+          :class="{ same: p[0] === p[1] }"
+        >
+          {{ p[0] }} × {{ p[1] }} = {{ p[0] * p[1] }}{{ p[0] === p[1] ? '（两个因数相同，只算一个）' : '' }}
+        </span>
+        <span class="pair-step-chip result">因数：{{ revealedFactors.join('、') }}（{{ revealedFactors.length }} 个）</span>
+      </div>
+      <p v-if="pairDone" class="verify-line">
+        ✓ 成对找因数：{{ revealedPairsText }} → {{ n }} 的因数有 <b>{{ revealedFactors.length }}</b> 个{{ samePair ? `（${samePair[0]} × ${samePair[1]} 两个因数相同，只算一个）` : '' }}：{{ revealedFactors.join('、') }}
+      </p>
       <div class="pair-grids">
         <div v-for="p in pairShapes" :key="`${p.w}x${p.h}`" class="pair-box">
           <svg :viewBox="`0 0 ${p.px} ${p.py}`" :width="Math.min(140, Math.max(40, p.px))" class="pair-svg">
@@ -139,13 +247,21 @@ const lcmLine = computed(() => {
             <line :x1="lineX(v)" y1="96" :x2="lineX(v)" y2="106" class="nl-tick" />
             <text :x="lineX(v)" y="120" text-anchor="middle" class="nl-num">{{ v }}</text>
           </g>
-          <!-- 每次加 n 的跳跃箭头 -->
+          <!-- 每次加 n 的跳跃箭头：点一次点亮一段 -->
           <g v-for="(m, i) in mList.slice(0, -1)" :key="'j' + i">
             <path
               :d="`M ${lineX(m)} 88 Q ${lineX((m + mList[i + 1]!) / 2)} 56 ${lineX(mList[i + 1]!)} 88`"
               class="jump-arc"
+              :class="{ on: i < mJump }"
               marker-end="url(#numarrow)"
             />
+            <text
+              v-if="i < mJump"
+              :x="lineX((m + mList[i + 1]!) / 2)"
+              y="52"
+              text-anchor="middle"
+              class="jump-step-label"
+            >+{{ mBase }}</text>
           </g>
           <defs>
             <marker id="numarrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
@@ -153,14 +269,29 @@ const lcmLine = computed(() => {
             </marker>
           </defs>
           <g v-for="m in mList" :key="'m' + m">
-            <circle :cx="lineX(m)" cy="96" r="5" class="nl-mark" />
+            <circle :cx="lineX(m)" cy="96" r="5" class="nl-mark" :class="{ hit: mJump > 0 && m === mJumpTo }" />
             <text :x="lineX(m)" y="80" text-anchor="middle" class="nl-mark-num">{{ m }}</text>
           </g>
           <text :x="LINE_X0" y="24" class="jump-label">每次加 {{ mBase }}（箭头 = 跳一次）</text>
         </svg>
       </div>
+      <div class="jump-controls">
+        <UButton size="sm" color="primary" variant="soft" data-act data-test="jump-next" :disabled="mJumpDone" @click="nextJump">
+          {{ mJumpDone ? '跳到头了' : `再跳一次（+${mBase}）` }}
+        </UButton>
+        <UButton size="sm" color="primary" variant="solid" data-test="jump-all" :disabled="mJumpDone" @click="jumpAll">
+          跳到头（一共 {{ mJumpMax }} 次）
+        </UButton>
+        <UButton v-if="mJump > 0" size="sm" variant="outline" color="neutral" @click="resetJump">复位</UButton>
+        <span class="jump-status" data-test="jump-status">{{ mJumpStatus }}</span>
+      </div>
       <div class="factor-chips">
-        <span v-for="m in mList" :key="m" class="factor-chip primary">{{ m }}</span>
+        <span
+          v-for="(m, i) in mList"
+          :key="m"
+          class="factor-chip"
+          :class="i <= mJump ? 'primary' : 'muted-chip'"
+        >{{ m }}</span>
       </div>
       <p class="verify-line">✓ {{ mBase }} × 1 = {{ mBase }}，{{ mBase }} × 2 = {{ mBase * 2 }}，… 每次加 {{ mBase }}；最小的倍数是 {{ mBase }} 本身</p>
       <p class="note">{{ mBase }} 的倍数有无数个，所以没有最大的倍数</p>
@@ -197,6 +328,13 @@ const lcmLine = computed(() => {
       <p v-if="sieveDone" class="verify-line">
         ✓ 划掉 2、3、5、7 的倍数后，剩下的恰好是质数：{{ primeSet.size }} 个（{{ primes.slice(0, 12).join('、') }}…）
       </p>
+      <div v-if="sieveDone" class="sieve-summary" aria-label="筛法结果统计">
+        <span class="sieve-sum-chip">已划掉 <b>{{ crossedCount }}</b> 个</span>
+        <span class="sieve-sum-chip">剩下 <b>{{ remaining.length }}</b> 个</span>
+        <span class="sieve-sum-chip result">
+          剩下的恰好是质数（{{ primeSet.size }} 个）：{{ primes.join('、') }}
+        </span>
+      </div>
       <p class="note">1 既不是质数也不是合数（表里从 2 开始）；2 是最小的质数，也是唯一的偶数质数</p>
     </template>
 
@@ -256,6 +394,61 @@ const lcmLine = computed(() => {
             >（最小公倍数 = 两数公有倍数中最小的）
           </p>
         </template>
+
+        <!-- 只看公有的：分步揭示（先分别列举，再高亮交集） -->
+        <div class="reveal-bar">
+          <UButton size="sm" color="primary" variant="soft" :disabled="revealStep >= 2" @click="nextReveal" data-act>
+            {{
+              revealStep === 0
+                ? '只看公有的 · 分步揭示'
+                : revealStep === 1
+                  ? '下一步：高亮公有部分'
+                  : '已高亮公有部分'
+            }}
+          </UButton>
+          <UButton v-if="revealStep > 0" size="sm" variant="outline" color="neutral" @click="resetReveal">复位</UButton>
+        </div>
+        <div v-if="revealStep >= 1" class="reveal-panel" aria-label="分步揭示">
+          <div class="reveal-line">
+            <span class="reveal-tag">{{ a }} 的{{ isLcmMode ? '倍数' : '因数' }}</span>
+            <span
+              v-for="v in revealListA"
+              :key="'ra' + v"
+              class="reveal-chip"
+              :class="{ hit: revealStep >= 2 && commonList.includes(v) }"
+            >{{ v }}</span>
+          </div>
+          <div class="reveal-line">
+            <span class="reveal-tag">{{ b }} 的{{ isLcmMode ? '倍数' : '因数' }}</span>
+            <span
+              v-for="v in revealListB"
+              :key="'rb' + v"
+              class="reveal-chip"
+              :class="{ hit: revealStep >= 2 && commonList.includes(v) }"
+            >{{ v }}</span>
+          </div>
+          <div v-if="revealStep >= 2" class="reveal-common">
+            <span class="reveal-tag">公有的（交集）</span>
+            <span
+              v-for="v in commonList"
+              :key="'rc' + v"
+              class="common-hit"
+              :class="{ extreme: v === commonExtreme }"
+            >{{ v }}</span>
+            <span class="reveal-note">
+              {{
+                isLcmMode
+                  ? `最小公倍数 ${commonExtreme} 就在交集里`
+                  : `最大公因数 ${commonExtreme} 就在交集里`
+              }}
+            </span>
+          </div>
+          <p v-if="revealStep >= 2" class="reveal-verify">
+            ✓ 两个数<template v-if="isLcmMode">公有的倍数</template><template v-else>公有的因数</template>就是交集里的
+            {{ commonList.join('、') }}；{{ isLcmMode ? '最小公倍数' : '最大公因数' }}
+            <b>{{ commonExtreme }}</b> 一定在交集中
+          </p>
+        </div>
       </div>
     </template>
   </div>
@@ -277,6 +470,153 @@ const lcmLine = computed(() => {
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-end;
+}
+.pair-step-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.pair-step-status {
+  font-size: 0.82rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.pair-step-status b {
+  color: var(--ui-primary);
+  font-size: 1rem;
+}
+.pair-step-panel {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  max-width: 644px;
+}
+.pair-step-chip {
+  border: 1px solid var(--ui-border-accented);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ui-text-highlighted);
+}
+.pair-step-chip.same {
+  border-color: var(--ui-warning, #f59e0b);
+  color: #b45309;
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 14%, var(--ui-bg));
+}
+.pair-step-chip.result {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, var(--ui-bg));
+  color: var(--ui-primary);
+}
+.reveal-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.reveal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-muted);
+  padding: 0.5rem 0.6rem;
+}
+.reveal-line {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+.reveal-tag {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--ui-text-toned);
+  min-width: 6.5rem;
+}
+.reveal-chip {
+  border: 1px solid var(--ui-border-accented);
+  border-radius: 9999px;
+  background: var(--ui-bg);
+  padding: 0.15rem 0.55rem;
+  font-size: 0.8rem;
+  color: var(--ui-text-highlighted);
+}
+.reveal-chip.hit {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 15%, var(--ui-bg));
+  color: var(--ui-primary);
+  font-weight: 800;
+}
+.reveal-common {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  border-top: 1px dashed var(--ui-border-accented);
+  padding-top: 0.35rem;
+}
+.common-hit {
+  border: 1px solid var(--ui-primary);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ui-primary) 25%, var(--ui-bg));
+  color: var(--ui-primary);
+  padding: 0.15rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.common-hit.extreme {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 1px;
+}
+.reveal-note {
+  font-size: 0.78rem;
+  color: var(--ui-primary);
+  font-weight: 700;
+}
+.reveal-verify {
+  margin: 0.1rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ui-success, #16a34a);
+}
+.reveal-verify b {
+  color: var(--ui-primary);
+}
+.sieve-summary {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  max-width: 644px;
+}
+.sieve-sum-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.84rem;
+  padding: 0.2rem 0.6rem;
+}
+.sieve-sum-chip b {
+  color: var(--ui-text-highlighted);
+  font-size: 1rem;
+}
+.sieve-sum-chip.result {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, var(--ui-bg));
+  color: var(--ui-primary);
+  font-weight: 700;
 }
 .pair-box {
   display: flex;
@@ -417,8 +757,35 @@ const lcmLine = computed(() => {
 }
 .jump-arc {
   fill: none;
+  stroke: color-mix(in srgb, var(--ui-warning, #f59e0b) 30%, transparent);
+  stroke-width: 1.2;
+}
+/* 点过的那几段跳跃才点亮 */
+.jump-arc.on {
   stroke: var(--ui-warning, #f59e0b);
-  stroke-width: 1.5;
+  stroke-width: 2.6;
+}
+.jump-step-label {
+  font-size: 11px;
+  fill: #b45309;
+  font-weight: 700;
+}
+.nl-mark.hit {
+  fill: #dc2626;
+  r: 7;
+}
+.jump-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.jump-status {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted);
+}
+.muted-chip {
+  opacity: 0.45;
 }
 .jump-label {
   font-size: 12px;

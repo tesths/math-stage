@@ -2,7 +2,7 @@
 /**
  * 线段图 Lab：总量减运走、多几少几、每行人数变换、倍数两步计算
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
@@ -78,6 +78,42 @@ const timesBars = computed(() => {
   ]
 })
 
+/**
+ * 过程态：课本 p89 的两步——先把线段图填完整（条件），再写数量关系式，最后列式解答。
+ * 原来线段图画完就直接摆着答案，学生没有"从图到式"的一步（L3），
+ * 而且三段条子全部 `x=0` 叠在一起画（图形与数值对不上，已修）。
+ */
+const segStep = ref(0)
+function nextSegStep() {
+  segStep.value = Math.min(segStep.value + 1, 2)
+}
+function resetSegStep() {
+  segStep.value = 0
+}
+const relation = computed(() => {
+  if (isTotal.value) return `剩下的箱数 = 总箱数 − （上午运走的箱数 + 下午运走的箱数）= ${total.value} − （${part1.value} + ${part2.value}）`
+  if (isMore.value) return `排球的个数 = 篮球的个数 + ${more1.value}；足球的个数 = 排球的个数 + ${more2.value}`
+  if (isRows.value) return `后来的行数 = 总人数 ÷ 后来每行的人数 = ${rowTotal.value} ÷ （${per.value} + ${perMore.value}）`
+  return `四年级的幅数 = 三年级的幅数 × ${times.value}；五年级的幅数 = 四年级的幅数 − ${less.value}`
+})
+const expr = computed(() => {
+  if (isTotal.value) return `${total.value} − （${part1.value} + ${part2.value}） = ${left.value}（箱）`
+  if (isMore.value) return `${base.value} + ${more1.value} = ${volleyball.value}（个），${volleyball.value} + ${more2.value} = ${football.value}（个）`
+  if (isRows.value) return `${rowTotal.value} ÷ （${per.value} + ${perMore.value}） = ${rowsNew.value}（行）`
+  return `${base3.value} × ${times.value} = ${grade4.value}（幅），${grade4.value} − ${less.value} = ${grade5.value}（幅）`
+})
+/** 总长条的分段偏移：三段首尾相接，不能都从 x=0 画（会叠在一起） */
+const segOffsets = computed(() => {
+  let acc = 0
+  return segTotal.value.map((seg) => {
+    const x = acc
+    acc += seg.len
+    return { ...seg, x }
+  })
+})
+/** 总长（用于刻度线右端） */
+const segTotalLen = computed(() => segOffsets.value.reduce((a, s) => a + s.len, 0))
+
 /** 差量括号路径：两端竖线 + 中间上拱弧线 */
 function bracketPath(x1: number, x2: number, y0: number): string {
   const mid = (x1 + x2) / 2
@@ -94,17 +130,32 @@ function bracketPath(x1: number, x2: number, y0: number): string {
       <svg viewBox="0 0 340 150" class="seg-svg">
         <text x="170" y="24" text-anchor="middle" class="bar-title">一共 {{ total }} 箱水果</text>
         <g transform="translate(30, 60)">
-          <rect v-for="(s, i) in segTotal" :key="i" :x="0" :width="s.len" height="22" rx="3" class="bar" :class="s.color" />
+          <rect v-for="(s, i) in segOffsets" :key="i" :x="s.x" :width="s.len" height="22" rx="3" class="bar" :class="s.color" />
+          <line
+            v-for="(s, i) in segOffsets.slice(1)"
+            :key="'sep' + i"
+            :x1="s.x"
+            y1="58"
+            :x2="s.x"
+            y2="84"
+            class="seg-sep"
+          />
         </g>
         <g transform="translate(30, 0)">
           <text
-            v-for="(s, i) in segTotal"
+            v-for="(s, i) in segOffsets"
             :key="i"
-            :x="(s.len / 2) + (segTotal.slice(0, i).reduce((a, x) => a + x.len, 0))"
+            :x="s.x + s.len / 2"
             :y="56"
             text-anchor="middle"
             class="bar-tag"
           >{{ s.label }}</text>
+        </g>
+        <!-- 刻度：总长条两端 + 每段分界 -->
+        <g transform="translate(30, 92)">
+          <line x1="0" y1="0" :x2="segTotalLen" y2="0" class="dim-line" />
+          <text x="0" y="14" text-anchor="middle" class="dim-text">0</text>
+          <text :x="segTotalLen" y="14" text-anchor="middle" class="dim-text">{{ total }} 箱</text>
         </g>
       </svg>
       <div class="formula-row">
@@ -202,6 +253,17 @@ function bracketPath(x1: number, x2: number, y0: number): string {
     <template v-else>
       <p class="tip">线段图：{{ id }}</p>
     </template>
+
+    <!-- 从图到式：先在图上标条件，再写数量关系式，最后列式 -->
+    <div class="seg-bar">
+      <button type="button" class="seg-btn primary" data-test="seg-next" :disabled="segStep >= 2" @click="nextSegStep">
+        试一试：把图变成算式
+      </button>
+      <button type="button" class="seg-btn ghost" data-test="seg-reset" @click="resetSegStep">重来</button>
+      <span class="seg-progress" data-test="seg-progress">第 {{ segStep }} / 2 步</span>
+    </div>
+    <p v-if="segStep >= 1" class="seg-relation" data-test="seg-relation">数量关系式：{{ relation }}</p>
+    <p v-if="segStep >= 2" class="seg-expr" data-test="seg-expr">列式解答：{{ expr }}</p>
   </div>
 </template>
 
@@ -215,6 +277,62 @@ function bracketPath(x1: number, x2: number, y0: number): string {
   min-height: 320px;
   width: 100%;
   padding: 0.5rem;
+}
+.seg-sep {
+  stroke: white;
+  stroke-width: 1.5;
+}
+.dim-line {
+  stroke: var(--ui-text-muted);
+  stroke-width: 1;
+}
+.dim-text {
+  fill: var(--ui-text-muted);
+  font-size: 9px;
+}
+.seg-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.seg-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  cursor: pointer;
+}
+.seg-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.seg-btn.ghost {
+  color: var(--ui-text-muted);
+}
+.seg-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.seg-progress {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+.seg-relation,
+.seg-expr {
+  font-size: 0.85rem;
+  color: var(--ui-text-toned);
+  text-align: center;
+  max-width: 40rem;
+}
+.seg-expr {
+  color: var(--ui-primary);
+  font-weight: 800;
 }
 .seg-svg {
   width: 100%;

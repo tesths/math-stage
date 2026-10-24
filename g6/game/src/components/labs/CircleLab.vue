@@ -54,9 +54,61 @@ const axisEnds = computed(() =>
     }
   }),
 )
+/**
+ * 「多画几条半径」：按一次多画一条半径并标注长度，画够 RADIUS_TARGET 条给出完成态
+ * （同一个圆里半径有无数条、都相等 + d = 2r）。
+ * 新增的半径用独立 class `.line-radius-extra`：既有的 3 条 `.line-radius` 语义不变
+ * （审计用例 C1-1 锁定了「三条半径」）。
+ */
+const EXTRA_DIRS = [90, 150, 270, 330, -30, -150]
+const RADIUS_TARGET = 6
+const extraCount = ref(0)
+const extraRadii = computed(() =>
+  EXTRA_DIRS.slice(0, extraCount.value).map((deg) => {
+    const rad = (deg * Math.PI) / 180
+    return {
+      deg,
+      x: CX + crPx.value * Math.cos(rad),
+      y: CY + crPx.value * Math.sin(rad),
+      /** 每条半径的长度（厘米）——同一个圆里都相等 */
+      len: cr.value,
+      /** 长度标注放在半径中点偏外一点，避开圆心与圆周标注 */
+      lx: CX + crPx.value * 0.62 * Math.cos(rad),
+      ly: CY + crPx.value * 0.62 * Math.sin(rad),
+    }
+  }),
+)
+const radiusCount = computed(() => radiusDirs.length + extraCount.value)
+const radiusAllDrawn = computed(() => extraCount.value >= RADIUS_TARGET)
+function drawRadius() {
+  playClick()
+  extraCount.value = radiusAllDrawn.value ? 0 : extraCount.value + 1
+}
 
 /* ---------- 扇形 ---------- */
-const angle = computed(() => Math.max(0, Math.round(props.values.angle ?? 90)))
+const angleParam = computed(() => Math.max(0, Math.round(props.values.angle ?? 90)))
+/**
+ * 「对折成四分之一」：本地把圆心角锁到 90°（对折两次把圆平均分成 4 份），
+ * 再点一次恢复滑块角度。滑块照旧生效，不受覆盖影响。
+ */
+const quarterOverride = ref(false)
+const angle = computed(() => (quarterOverride.value ? 90 : angleParam.value))
+function foldQuarter() {
+  playClick()
+  quarterOverride.value = !quarterOverride.value
+}
+/** 对折线：竖直与水平两条直径，把圆分成 4 个相等的扇形（每份圆心角 90°） */
+const foldLines = computed(() =>
+  [90, 0].map((deg) => {
+    const rad = (deg * Math.PI) / 180
+    return {
+      x1: CX - sr * Math.cos(rad),
+      y1: CY - sr * Math.sin(rad),
+      x2: CX + sr * Math.cos(rad),
+      y2: CY + sr * Math.sin(rad),
+    }
+  }),
+)
 const sectorR = computed(() => Math.max(1, Math.round(props.values.r ?? 6)))
 /** 占比的最简分数：30° → 1/12，45° → 1/8，90° → 1/4 */
 const angleFrac = computed(() => {
@@ -134,6 +186,19 @@ const measureRows = computed(() =>
     return { r: rr, d, c, ratio: fixedN(c / d, 2) }
   }),
 )
+/**
+ * 「不同直径对照表」：换几个固定的直径量一量（1 / 2 / 4 / 8 米）。
+ * 直径每变一次周长就跟着变，但 C ÷ d 恒为 3.14——「都是 3 倍多一些」。
+ * 与上面随滑块变化的绕绳测量表互为印证（那一张锁定了课本半径序列）。
+ */
+const DIAMETERS = [1, 2, 4, 8]
+const diameterRows = computed(() =>
+  DIAMETERS.map((d) => {
+    const c = roundTo(PI * d, 2)
+    const ratio = roundTo(c / d, 4)
+    return { d, c, ratio: fixedN(ratio, 2), over: fixedN(ratio - 3, 2) }
+  }),
+)
 function runRoll() {
   if (rolling.value) return
   playClick()
@@ -160,7 +225,29 @@ function resetRoll() {
 
 /* ---------- 圆的面积：等分 + 交错剪拼 ---------- */
 const ar = computed(() => Math.max(1, Math.round(props.values.r ?? 5)))
-const slices = computed(() => Math.max(4, Math.round((props.values.slices ?? 8) / 2) * 2))
+/** 滑块给出的份数（取偶） */
+const slicesParam = computed(() => Math.max(4, Math.round((props.values.slices ?? 8) / 2) * 2))
+/**
+ * 「逐级翻倍」：课本序列 8 → 16 → 32 → 64。
+ * 按钮写的是本地覆盖值，滑块照旧生效；拖动滑块后可点「取消翻倍」回到滑块读数。
+ */
+const sliceOverride = ref<number | null>(null)
+const slices = computed(() => sliceOverride.value ?? slicesParam.value)
+const DOUBLE_STEPS = [8, 16, 32, 64]
+/** 点一次「逐级翻倍」后的份数：落在课本序列上就往后走一档，64 之后回到 8 */
+const nextSlices = computed(() => {
+  const i = DOUBLE_STEPS.indexOf(slices.value)
+  if (i < 0) return DOUBLE_STEPS[0]!
+  return DOUBLE_STEPS[(i + 1) % DOUBLE_STEPS.length]!
+})
+function doubleSlices() {
+  playClick()
+  sliceOverride.value = nextSlices.value
+}
+function resetSlices() {
+  playClick()
+  sliceOverride.value = null
+}
 const A = computed(() => roundTo(PI * ar.value * ar.value, 2))
 const pieR = 60
 const pieCX = 74
@@ -177,8 +264,9 @@ const layout = computed(() => wedgeLayout(slices.value, wedgeR, 166, 172))
 /** 拼成图形的长，以半径 r 为单位：n·sin(π/n) → π */
 const approxLenR = computed(() => approxLengthInR(slices.value))
 const approxLenReal = computed(() => roundTo(approxLenR.value * ar.value, 3))
-const piRReal = computed(() => roundTo(PI * ar.value, 3))
-const lenGap = computed(() => roundTo(piRReal.value - approxLenReal.value, 3))
+/** πr 的真值：差用真 π 复算，才是「份数越多差越小」，不会在 64 份时冒出负数 */
+const piRReal = computed(() => roundTo(Math.PI * ar.value, 4))
+const lenGap = computed(() => roundTo(piRReal.value - approxLenReal.value, 4))
 
 /* ---------- 环形面积 ---------- */
 const R = computed(() => Math.round(props.values.R ?? 10))
@@ -196,6 +284,22 @@ const ringPath = computed(
     `M 65 ${65 - OUTER_PX} A ${OUTER_PX} ${OUTER_PX} 0 1 1 ${65 - OUTER_PX + 0.01} ${65 - OUTER_PX} Z ` +
     `M 65 ${65 - innerPx.value} A ${innerPx.value} ${innerPx.value} 0 1 0 ${65 - innerPx.value + 0.01} ${65 - innerPx.value} Z`,
 )
+/**
+ * 「外圆减内圆」图形化扣减步进：0 未开始 → 1 画外圆 → 2 挖掉内圆 → 3 剩下环。
+ * 三步都给出面积，最后一步并排给出 π(R² − r²) 的写法，与 πR² − πr² 结果一致。
+ */
+const ringStep = ref(0)
+const ringSteps = computed(() => [
+  { label: '① 画外圆', expr: `S大 = πR² = 3.14 × ${R.value}²`, value: fixedN(aOuter.value, 2) },
+  { label: '② 挖掉内圆', expr: `S小 = πr² = 3.14 × ${r.value}²`, value: fixedN(aInner.value, 2) },
+  { label: '③ 剩下环', expr: 'S环 = S大 − S小 = π(R² − r²)', value: fixedN(annulus.value, 2) },
+])
+const shownRingSteps = computed(() => ringSteps.value.slice(0, ringStep.value))
+const ringDone = computed(() => ringStep.value >= 3)
+function stepRing() {
+  playClick()
+  ringStep.value = ringDone.value ? 0 : ringStep.value + 1
+}
 
 /* ---------- 组合图形 · 窗户 ---------- */
 const side = computed(() => props.values.side ?? 1.8)
@@ -212,6 +316,23 @@ const windowSemi = computed(() => roundTo((PI * (side.value / 2) ** 2) / 2, 4))
 const windowTotal = computed(() => roundTo(windowSq.value + windowSemi.value, 2))
 /** 窗户周长 = 3 条正方形边 + 半圆弧 = 边长 ×(3 + π/2) */
 const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
+/**
+ * 分块高亮 + 面积累加：0 未开始 → 1 正方形 → 2 半圆 → 3 相加。
+ * 先分别算再相加，最后一行与 computeLab 的总面积完全一致。
+ */
+const compStep = ref(0)
+const compSquare = computed(() => roundTo(windowSq.value, 2))
+const compSemi = computed(() => roundTo(windowSemi.value, 2))
+const compSum = computed(() => roundTo(compSquare.value + compSemi.value, 2))
+const compParts = computed(() => [
+  { key: 'square', label: '正方形', expr: `${toFixed2(side.value)} × ${toFixed2(side.value)}`, value: compSquare.value },
+  { key: 'semi', label: '半圆', expr: `π × ${toFixed2(side.value / 2)}² ÷ 2`, value: compSemi.value },
+])
+const compDone = computed(() => compStep.value >= 3)
+function stepComposite() {
+  playClick()
+  compStep.value = compDone.value ? 0 : compStep.value + 1
+}
 </script>
 
 <template>
@@ -242,6 +363,12 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
             <line :x1="CX" :y1="CY" :x2="p.x" :y2="p.y" class="line-radius" :marker-end="i === 0 ? 'url(#arr)' : undefined" />
             <circle :cx="p.x" :cy="p.y" r="3" class="dot amber" />
           </g>
+          <!-- 多画出来的半径：每条都标注长度，长度都相等 -->
+          <g v-for="(p, i) in extraRadii" :key="'xr' + i">
+            <line :x1="CX" :y1="CY" :x2="p.x" :y2="p.y" class="line-radius-extra" />
+            <circle :cx="p.x" :cy="p.y" r="2.5" class="dot amber" />
+            <text :x="p.lx" :y="p.ly" text-anchor="middle" class="t-lbl2 radius-len">{{ p.len }} 厘米</text>
+          </g>
           <circle :cx="CX" :cy="CY" r="4" class="dot-center" />
           <text :x="CX" :y="CY + 22" text-anchor="middle" class="t-lbl">圆心 O</text>
           <text :x="CX + 8" :y="CY - crPx / 2 - 6" class="t-lbl amber">半径 r = {{ cr }} 厘米</text>
@@ -250,6 +377,15 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
           <text x="8" y="232" class="t-lbl2">虚线是过圆心的直线——圆有无数条对称轴</text>
         </svg>
       </div>
+      <div class="controls" aria-label="画半径操作">
+        <UButton size="sm" color="primary" variant="soft" data-test="draw-radius" @click="drawRadius" data-act>
+          {{ radiusAllDrawn ? '再画一遍（重置）' : '再画一条半径' }} · 已画 {{ radiusCount }} 条
+        </UButton>
+      </div>
+      <p v-if="radiusAllDrawn" class="done-line" data-test="radius-done">
+        ✓ 已画出 {{ radiusCount }} 条半径，每条都是 <b>{{ cr }}</b> 厘米——同一个圆里的半径有无数条，全部相等；直径 d = 2r = 2 ×
+        {{ cr }} = <b>{{ cd }}</b> 厘米
+      </p>
       <p class="res-line">同一个圆里所有半径都相等（OA = OB = OC = {{ cr }} 厘米）：d = 2r = 2 × {{ cr }} = <b>{{ cd }}</b> 厘米</p>
     </template>
 
@@ -263,6 +399,19 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
             </marker>
           </defs>
           <circle :cx="CX" :cy="CY" :r="sr" class="circle-outline-muted" />
+          <!-- 对折线：竖直 + 水平两条直径，把圆平均分成 4 份 -->
+          <g v-if="quarterOverride">
+            <line
+              v-for="(f, i) in foldLines"
+              :key="'fold' + i"
+              :x1="f.x1"
+              :y1="f.y1"
+              :x2="f.x2"
+              :y2="f.y2"
+              class="fold-line"
+              stroke-dasharray="5 4"
+            />
+          </g>
           <circle v-if="isFullCircle" :cx="CX" :cy="CY" :r="sr" class="sector-fill" />
           <path v-else :d="arc" class="sector-fill-stroke" />
           <line :x1="CX" :y1="CY" :x2="CX" :y2="CY - sr" class="line-radius" />
@@ -286,6 +435,15 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
       <p class="res-line">
         扇形占全圆的 {{ angle }} ÷ 360 = <b>{{ angleFrac }}</b> ≈ {{ fixedN(angle / 360, 3) }}；弧长 = 2πr × {{ angle }}/360 ≈
         <b>{{ fixedN(sectorArcLen, 2) }}</b> 厘米，面积 = πr² × {{ angle }}/360 ≈ <b>{{ fixedN(sectorArea, 2) }}</b> 平方厘米
+      </p>
+      <div class="controls" aria-label="对折操作">
+        <UButton size="sm" color="primary" variant="soft" data-test="fold-quarter" @click="foldQuarter">
+          {{ quarterOverride ? '取消对折，跟随滑块' : '对折成四分之一（90°）' }}
+        </UButton>
+      </div>
+      <p v-if="quarterOverride" class="done-line quarter-line" data-test="quarter-line">
+        ✓ 对折两次把圆平均分成 4 份：每份的圆心角 = 360° ÷ 4 = <b>90°</b>，占全圆的
+        <b>1/4</b>（90 ÷ 360 = 1/4）；阴影就是这 1/4 个圆
       </p>
     </template>
 
@@ -346,6 +504,24 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
           </tr>
         </tbody>
       </table>
+      <!-- 不同直径对照表：直径换几个，C ÷ d 恒为 π（都是 3 倍多一些） -->
+      <table class="measure-table diameter-table" data-test="diameter-table" aria-label="不同直径对照表">
+        <caption>换几个直径量一量：直径变大周长跟着变大，但 C ÷ d 始终是 3 倍多一些</caption>
+        <thead>
+          <tr><th>直径 d / 米</th><th>周长 C / 米</th><th>C ÷ d</th><th>比 3 多</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in diameterRows" :key="'dd' + row.d">
+            <td>{{ row.d }}</td>
+            <td>{{ fixedN(row.c, 2) }}</td>
+            <td class="ratio-cell">{{ row.ratio }}</td>
+            <td>{{ row.over }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="diameter-note" data-test="diameter-note">
+        无论直径是 1 米还是 8 米，C ÷ d 都是 <b>3 倍多一些</b>（3.14）——这个固定不变的倍数就是圆周率 <b>π</b>
+      </p>
       <p class="res-line">C = πd = 2πr = 2 × 3.14 × {{ cir }} = <b>{{ C }}</b> 米，且 C ÷ d ≈ <b>π = 3.14</b></p>
     </template>
 
@@ -374,7 +550,7 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
             </text>
             <text :x="layout.x0 + layout.width - 6" :y="layout.baseY - 8" text-anchor="end" class="t-lbl sky">宽 = r</text>
             <text :x="layout.x0 + layout.width / 2" :y="layout.baseY + 18" text-anchor="middle" class="t-lbl2">
-              拼成的长方形：{{ fixedN(approxLenReal, 2) }} × {{ ar }} ≈ {{ fixedN(roundTo(approxLenReal * ar, 2), 2) }} 平方米
+              拼成的长方形：{{ fixedN(approxLenReal, 3) }} × {{ ar }} ≈ {{ fixedN(roundTo(approxLenReal * ar, 2), 2) }} 平方米
             </text>
           </g>
         </svg>
@@ -383,7 +559,25 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
         <span class="conv-chip">份数 <strong>{{ slices }}</strong></span>
         <span class="conv-chip">长 = {{ slices }} × sin(180°/{{ slices }}) × r = <strong>{{ fixedN(approxLenR, 3) }}</strong> r</span>
         <span class="conv-chip">πr = <strong>3.142</strong> r</span>
-        <span class="conv-chip result">与 πr 还差 {{ fixedN(lenGap, 3) }} 米（份数越多差越小）</span>
+        <span class="conv-chip result" data-test="len-gap">
+          现在的长 {{ fixedN(approxLenReal, 2) }} 米（精确 {{ fixedN(approxLenReal, 3) }} 米）
+          与 πr = {{ fixedN(piRReal, 2) }} 米（精确 {{ fixedN(piRReal, 3) }} 米）的差 = {{ fixedN(lenGap, 3) }} 米（份数越多差越小）
+        </span>
+      </div>
+      <div class="controls" aria-label="等分操作">
+        <UButton size="sm" color="primary" variant="soft" data-test="double-slices" @click="doubleSlices" data-act>
+          逐级翻倍 · 下一档 {{ nextSlices }} 份
+        </UButton>
+        <UButton
+          v-if="sliceOverride !== null"
+          size="sm"
+          variant="outline"
+          color="neutral"
+          data-test="follow-slider"
+          @click="resetSlices"
+        >
+          取消翻倍，跟随滑块 {{ slicesParam }} 份
+        </UButton>
       </div>
       <p class="res-line">
         S = 长 × 宽 = πr × r = 3.14 × {{ ar }} × {{ ar }} = <b>{{ fixedN(A, 2) }}</b> 平方米
@@ -432,6 +626,23 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
         <p class="res-line">
           S 环 = πR² − πr² = π(R² − r²) = 3.14 × ({{ R }}² − {{ r }}²) = <b>{{ fixedN(annulus, 2) }}</b> 平方厘米；环宽 R − r = {{ R - r }} 厘米
         </p>
+        <!-- 外圆减内圆：图形化扣减步进 -->
+        <div class="deduct-panel" aria-label="外圆减内圆扣减步进">
+          <UButton size="sm" color="primary" variant="soft" data-test="ring-step" @click="stepRing">
+            {{ ringDone ? '重看一遍' : '下一步：外圆减内圆' }}
+          </UButton>
+          <ol class="deduct-list">
+            <li v-for="(s, i) in shownRingSteps" :key="'rs' + i" class="deduct-line" data-test="deduct-line">
+              <span class="deduct-label">{{ s.label }}</span>
+              <span class="deduct-expr">{{ s.expr }}</span>
+              <b class="deduct-value">{{ s.value }}</b> 平方厘米
+            </li>
+          </ol>
+          <p v-if="ringDone" class="done-line" data-test="ring-done">
+            ✓ 环面积 = 外圆 − 内圆 = {{ fixedN(aOuter, 2) }} − {{ fixedN(aInner, 2) }} = <b>{{ fixedN(annulus, 2) }}</b> 平方厘米；
+            用 π(R² − r²) 算同样得 <b>{{ fixedN(annulus, 2) }}</b> 平方厘米（R² − r² = {{ R * R - r * r }}）
+          </p>
+        </div>
       </template>
     </template>
 
@@ -445,12 +656,14 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
               :y="-sqPx"
               :width="sqPx"
               :height="sqPx"
+              :class="{ 'part-hl': compStep === 1 }"
               fill="color-mix(in srgb, var(--ui-primary) 20%, transparent)"
               stroke="var(--ui-primary)"
               stroke-width="2.5"
             />
             <path
               :d="`M ${-smRadius} ${-sqPx} A ${smRadius} ${smRadius} 0 0 1 ${smRadius} ${-sqPx}`"
+              :class="{ 'part-hl': compStep === 2 }"
               fill="color-mix(in srgb, var(--ui-primary) 45%, white)"
               stroke="var(--ui-primary)"
               stroke-width="2.5"
@@ -470,6 +683,25 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
             <text :x="sqPx / 2 + 8" :y="-sqPx / 2 + 4" class="t-lbl2 side-label">边长 {{ toFixed2(side) }} 米</text>
           </g>
         </svg>
+      </div>
+      <!-- 分块高亮 + 各部分面积累加 -->
+      <div class="composite-panel" aria-label="分块累加">
+        <div class="comp-chips">
+          <span
+            v-for="(p, i) in compParts"
+            :key="p.key"
+            class="comp-chip"
+            :class="{ on: compStep >= i + 1 && compStep <= 2 }"
+            data-test="comp-chip"
+          >{{ p.label }} S = {{ p.expr }} = <b>{{ fixedN(p.value, 2) }}</b> 平方米</span>
+        </div>
+        <UButton size="sm" color="primary" variant="soft" data-test="comp-step" @click="stepComposite" data-act>
+          {{ compDone ? '重看一遍' : compStep === 0 ? '第 1 步：先算正方形' : compStep === 1 ? '第 2 步：再算半圆' : '第 3 步：两部分相加' }}
+        </UButton>
+        <p v-if="compDone" class="done-line" data-test="comp-done">
+          ✓ 各部分之和 = {{ fixedN(compSquare, 2) }} + {{ fixedN(compSemi, 2) }} =
+          <b>{{ fixedN(compSum, 2) }}</b> 平方米（半圆直径 = 正方形边长 = {{ toFixed2(side) }} 米，先分别算再相加）
+        </p>
       </div>
       <p class="res-line">
         S = {{ fixedN(windowSq, 2) }} + π×{{ toFixed2(side / 2) }}²÷2 = {{ fixedN(windowSq, 2) }} + {{ fixedN(windowSemi, 2) }} =
@@ -538,6 +770,22 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
 .line-radius {
   stroke: #f59e0b;
   stroke-width: 1.8;
+}
+.line-radius-extra {
+  stroke: #f59e0b;
+  stroke-width: 1.4;
+  stroke-dasharray: 5 3;
+}
+.radius-len {
+  fill: #b45309;
+}
+.fold-line {
+  stroke: #a855f7;
+  stroke-width: 1.4;
+}
+.part-hl {
+  stroke-width: 4;
+  stroke: var(--ui-warning, #f59e0b);
 }
 .line-diameter {
   stroke: #0ea5e9;
@@ -673,6 +921,87 @@ const windowPerim = computed(() => roundTo(side.value * (3 + PI / 2), 3))
   font-size: 0.86rem;
   font-weight: 700;
   padding: 0.3rem 0.75rem;
+}
+.done-line {
+  margin: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  text-align: center;
+  max-width: 34rem;
+}
+.diameter-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  font-weight: 600;
+  text-align: center;
+  max-width: 34rem;
+}
+.diameter-table td.ratio-cell,
+.diameter-table td:last-child {
+  color: var(--ui-primary);
+  font-weight: 800;
+}
+.deduct-panel,
+.composite-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+}
+.deduct-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.deduct-line {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+  font-variant-numeric: tabular-nums;
+}
+.deduct-label {
+  font-weight: 800;
+  color: var(--ui-text-highlighted);
+}
+.deduct-value {
+  color: var(--ui-primary);
+}
+.comp-chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.comp-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.comp-chip.on {
+  border-color: var(--ui-warning, #f59e0b);
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 16%, var(--ui-bg));
+  color: var(--ui-text-highlighted);
 }
 .scale-line {
   margin: 0;

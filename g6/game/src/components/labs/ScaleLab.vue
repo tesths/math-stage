@@ -2,9 +2,10 @@
 /**
  * 放大与缩小 Lab：图形的放大与缩小 / 比例尺
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { roundTo, toFixed2 } from '@/lib/engine/math'
+import { fixedN, roundTo, toFixed2 } from '@/lib/engine/math'
+import { playClick } from '@/lib/sound'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
 
@@ -27,16 +28,36 @@ const SHAPES = [
     name: '长方形',
     orig: 'M 0 32 L 64 32 L 64 0 L 0 0 Z',
     scale: (k: number) => `M 0 ${32 * k} L ${64 * k} ${32 * k} L ${64 * k} 0 L 0 0 Z`,
+    /** 各条边在方格纸上的格数（16px = 1 格），用于「逐个对应边量一量」 */
+    edges: [
+      { label: '长', len: 4 },
+      { label: '宽', len: 2 },
+    ],
+    /** 原图面积（格²） */
+    area: 8,
   },
   {
     name: '直角三角形',
     orig: 'M 0 48 L 64 48 L 0 0 Z',
     scale: (k: number) => `M 0 ${48 * k} L ${64 * k} ${48 * k} L 0 0 Z`,
+    edges: [
+      { label: '底', len: 4 },
+      { label: '高', len: 3 },
+      { label: '斜边', len: 5 },
+    ],
+    area: 6,
   },
   {
     name: '梯形',
     orig: 'M 16 0 L 48 0 L 64 32 L 0 32 Z',
     scale: (k: number) => `M ${16 * k} 0 L ${48 * k} 0 L ${64 * k} ${32 * k} L 0 ${32 * k} Z`,
+    edges: [
+      { label: '上底', len: 2 },
+      { label: '下底', len: 4 },
+      { label: '左腰', len: Math.sqrt(5) },
+      { label: '右腰', len: Math.sqrt(5) },
+    ],
+    area: 6,
   },
 ]
 const current = computed(() => SHAPES[shape.value % SHAPES.length]!)
@@ -54,6 +75,32 @@ const heightLabel = computed(() => `${heightLen.value} → ${Math.round(heightLe
 /** 放大图动态网格尺寸，避免大比例时图形超出画布 */
 const sW = computed(() => Math.ceil((baseLen.value * f.value + 12) / 16))
 const sH = computed(() => Math.ceil((heightLen.value * f.value + 12) / 16))
+
+/* ---------- 逐个对应边量一量 ---------- */
+/** 已经量出的对应边条数（0 = 还没开始量） */
+const measureStep = ref(0)
+const shapeEdges = computed(() => current.value.edges)
+/** 每量一条就多一行：原边 → 后边，比都等于 n:d（形状不变的关键证据） */
+const measuredEdges = computed(() =>
+  shapeEdges.value.slice(0, measureStep.value).map((e) => ({
+    label: e.label,
+    orig: toFixed2(e.len),
+    scaled: toFixed2(roundTo(e.len * f.value, 4)),
+    ratio: toFixed2(f.value),
+  })),
+)
+const allMeasured = computed(() => measureStep.value >= shapeEdges.value.length)
+const areaOrig = computed(() => current.value.area)
+/** 面积倍数 = 边倍数 f 的平方 = (n/d)² */
+const areaScaled = computed(() => roundTo(areaOrig.value * areaFactor.value, 2))
+function measureNext() {
+  playClick()
+  measureStep.value = allMeasured.value ? 1 : measureStep.value + 1
+}
+function resetMeasure() {
+  playClick()
+  measureStep.value = 0
+}
 
 /* ---------- 比例尺 ---------- */
 const scaleDen = computed(() => Math.round(props.values.scaleDen ?? 1000))
@@ -124,6 +171,44 @@ const askLabel = computed(() => ['求实际距离', '求图上距离', '求比�
         <span class="legend-chip base">底边对应</span>
         <span class="legend-chip height">高对应</span>
         <span class="legend-text">对应边按同一比放大/缩小，形状不变</span>
+      </div>
+
+      <!-- 逐个对应边量一量：每条对应边的比都相等，面积倍数 = 边倍数² -->
+      <div class="measure-panel" aria-label="逐个对应边量一量">
+        <div class="measure-btns">
+          <UButton size="sm" color="primary" variant="soft" data-test="measure-next" @click="measureNext" data-act>
+            {{ allMeasured ? '再量一遍' : '量下一条对应边' }}
+          </UButton>
+          <UButton
+            v-if="measureStep > 0"
+            size="sm"
+            variant="outline"
+            color="neutral"
+            data-test="measure-reset"
+            @click="resetMeasure"
+          >
+            清空
+          </UButton>
+          <span class="measure-progress">已量 {{ measureStep }} / {{ shapeEdges.length }} 条边</span>
+        </div>
+        <table v-if="measureStep > 0" class="measure-table" data-test="measure-table">
+          <thead>
+            <tr><th>对应边</th><th>原图 / 格</th><th>后图 / 格</th><th>后图 ÷ 原图</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in measuredEdges" :key="row.label">
+              <td>{{ row.label }}</td>
+              <td>{{ row.orig }}</td>
+              <td>{{ row.scaled }}</td>
+              <td class="ratio-cell">{{ row.ratio }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="allMeasured" class="measure-verify" data-test="measure-verify">
+          ✓ 量完 {{ shapeEdges.length }} 条对应边：每一条的比都是 <b>{{ n }}:{{ d }}</b>（后图 ÷ 原图 = {{ toFixed2(f) }}）——比相等所以形状不变；
+          面积 = {{ areaOrig }} → {{ fixedN(areaScaled, 2) }} 格²，是原来的 ×{{ toFixed2(areaFactor) }} = （{{ n }}/{{ d }}）² 倍
+        </p>
+        <p class="measure-hint">把对应边一条一条量出来：每条都乘/除以同一个数，图形只是变大变小，形状不变；面积要乘这个数的平方。</p>
       </div>
       <p class="note">放大或缩小前后，图形的大小变了，形状不变（对应角相等，对应边的比都是 {{ n }}:{{ d }}）</p>
     </template>
@@ -307,6 +392,63 @@ const askLabel = computed(() => ['求实际距离', '求图上距离', '求比�
   color: var(--ui-text-muted);
   text-align: center;
   max-width: 36rem;
+}
+.measure-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+}
+.measure-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.measure-progress {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted);
+  font-weight: 700;
+}
+.measure-table {
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+}
+.measure-table th,
+.measure-table td {
+  border: 1px solid var(--ui-border);
+  padding: 0.15rem 0.6rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.measure-table th {
+  background: var(--ui-bg-muted);
+  font-weight: 800;
+}
+.measure-table td.ratio-cell {
+  color: var(--ui-primary);
+  font-weight: 800;
+}
+.measure-verify {
+  margin: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  text-align: center;
+  max-width: 36rem;
+}
+.measure-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ui-text-muted);
+  text-align: center;
+  max-width: 34rem;
 }
 .map-block {
   display: flex;

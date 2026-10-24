@@ -29,7 +29,8 @@ const sidePx = computed(() => hectareScale(side.value, 1000, BOX))
 const sidePxShown = computed(() => Math.max(sidePx.value, 1.5))
 const haTiles = computed(() => Math.min(100, Math.round(ha.value)))
 const sqX = 24
-const sqY = 226
+/** 画框 520×520，1 千米外框边长 BOX=240：底边留一点空位，整个外框（含铺满的方块）都在画布内 */
+const sqY = 272
 const isOneHectare = computed(() => Math.abs(side.value - 100) < 1e-9)
 const isOneKm = computed(() => Math.abs(side.value - 1000) < 1e-9)
 const hectareVerify = computed(() =>
@@ -60,6 +61,41 @@ function pickMethod(i: number) {
   methodIdx.value = i
   playClick()
 }
+/** 换一种割法：在三种割补方法之间轮换（结果必须完全相同） */
+function cycleMethod() {
+  methodIdx.value = (methodIdx.value + 1) % methods.value.length
+  playClick()
+}
+
+/* ---------- 公顷：把 1 公顷小方块逐行铺满 1 平方千米 ---------- */
+const FILL_ROWS = 10
+const FILL_COLS = 10
+const fillRows = ref(0)
+const filledTiles = computed(() => fillRows.value * FILL_COLS)
+const fillDone = computed(() => fillRows.value >= FILL_ROWS)
+const fillTiles = computed(() => {
+  const size = BOX / FILL_COLS
+  const out: { x: number; y: number; key: string }[] = []
+  for (let r = 0; r < fillRows.value; r++) {
+    for (let c = 0; c < FILL_COLS; c++) {
+      out.push({ x: sqX + c * size, y: sqY - (r + 1) * size, key: `r${r}c${c}` })
+    }
+  }
+  return out
+})
+function fillNextRow() {
+  if (fillDone.value) return
+  fillRows.value++
+  playClick()
+}
+function fillAll() {
+  fillRows.value = FILL_ROWS
+  playClick()
+}
+function resetFill() {
+  fillRows.value = 0
+  playClick()
+}
 
 /* ---------- 组合图形：米 → 像素（等比） ---------- */
 const PAD = 70
@@ -87,19 +123,31 @@ const partLabelPos = (points: Pt[]) => {
             <!-- 1 千米外框（参照系） -->
             <rect :x="sqX" :y="sqY - BOX" :width="BOX" :height="BOX" class="km-outline" />
             <text :x="sqX + BOX - 4" :y="sqY - BOX + 14" text-anchor="end" class="dim-label">1 千米 × 1 千米 = 1 平方千米</text>
-            <!-- 1 公顷小方块（100 米） -->
+            <!-- 1 公顷小方块（100 米，按真实比例：1 千米外框的 1/10 宽） -->
             <rect :x="sqX" :y="sqY - (BOX / 10) * 1" :width="BOX / 10" :height="BOX / 10" class="ha-unit" />
-            <text :x="sqX + BOX / 10 + 4" :y="sqY - 4" class="dim-label">100 米 = 1 公顷</text>
+            <!-- 铺满看进率：逐行铺进 1 公顷小方块 -->
+            <g v-if="fillRows > 0" class="fill-layer" aria-label="逐行铺满的 1 公顷方块">
+              <rect
+                v-for="t in fillTiles"
+                :key="t.key"
+                :x="t.x"
+                :y="t.y"
+                :width="BOX / 10"
+                :height="BOX / 10"
+                class="fill-tile"
+              />
+            </g>
             <!-- 当前正方形 -->
             <rect :x="sqX" :y="sqY - sidePxShown" :width="sidePxShown" :height="sidePxShown" class="square-fill" />
-            <text :x="sqX + BOX / 2" :y="sqY + 18" text-anchor="middle" class="dim-label">边长 {{ side }} 米</text>
-            <text
-              :x="sqX + Math.max(sidePxShown / 2, 40)"
-              :y="sqY - Math.max(sidePxShown / 2, 20)"
-              text-anchor="middle"
-              class="m2-label"
-            >
-              {{ m2 }} m²
+            <!--
+              标注一律贴在当前正方形右侧：原来「100 米 = 1 公顷」落在方块底边上、「10000 m²」压在方块中间，
+              「边长 100 米」还居中在外框下方（看起来像在说外框），三个标签互相重叠且指错了对象。
+            -->
+            <text :x="sqX + sidePxShown + 6" :y="sqY - 6" text-anchor="start" class="dim-label">
+              边长 {{ side }} 米
+            </text>
+            <text :x="sqX" :y="sqY - sidePxShown - 8" text-anchor="start" class="m2-label">
+              {{ m2 }} m² = {{ toFixed2(ha) }} 公顷
             </text>
           </svg>
           <p class="grid-note">同一个比例尺下比较：边长 100 米的方块只有 1 千米外框的十分之一宽，面积是它的百分之一</p>
@@ -129,6 +177,18 @@ const partLabelPos = (points: Pt[]) => {
           <p>每格 1 公顷；当前正方形约占 <b>{{ toFixed2(ha) }}</b> 格。</p>
         </div>
       </div>
+      <div class="fill-bar">
+        <UButton size="sm" color="primary" variant="soft" :disabled="fillDone" @click="fillNextRow" data-act>
+          再铺一行（{{ FILL_COLS }} 个 1 公顷）
+        </UButton>
+        <UButton size="sm" color="primary" variant="solid" :disabled="fillDone" @click="fillAll">铺满看进率</UButton>
+        <UButton v-if="fillRows > 0" size="sm" variant="outline" color="neutral" @click="resetFill">复位</UButton>
+        <span class="fill-count" aria-label="已铺个数">已铺 <b>{{ filledTiles }}</b> 个 1 公顷</span>
+      </div>
+      <p v-if="fillDone" class="fill-verify">
+        ✓ 每行 {{ FILL_COLS }} 个、铺满 {{ FILL_ROWS }} 行：{{ FILL_COLS }} × {{ FILL_ROWS }} = <b>{{ filledTiles }}</b> 个 1 公顷 =
+        <b>100 公顷</b> = 1 平方千米（1 公顷 = 10000 平方米，所以 1 平方千米 = 1000000 平方米）
+      </p>
       <p class="verify-line">{{ hectareVerify }}</p>
       <p class="note">测量或计量土地面积，常用公顷（hm²）作单位；边长 100 米的正方形土地面积就是 1 公顷。</p>
     </template>
@@ -146,6 +206,22 @@ const partLabelPos = (points: Pt[]) => {
         >
           {{ m.label }}
         </UButton>
+      </div>
+      <div class="cycle-bar">
+        <UButton size="sm" color="warning" variant="soft" icon="i-heroicons-arrow-path" @click="cycleMethod">
+          换一种割法（第 {{ methodIdx + 1 }}/{{ methods.length }} 种）
+        </UButton>
+        <span class="cycle-tip">三种割法只是分法不同，总面积一定相同</span>
+      </div>
+      <div class="method-totals" aria-label="三种割法结果对照">
+        <span
+          v-for="(m, i) in methods"
+          :key="m.key"
+          class="method-total-chip"
+          :class="{ active: i === methodIdx }"
+        >
+          {{ m.label }}：<b>{{ m.total }}</b> m²
+        </span>
       </div>
       <svg :viewBox="viewBox" class="pond-svg" role="img" aria-label="池塘平面图与割补方法">
         <!-- 底图 -->
@@ -308,6 +384,77 @@ const partLabelPos = (points: Pt[]) => {
   gap: 0.4rem;
   flex-wrap: wrap;
   justify-content: center;
+}
+.cycle-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.cycle-tip {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted);
+  font-weight: 700;
+}
+.method-totals {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.method-total-chip {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  padding: 0.2rem 0.65rem;
+}
+.method-total-chip b {
+  color: var(--ui-text-highlighted);
+}
+.method-total-chip.active {
+  border-color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, var(--ui-bg));
+  color: var(--ui-primary);
+}
+.method-total-chip.active b {
+  color: var(--ui-primary);
+}
+.fill-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.fill-count {
+  font-size: 0.82rem;
+  color: var(--ui-text-toned);
+  font-weight: 700;
+}
+.fill-count b {
+  color: var(--ui-primary);
+  font-size: 1rem;
+}
+.fill-tile {
+  fill: color-mix(in srgb, var(--ui-primary) 55%, white);
+  stroke: var(--ui-primary);
+  stroke-width: 0.6;
+}
+.fill-verify {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-success, #16a34a) 12%, var(--ui-bg));
+  color: var(--ui-success, #16a34a);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  text-align: center;
+  max-width: 44rem;
+}
+.fill-verify b {
+  color: var(--ui-primary);
 }
 .pond-svg {
   max-width: 420px;

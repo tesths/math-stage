@@ -36,9 +36,9 @@ describe('computeLab · 一天的时间', () => {
     expect(r.text).toContain('20:00')
   })
 
-  it('time24：凌晨 0 时', () => {
+  it('time24：0 时是晚上 12 时（课本：一天从晚上 12:00 开始）', () => {
     const r = computeLab('time24', { hour: 0, min: 30 })
-    expect(r.text).toContain('凌晨')
+    expect(r.text).toContain('晚上')
     expect(r.text).toContain('12')
   })
 
@@ -61,15 +61,22 @@ describe('computeLab · 乘法', () => {
     expect(r.text).toContain('120')
   })
 
-  it('mul-oral：估算（够买）', () => {
+  it('mul-oral：估算（估大不超 → 一定够买，结果是精算 112 元）', () => {
     const r = computeLab('mul-oral', { price: 28, count: 4, money: 120 })
-    expect(r.value).toBe(120)
-    expect(r.text).toContain('够买')
+    expect(r.value).toBe(112)
+    expect(r.text).toContain('一定够买')
+    expect(r.steps[0]!.result).toContain('120')
   })
 
-  it('mul-oral：估算（不够买）', () => {
+  it('mul-oral：估算（估小已超 → 一定不够买）', () => {
+    const r = computeLab('mul-oral', { price: 28, count: 4, money: 75 })
+    expect(r.text).toContain('一定不够买')
+  })
+
+  it('mul-oral：估算（估大超了、估小没超 → 不能靠估算下结论）', () => {
     const r = computeLab('mul-oral', { price: 28, count: 4, money: 100 })
-    expect(r.text).toContain('不够')
+    expect(r.text).toContain('不能确定')
+    expect(r.text).toContain('112')
   })
 
   it('mul-pen：两位数×一位数', () => {
@@ -96,10 +103,17 @@ describe('computeLab · 曹冲称象', () => {
     expect(r.text).toContain('3000')
   })
 
-  it('equivalent：等量代换', () => {
-    const r = computeLab('equivalent', { stones: 5, each: 40 })
-    expect(r.value).toBe(200)
-    expect(r.text).toContain('200')
+  it('equivalent：象重 2000 千克、每块 200 千克 → 需要 10 块（不是拿块数定义象重）', () => {
+    const r = computeLab('equivalent', { mass: 2000, each: 200 })
+    expect(r.value).toBe(10)
+    expect(r.text).toContain('2000')
+  })
+
+  it('equivalent：象重不是石块质量整数倍时给出"还差多少"', () => {
+    const r = computeLab('equivalent', { mass: 2100, each: 200 })
+    expect(r.value).toBe(11)
+    expect(r.text).toContain('11')
+    expect(r.conclusion).toContain('多')
   })
 })
 

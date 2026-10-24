@@ -59,6 +59,12 @@ describe('ParamControl：滑块与离散选项', () => {
     expect(w.emitted('pick')).toHaveLength(1)
   })
 
+  it('options 里没有当前值时右上角回退显示数字（防御分支）', () => {
+    const w = mount(ParamControl, { props: { param: select, modelValue: 9 } })
+    expect(w.find('strong').text()).toBe('9')
+    expect(w.findAll('.param-option.active')).toHaveLength(0)
+  })
+
   it('数据里有 options 的参数都满足：唯一、在范围内、默认值在其中', async () => {
     const { allLabs } = await import('@data')
     let checked = 0

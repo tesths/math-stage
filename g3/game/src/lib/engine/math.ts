@@ -49,9 +49,9 @@ export function applyOp(a: number, op: MixOp, b: number): number {
 
 export const OP_SYMBOL: Record<MixOp, string> = { add: '+', sub: '−', mul: '×', div: '÷' }
 
-/** 24 时制 → 普通记时法文本（如 20 → 晚上 8 时） */
+/** 24 时制 → 普通记时法文本（如 20 → 晚上 8 时；0 时 → 晚上 12 时，课本：一天从晚上 12:00 开始） */
 export function time12Text(hour: number): { period: string; display: number } {
-  if (hour === 0) return { period: '凌晨', display: 12 }
+  if (hour === 0) return { period: '晚上', display: 12 }
   if (hour < 6) return { period: '凌晨', display: hour }
   if (hour < 12) return { period: '上午', display: hour }
   if (hour === 12) return { period: '中午', display: 12 }

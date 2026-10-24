@@ -209,7 +209,7 @@ const bars = computed(() => {
             <UButton size="sm" color="primary" :disabled="digitsLeft <= 0" @click="nextDigit">
               再多算一位
             </UButton>
-            <UButton size="sm" variant="outline" color="neutral" :disabled="shownDigits <= 2" @click="resetDigits">
+            <UButton size="sm" variant="outline" color="neutral" :disabled="shownDigits <= 2" @click="resetDigits" data-act>
               重来
             </UButton>
             <span class="digit-note">
@@ -303,7 +303,7 @@ const bars = computed(() => {
             <text x="137" y="190" text-anchor="middle" class="pg-sub">{{ toFixed2(base) }}×{{ toFixed2(height) }}</text>
           </svg>
           <div class="pgram-steps">
-            <UButton size="sm" variant="outline" color="neutral" @click="toggleExact">
+            <UButton size="sm" variant="outline" color="neutral" @click="toggleExact" data-act>
               {{ revealExact ? '先只看估算' : '再看精确计算' }}
             </UButton>
             <span class="pgram-note">{{ pgramNote }}</span>

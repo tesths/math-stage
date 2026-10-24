@@ -85,9 +85,11 @@ const figOrigin = computed<Pt>(() => {
   const f = figure.value
   const g = cells.value
   if (dirIdx.value === 0) return [2, (rows - f.h) / 2]
-  if (dirIdx.value === 2) return [cols - 2 - f.w - g, (rows - f.h) / 2]
+  /** 向左：原图放在右侧，平移后的图形正好落到左边界 */
+  if (dirIdx.value === 2) return [g + 2, (rows - f.h) / 2]
   if (dirIdx.value === 3) return [(cols - f.w) / 2, 2]
-  return [(cols - f.w) / 2, rows - 2 - f.h - g]
+  /** 向下：原图放在上方，平移后的图形正好落到下边界 */
+  return [(cols - f.w) / 2, g + 2]
 })
 
 /**
@@ -120,6 +122,8 @@ function atOrigin(f: ShapeFigure, origin: Pt): ShapeFigure {
 }
 
 /* ---------------- 平移 ---------------- */
+/** 「换一组对应点」步进量：用于在 A→A′ / B→B′ / C→C′ 之间轮换 */
+const pairStep = ref(0)
 const moveVec = computed<Pt>(() => {
   const g = cells.value
   if (dirIdx.value === 0) return [g, 0]
@@ -137,6 +141,31 @@ const translateVerify = computed(() => {
   const m = placed.value.marks[0]!
   return `对应点 A → A′ 相距 ${dist(m.p, finalMarks.value[0]!.p).toFixed(0)} 格，其余各组对应点也都是 ${cells.value} 格，形状和大小不变`
 })
+
+/** 每组对应点（A→A′ / B→B′ / C→C′）：当前高亮组的下标 */
+const pairCount = computed(() => placed.value.marks.length)
+const activePair = computed(() =>
+  pairCount.value ? ((pairStep.value % pairCount.value) + pairCount.value) % pairCount.value : 0,
+)
+const activePairMark = computed(() => placed.value.marks[activePair.value] ?? null)
+const activePairTarget = computed(() => finalMarks.value[activePair.value] ?? null)
+/**
+ * 这一组对应点相距的格数：直接由两组坐标算出，
+ * 所以它恒等于当前平移格数 `values.grid`（这是本 Lab 的重点概念）。
+ */
+const activePairDist = computed(() =>
+  activePairMark.value && activePairTarget.value ? dist(activePairMark.value.p, activePairTarget.value.p) : 0,
+)
+const pairReadout = computed(() => {
+  const m = activePairMark.value
+  if (!m) return ''
+  return `这一组对应点（${m.label} → ${m.label}′）相距 ${activePairDist.value.toFixed(0)} 格`
+})
+function nextPair() {
+  if (pairCount.value <= 0) return
+  pairStep.value += 1
+  playClick()
+}
 
 /* ---------------- 旋转 ---------------- */
 const rotPivotAbs = computed<Pt>(() => ROT_PIVOT[figCode.value] ?? [4, 6])
@@ -205,6 +234,32 @@ const rotateVerify = computed(() => {
   return `绕 ${pivotName} 点${clockwise.value ? '顺' : '逆'}时针旋转 ${angle.value}°：${detail}，对应点到旋转中心的距离不变`
 })
 
+/** 一步一步转：每次严格 +15°（直接写回参数，滑块同步） */
+const ROT_STEP = 15
+const canStepRotate = computed(() => angle.value < 360)
+function stepRotate() {
+  if (!canStepRotate.value) return
+  props.values.angle = Math.min(360, angle.value + ROT_STEP)
+  playClick()
+}
+
+/** 量一量：对应点旋转前后到旋转中心的距离（两条线段长度由坐标分别算出） */
+const measuredRot = ref(false)
+const rotMeasures = computed(() =>
+  rotPairs.value.map((pair) => ({
+    label: pair.label,
+    name: `${pivotName.value}${pair.label}`,
+    from: dist(pair.from, rotPivotAbs.value),
+    to: dist(pair.to, rotPivotAbs.value),
+  })),
+)
+const measureLabel = computed(() =>
+  rotMeasures.value[0] ? `量一量 ${rotMeasures.value[0]!.name} 与 ${rotMeasures.value[0]!.name}′` : '量一量',
+)
+const measuredEqual = computed(
+  () => rotMeasures.value.length > 0 && rotMeasures.value.every((m) => Math.abs(m.from - m.to) < 1e-9),
+)
+
 /* ---------------- 轴对称 ---------------- */
 const foldP = ref(0)
 const mirrorShown = ref(false)
@@ -245,6 +300,25 @@ function resetFold() {
   playClick()
 }
 const axisVerify = computed(() => `对应点到对称轴的距离相等：都是 ${axisDistances.value[0]!.left.toFixed(1)} 格，对折后两边完全重合`)
+
+/** 「标出对应点到对称轴的距离」：左右成对显示，换对称轴位置自动重算 */
+const measuredAxis = ref(false)
+const AXIS_PT_LABELS = ['A', 'B']
+const axisPairDistances = computed(() =>
+  axisPairs.value.map((pair, i) => ({
+    name: AXIS_PT_LABELS[i] ?? String.fromCharCode(65 + i),
+    /** 左边的点（已画的一半）到对称轴的距离 */
+    left: dist(pair.from, [axisAt.value, pair.from[1]]),
+    /** 右边对应点（反射得到）到对称轴的距离 */
+    right: dist(pair.to, [axisAt.value, pair.to[1]]),
+  })),
+)
+const axisPairsEqual = computed(
+  () => axisPairDistances.value.length > 0 && axisPairDistances.value.every((d) => Math.abs(d.left - d.right) < 1e-9),
+)
+const axisMeasureText = computed(() =>
+  axisPairDistances.value.map((d) => `${d.name}/${d.name}′ ${d.left.toFixed(1)} = ${d.right.toFixed(1)} 格`).join('；'),
+)
 
 const pivotName = computed(() => (isTriangle.value ? 'A' : 'O'))
 </script>
@@ -308,7 +382,7 @@ const pivotName = computed(() => (isTriangle.value ? 'A' : 'O'))
         </g>
         <!-- 对应点、箭头、格数标尺 -->
         <g v-if="cells > 0">
-          <g v-for="(m, i) in placed.marks" :key="'cm' + i">
+          <g v-for="(m, i) in placed.marks" :key="'cm' + i" :class="{ 'pair-active': i === activePair }">
             <line
               :x1="px(m.p[0])"
               :y1="py(m.p[1])"
@@ -349,6 +423,10 @@ const pivotName = computed(() => (isTriangle.value ? 'A' : 'O'))
               class="ruler-tick"
             />
           </template>
+          <!-- 「换一组对应点」后同步写出的这一组距离 -->
+          <text :x="px(layout.cols / 2)" :y="py(0) - 6" text-anchor="middle" class="pair-readout">
+            {{ pairReadout }}
+          </text>
         </g>
       </template>
 
@@ -403,6 +481,13 @@ const pivotName = computed(() => (isTriangle.value ? 'A' : 'O'))
           <path v-if="angle < 360" :d="sectorPath" class="sector" />
           <path :d="arcPath" class="arc" marker-end="url(#motion-arrow)" />
           <text :x="angleLabelPt.x" :y="angleLabelPt.y" text-anchor="middle" class="angle-label">{{ angle }}°</text>
+          <!-- 量一量：把 OA 与 OA′ 两条线段单独描出来 -->
+          <g v-if="measuredRot" class="measure-layer">
+            <g v-for="pair in rotPairs" :key="'ms' + pair.label">
+              <line :x1="px(rotPivotAbs[0])" :y1="py(rotPivotAbs[1])" :x2="px(pair.from[0])" :y2="py(pair.from[1])" class="measure-seg" />
+              <line :x1="px(rotPivotAbs[0])" :y1="py(rotPivotAbs[1])" :x2="px(pair.to[0])" :y2="py(pair.to[1])" class="measure-seg" />
+            </g>
+          </g>
         </g>
       </template>
 
@@ -418,18 +503,53 @@ const pivotName = computed(() => (isTriangle.value ? 'A' : 'O'))
         <!-- 对应点到对称轴的垂线 -->
         <g v-for="(pair, i) in axisPairs" :key="'ap' + i">
           <line :x1="px(pair.from[0])" :y1="py(pair.from[1])" :x2="px(axisAt)" :y2="py(pair.from[1])" class="corr-line" />
-          <line v-if="mirrorShown" :x1="px(axisAt)" :y1="py(pair.to[1])" :x2="px(pair.to[0])" :y2="py(pair.to[1])" class="corr-line" />
+          <line
+            v-if="mirrorShown || measuredAxis"
+            :x1="px(axisAt)"
+            :y1="py(pair.to[1])"
+            :x2="px(pair.to[0])"
+            :y2="py(pair.to[1])"
+            class="corr-line"
+          />
           <circle :cx="px(pair.from[0])" :cy="py(pair.from[1])" r="3.5" class="pt-original" />
           <circle v-if="mirrorShown" :cx="px(pair.to[0])" :cy="py(pair.to[1])" r="3.5" class="pt-target" />
-          <text :x="px(axisAt) - 40" :y="py(pair.from[1]) - 7" class="corr-label">{{ axisDistances[i]!.left.toFixed(1) }} 格</text>
-          <text v-if="mirrorShown" :x="px(axisAt) + 7" :y="py(pair.to[1]) - 7" class="corr-label">
+          <circle v-else-if="measuredAxis" :cx="px(pair.to[0])" :cy="py(pair.to[1])" r="3.5" class="axis-measure-pt" />
+          <text v-if="!measuredAxis" :x="px(axisAt) - 40" :y="py(pair.from[1]) - 7" class="corr-label">
             {{ axisDistances[i]!.left.toFixed(1) }} 格
           </text>
+          <text v-if="mirrorShown && !measuredAxis" :x="px(axisAt) + 7" :y="py(pair.to[1]) - 7" class="corr-label">
+            {{ axisDistances[i]!.left.toFixed(1) }} 格
+          </text>
+          <!-- 「标出距离」：左右成对显示，换对称轴位置时自动重算 -->
+          <template v-if="measuredAxis">
+            <text :x="px(pair.from[0]) - 4" :y="py(pair.from[1]) - 7" text-anchor="end" class="axis-pair-left">
+              {{ axisPairDistances[i]!.left.toFixed(1) }} 格
+            </text>
+            <text :x="px(pair.to[0]) + 4" :y="py(pair.to[1]) - 7" class="axis-pair-right">
+              {{ axisPairDistances[i]!.right.toFixed(1) }} 格
+            </text>
+          </template>
         </g>
       </template>
     </svg>
 
     <div class="controls">
+      <UButton v-if="isTranslate" size="sm" variant="outline" color="neutral" @click="nextPair" data-act>换一组对应点</UButton>
+      <UButton
+        v-if="isRotate"
+        size="sm"
+        variant="outline"
+        color="neutral"
+        :disabled="!canStepRotate"
+        @click="stepRotate" data-act>
+        一步一步转（每次 +15°）
+      </UButton>
+      <UButton v-if="isRotate" size="sm" variant="outline" color="neutral" @click="measuredRot = !measuredRot">
+        {{ measuredRot ? '收起测量' : measureLabel }}
+      </UButton>
+      <UButton v-if="isAxis" size="sm" variant="outline" color="neutral" @click="measuredAxis = !measuredAxis">
+        {{ measuredAxis ? '收起距离标注' : '标出对应点到对称轴的距离' }}
+      </UButton>
       <UButton v-if="isAxis" size="sm" color="primary" variant="soft" icon="i-heroicons-arrows-right-left" @click="runFold">
         对折验证 · 两边完全重合
       </UButton>
@@ -437,9 +557,26 @@ const pivotName = computed(() => (isTriangle.value ? 'A' : 'O'))
       <span class="verify-line">
         <template v-if="isTranslate">✓ {{ translateVerify }}</template>
         <template v-else-if="isRotate">✓ {{ rotateVerify }}</template>
+        <template v-else-if="measuredAxis">✓ 对应点到对称轴的距离成对相等：{{ axisMeasureText }}</template>
         <template v-else-if="mirrorShown">✓ {{ axisVerify }}</template>
         <template v-else>拖动「对称轴位置」：无论对称轴在哪，对应点到轴的距离都相等</template>
       </span>
+    </div>
+    <!-- 量一量 OA 与 OA′：两条线段的长度由坐标分别算出，旋转前后相等 -->
+    <div v-if="isRotate && measuredRot" class="measure-panel">
+      <p class="measure-title">
+        {{ pivotName }} 是旋转中心：量一量对应点旋转前后到 {{ pivotName }} 的距离
+      </p>
+      <p v-for="m in rotMeasures" :key="'mv' + m.label" class="measure-row">
+        <span class="measure-name">{{ m.name }}</span>
+        <span class="measure-val measure-from">{{ m.from.toFixed(1) }} 格</span>
+        <span class="measure-eq">=</span>
+        <span class="measure-name">{{ m.name }}′</span>
+        <span class="measure-val measure-to">{{ m.to.toFixed(1) }} 格</span>
+      </p>
+      <p class="measure-conclusion" :class="{ ok: measuredEqual }">
+        {{ measuredEqual ? `✓ 每一组 ${pivotName}A 与 ${pivotName}A′ 都相等：旋转只改变位置，不改变到旋转中心的距离` : '对应点到旋转中心的距离不相等' }}
+      </p>
     </div>
     <p class="lab-caption">{{ lab.prompt }}</p>
   </div>
@@ -518,10 +655,76 @@ svg {
 .corr-label,
 .mark-label,
 .angle-label,
-.axis-label {
+.axis-label,
+.pair-readout,
+.axis-pair-left,
+.axis-pair-right {
   font-size: 12px;
   font-weight: 700;
   fill: var(--ui-text-muted);
+}
+/* 「换一组对应点」：当前这一组加粗、加深，其余保持浅色 */
+.pair-active .corr-line {
+  stroke-width: 3;
+  stroke: var(--ui-error, #ef4444);
+  stroke-dasharray: none;
+}
+.pair-active .pt-original,
+.pair-active .pt-target {
+  r: 4.5;
+}
+.pair-readout {
+  fill: var(--ui-error, #ef4444);
+}
+.axis-pair-left,
+.axis-pair-right {
+  fill: var(--ui-warning, #f59e0b);
+}
+.axis-measure-pt {
+  fill: var(--ui-warning, #f59e0b);
+  stroke: var(--ui-bg);
+  stroke-width: 1.5;
+}
+.measure-seg {
+  stroke: var(--ui-warning, #f59e0b);
+  stroke-width: 3.2;
+}
+.measure-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: center;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-muted);
+  padding: 0.5rem 0.85rem;
+}
+.measure-title {
+  font-size: 0.8rem;
+  color: var(--ui-text-toned);
+}
+.measure-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.measure-name {
+  color: var(--ui-primary);
+}
+.measure-val {
+  color: var(--ui-warning, #f59e0b);
+}
+.measure-eq {
+  color: var(--ui-text-muted);
+}
+.measure-conclusion {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+}
+.measure-conclusion.ok {
+  color: var(--ui-success, #16a34a);
 }
 .angle-label {
   fill: var(--ui-warning, #f59e0b);

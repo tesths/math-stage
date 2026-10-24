@@ -16,7 +16,7 @@ export const c4Labs: LabDef[] = [
       { key: 'per', label: '每组人数', min: 1, max: 9, step: 1, default: 4, unit: '人' },
     ],
     formula: '4 + 4 + 4 = 4 × 3',
-    tip: '求几个相同加数的和，用乘法计算比较简便。',
+    tip: '求几个相同加数的和，用乘法计算比较简便：4 + 4 + 4 = 4 × 3。易错点：把 3 个 4 和 4 个 3 的算式写反却当成结果不同（结果一样，意义不同）。',
   },
   {
     id: 'g4-c4-mul-total',
@@ -32,7 +32,7 @@ export const c4Labs: LabDef[] = [
       { key: 'count', label: '数量', min: 1, max: 20, step: 1, default: 3, unit: '支' },
     ],
     formula: '总价 = 单价 × 数量',
-    tip: '一件商品的价格叫单价，购买的数量叫数量，总价 = 单价 × 数量。',
+    tip: '一件商品的价格叫单价，购买的数量叫数量，总价 = 单价 × 数量。易错点：把"数量"当成"单价"，或总价算成单价 + 数量。',
   },
   {
     id: 'g4-c4-mul-distance',
@@ -48,7 +48,7 @@ export const c4Labs: LabDef[] = [
       { key: 't', label: '时间', min: 1, max: 20, step: 1, default: 4, unit: '分' },
     ],
     formula: '路程 = 速度 × 时间',
-    tip: '单位时间里行的路程叫速度；路程 = 速度 × 时间，速度可以写作 70 米/分。',
+    tip: '单位时间里行的路程叫速度，速度可以写作 70 米/分；路程 = 速度 × 时间。易错点：求路程却用除法，或把"米/分"读成"每分米"。',
   },
   {
     id: 'g4-c4-mul-solve',
@@ -64,6 +64,6 @@ export const c4Labs: LabDef[] = [
       { key: 'count', label: '要买本数', min: 1, max: 20, step: 1, default: 5, unit: '本' },
     ],
     formula: '总价 = 单价 × 数量',
-    tip: '笔记本的单价不变，先求出单价（总价÷数量），再用单价×数量求要买的钱。',
+    tip: '单价不变：先求单价（总价 ÷ 数量），再用单价 × 要买的数量。易错点：拿原来的总价去乘数量。',
   },
 ]

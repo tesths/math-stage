@@ -11,6 +11,7 @@ import {
   type AreaShape,
 } from '@/lib/engine/math'
 import { compositeMethods, toHectare } from '@/lib/labs/area'
+import { decimalText, splitShares } from '@/lib/labs/decimal'
 import { PINBOARD_SHAPES, pickCheck } from '@/lib/labs/pinboard'
 
 export interface LabStep {
@@ -49,13 +50,34 @@ function mulSteps(price: number, count: number): LabStep[] {
   ]
 }
 
+/**
+ * 小数除以整数：与组件共用 `splitShares`（元 → 角 → 分逐级平均分）。
+ *
+ * 原来这里直接写 `${total} ÷ ${count} = ${fmt(total / count)}`：
+ * 9.6 ÷ 7 会显示「9.6 ÷ 7 = 1.37143」——既用了等号（真值是 1.371428…），
+ * 又和左侧「逐级平均分」面板给出的「每份 1.3 元、余 0.5 元」互相矛盾。
+ * 现在除不尽时给「商 + 余数 + 约等于」，能除尽时才用等号。
+ */
 function divSteps(total: number, count: number): LabStep[] {
-  const unit = total / count
-  return [
-    { expr: `${fmt(total)} ÷ ${count}`, result: `把总价平均分成 ${count} 份` },
-    { expr: `商的小数点与被除数对齐`, result: `每位 ${fmt(unit)} 元` },
-    { expr: `${fmt(total)} ÷ ${count} = ${fmt(unit)}`, result: `单价 ${fmt(unit)} 元` },
+  const s = splitShares(total, count)
+  const approx = toFixed2(Math.round((total / count) * 100) / 100)
+  const steps: LabStep[] = [
+    {
+      expr: `${fmt(total)} ÷ ${count}`,
+      result: `把总价平均分成 ${count} 份：每份 ${s.perGroupText} 元${s.exact ? '' : `，还余 ${decimalText(s.remainder)} 元`}`,
+    },
+    {
+      expr: `每份 × 份数 + 余数 = 总数`,
+      result: `${s.perGroupText} × ${count} + ${decimalText(s.remainder)} = ${fmt(total)} 元${s.exact ? '（正好分完）' : ''}`,
+    },
   ]
+  if (!s.exact) {
+    steps.push({
+      expr: `除不尽：余下的 ${decimalText(s.remainder)} 元 = ${Math.round(s.remainder * 10)} 角，添 0 继续除`,
+      result: `所以 ${fmt(total)} ÷ ${count} ≈ ${approx} 元（商的小数点与被除数的小数点对齐）`,
+    })
+  }
+  return steps
 }
 
 /**
@@ -243,8 +265,19 @@ export function computeLab(kind: LabKind, p: ParamValues, lab?: LabDef): LabResu
     case 'decimal-div': {
       const total = p.total ?? 0
       const count = p.count ?? 0
-      const unit = total / count
-      return { value: unit, text: `${fmt(unit)} 元`, steps: divSteps(total, count), conclusion: `平均每个 ${fmt(unit)} 元。` }
+      const s = splitShares(total, count)
+      // 能除尽：每份就是商；除不尽：给「商 + 余数」并标明约等于（不再用 5 位小数冒充精确值）
+      const approx = toFixed2(Math.round((total / count) * 100) / 100)
+      const text = s.exact ? `${s.perGroupText} 元` : `每份 ${s.perGroupText} 元，余 ${decimalText(s.remainder)} 元（≈ ${approx} 元）`
+      const conclusion = s.exact
+        ? `平均每块 ${s.perGroupText} 元：${s.perGroupText} × ${count} = ${fmt(total)} 元，正好分完。`
+        : `平均每块 ${s.perGroupText} 元还余 ${decimalText(s.remainder)} 元：${s.perGroupText} × ${count} + ${decimalText(s.remainder)} = ${fmt(total)} 元。余下的 ${decimalText(s.remainder)} 元 = ${Math.round(s.remainder * 10)} 角，添 0 继续除，所以 ${fmt(total)} ÷ ${count} ≈ ${approx} 元。`
+      return {
+        value: s.exact ? s.perGroup : Number(approx),
+        text,
+        steps: divSteps(total, count),
+        conclusion,
+      }
     }
     case 'decimal-point': {
       const power = Math.round(p.power ?? 0)
@@ -269,16 +302,30 @@ export function computeLab(kind: LabKind, p: ParamValues, lab?: LabDef): LabResu
       const red = p.red ?? 0
       const blue = p.blue ?? 0
       const yellow = p.yellow ?? 0
-      const biggest = Math.max(red, blue, yellow)
-      const names = red === biggest ? '红' : blue === biggest ? '蓝' : '黄'
+      const values = [red, blue, yellow]
+      const biggest = Math.max(...values)
+      const names = ['红', '蓝', '黄'].filter((_, i) => values[i] === biggest)
+      // 面积相等/并列最大时不能说「某色区域最大」，否则与「面积相等→可能性相等」直接矛盾
+      const text =
+        names.length >= 3
+          ? '三个区域一样大'
+          : names.length === 2
+            ? `${names[0]}、${names[1]}色并列最大`
+            : `${names[0]}色区域最大`
+      const conclusion =
+        names.length >= 3
+          ? '三个区域的面积相等，指针停在每个区域的可能性都相等。'
+          : names.length === 2
+            ? `${names[0]}、${names[1]}色区域并列最大，指针停在这两个区域的可能性最大，而且相等。`
+            : `${names[0]}色区域占的面积最大，指针停在${names[0]}色区域的可能性最大。`
       return {
         value: biggest,
-        text: `${names}色区域最大`,
+        text,
         steps: [
           { expr: `红色 ${fmt(red)}%`, result: `蓝色 ${fmt(blue)}%` },
           { expr: `黄色 ${fmt(yellow)}%`, result: `合计 ${fmt(red + blue + yellow)}%` },
         ],
-        conclusion: `${names}色区域占的面积最大，指针停在${names}色区域的可能性最大。`,
+        conclusion,
       }
     }
     case 'marble': {

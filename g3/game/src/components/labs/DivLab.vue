@@ -61,12 +61,27 @@ const steps = computed(() => {
 })
 
 const isOral = computed(() => kind.value === 'div-oral')
+/**
+ * 口算：一份一份地分，点一次多分出一份（原来这一支是静态图，没有任何操作）
+ */
+const oralShown = ref(groups.value.length)
+function nextOral() {
+  oralShown.value = oralShown.value >= groups.value.length ? 1 : oralShown.value + 1
+}
+
 const isRemainder = computed(() => kind.value === 'remainder')
 
 /* ---------- 竖式逐步演示 ---------- */
 const started = computed(() => steps.value.filter((s) => s.started))
-/** 当前演示轮次（0 起，默认最后一轮） */
-const cur = ref(Math.max(started.value.length - 1, 0))
+/** 数位名：竖式里"商写在哪一位上面"必须与列号对应 */
+function placeName(col: number): string {
+  const total = String(value.value).length
+  const place = total - 1 - col
+  return place === 0 ? '个位' : place === 1 ? '十位' : place === 2 ? '百位' : '千位'
+}
+
+/** 当前演示轮次（0 起）：从第 1 轮开始，一轮一轮往下除 */
+const cur = ref(0)
 const setCur = (i: number) => {
   cur.value = Math.min(Math.max(i, 0), started.value.length - 1)
 }
@@ -78,6 +93,10 @@ const roundNotes = computed(() => {
   })
 })
 const activeRound = computed(() => roundNotes.value[cur.value])
+const nextRound = () => setCur(cur.value + 1)
+const prevRound = () => setCur(cur.value - 1)
+const resetRounds = () => setCur(0)
+const lastRound = computed(() => Math.max(started.value.length - 1, 0))
 </script>
 
 <template>
@@ -85,16 +104,24 @@ const activeRound = computed(() => roundNotes.value[cur.value])
     <!-- 口算除法：整十整百分组 -->
     <template v-if="isOral">
       <div class="piles">
-        <div v-for="(g, i) in groups" :key="i" class="pile">
+        <div v-for="(g, i) in groups" :key="i" class="pile" :class="{ dim: i >= oralShown }">
           <div class="rod-block">
             <span v-for="j in Math.min(g, 10)" :key="j" class="ten-rod" />
           </div>
           <p class="pile-val">{{ g }} 个十</p>
         </div>
       </div>
+      <div class="step-bar">
+        <button type="button" class="round-btn primary" data-test="oral-next" @click="nextOral">
+          试一试：一份一份地分（已分 {{ oralShown }} / {{ groups.length }} 份）
+        </button>
+        <button type="button" class="round-btn ghost" data-test="oral-reset" @click="oralShown = groups.length">重来</button>
+      </div>
       <div class="formula-row">
         <span class="chip">{{ value }} ÷ {{ group }} =</span>
-        <span class="chip op">?</span>
+        <span class="chip op" data-test="oral-answer">
+          {{ oralShown >= groups.length ? Math.round(tens / group) * 10 : `已分 ${oralShown} 份` }}
+        </span>
       </div>
       <p class="tip">
         {{ value }} 是 {{ tens }} 个十，把 {{ tens }} 个十平均分成 {{ group }} 份，每份 {{ Math.round(tens / group) }} 个十，就是
@@ -184,8 +211,23 @@ const activeRound = computed(() => roundNotes.value[cur.value])
           {{ i + 1 }}
         </button>
       </div>
-      <p v-if="activeRound" class="round-note">
-        第 {{ cur + 1 }} 轮：{{ activeRound.curVal }} ÷ {{ divisor }} = {{ activeRound.qd }}……{{ activeRound.rem }}（商写 {{ activeRound.qd }}，乘积 {{ activeRound.sub }}）
+      <div class="round-buttons">
+        <button type="button" class="round-btn" data-test="div-prev" :disabled="cur === 0" @click="prevRound">上一轮</button>
+        <button
+          type="button"
+          class="round-btn primary"
+          data-test="div-next"
+          :disabled="cur >= lastRound"
+          @click="nextRound"
+        >
+          开始下一轮
+        </button>
+        <button type="button" class="round-btn ghost" data-test="div-reset" @click="resetRounds">重来</button>
+      </div>
+      <p v-if="activeRound" class="round-note" data-test="div-round-note">
+        第 {{ cur + 1 }} / {{ roundNotes.length }} 轮：拿 {{ activeRound.curVal }} 除以 {{ divisor }}，商
+        {{ activeRound.qd }} 写在{{ placeName(activeRound.col) }}上面，{{ activeRound.qd }} × {{ divisor }} =
+        {{ activeRound.sub }}，余 {{ activeRound.rem }}
       </p>
 
       <div class="formula-row">
@@ -219,6 +261,9 @@ const activeRound = computed(() => roundNotes.value[cur.value])
   min-height: 320px;
   width: 100%;
   padding: 0.5rem;
+}
+.dim {
+  opacity: 0.32;
 }
 .piles {
   display: flex;
@@ -384,6 +429,34 @@ const activeRound = computed(() => roundNotes.value[cur.value])
   background: var(--ui-primary);
   border-color: var(--ui-primary);
   color: white;
+}
+.round-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.round-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+}
+.round-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.round-btn.ghost {
+  color: var(--ui-text-muted);
+}
+.round-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .round-note {
   font-size: 0.95rem;

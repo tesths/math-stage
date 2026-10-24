@@ -4,8 +4,10 @@ import { animate } from 'animejs'
 import { findById, examplesOfChapter, chapters } from '@data'
 import type { GameQuestion } from '@data/schema/example'
 import { gameComponentFor } from '@/lib/engine/registry'
+import { tipOf } from '@/lib/engine/tips'
 import { playCorrect, playWrong, playClick } from '@/lib/sound'
 import QuestionCard from '@/components/ui/QuestionCard.vue'
+import ConceptTip from '@shared/components/ConceptTip.vue'
 
 const route = useRoute()
 const questionId = computed(() => String(route.params.id))
@@ -25,6 +27,8 @@ const feedback = ref<'idle' | 'correct' | 'wrong'>('idle')
 const answered = computed(() => feedback.value !== 'idle')
 
 const game = computed(() => gameComponentFor(question.value!.type))
+/** 这道例题要建立的概念（题目自带 → 数据层逐题 → 按题型兜底） */
+const tip = computed(() => tipOf(question.value!))
 const stageRef = ref<HTMLElement | null>(null)
 
 function animateIn() {
@@ -113,6 +117,9 @@ function nextQuestion() {
         :page="question.page"
         :source="question.source"
       />
+      <div class="mt-4">
+        <ConceptTip :tip="tip" :page="question.page" :source="question.source" />
+      </div>
       <UCard
         class="game-slot mt-4 min-h-[400px]"
         :ui="{ body: 'flex flex-col justify-center gap-3' }"

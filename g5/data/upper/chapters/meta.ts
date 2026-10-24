@@ -67,8 +67,10 @@ export const chapters: ChapterMeta[] = [
     no: 7,
     title: '用字母表示数量关系（一）',
     tocLabel: '七',
+    // 第 110–111 页是「钉子板上的多边形」探索规律活动，紧接本单元练习十三，
+    // 因此计入本单元末（原来挂在 c6 上，导致第 110 页落在 79–95 的范围之外）
     pageStart: 96,
-    pageEnd: 109,
+    pageEnd: 111,
     icon: '🔤',
     summary: '用字母表示数、含有字母的式子、等式与天平',
   },

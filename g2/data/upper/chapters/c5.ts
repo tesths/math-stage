@@ -13,6 +13,6 @@ export const c5Labs: LabDef[] = [
     kind: 'direction',
     params: [{ key: 'face', label: '面向', min: 0, max: 3, step: 1, default: 0, unit: '0东1南2西3北' }],
     formula: '东和西相对，南和北相对',
-    tip: '早晨起来，面向太阳，前面是东，后面是西，左边是北，右边是南。',
+    tip: '早晨面向太阳，前面是东、后面是西、左边是北、右边是南；东和西相对，南和北相对。易错点：面向南时左右会互换（左手边是东），不能照搬面向东时的左右。',
   },
 ]

@@ -2,11 +2,17 @@
 /**
  * 数 Lab：三位数的组成（计数器）/ 三位数比大小 / 算盘拨珠
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { splitDigits } from '@/lib/engine/math'
+import { abacusBeads, comparePlaces, placeReading } from '@/lib/labs/process'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
+const emit = defineEmits<{ acted: [] }>()
+
+/* ---------- 过程态：0 = 全部摆好；>0 = 正在演示第 k 步 ---------- */
+const step = ref(0)
+const doing = computed(() => step.value > 0)
 
 const kind = computed(() => props.lab.kind)
 const list = (n: number) => Array.from({ length: n }, (_, i) => i)
@@ -89,6 +95,38 @@ const abacusTotal = computed(() => abacusRows.value.reduce((s, r) => s + r.upper
 const UPPER = [1]
 const LOWER = [1, 2, 3, 4]
 
+/* ---------- 过程态：一档一档读数 / 逐位比较 / 一档一档拨珠 ---------- */
+/** 数位表：从百位开始一档一档拨，累计到多少 */
+const reading = computed(() => placeReading(pvNumber.value))
+const curPlace = computed(() => (doing.value ? (reading.value[step.value - 1]?.place ?? '个位') : '三档都拨好'))
+const curRunning = computed(() =>
+  doing.value ? (reading.value[step.value - 1]?.running ?? 0) : pvNumber.value,
+)
+/** 比大小：比到第几位 */
+const cmpSteps = computed(() => comparePlaces(a.value, b.value))
+const curScan = computed(() => (doing.value ? step.value : 3))
+/** 算盘：拨到第几档 */
+const beads = computed(() => abacusBeads(abacusNum.value))
+const curBead = computed(() => (doing.value ? step.value : 3))
+const curAbacus = computed(() =>
+  doing.value ? (beads.value[step.value - 1]?.running ?? 0) : abacusTotal.value,
+)
+const totalSteps = computed(() => {
+  if (kind.value === 'place-value') return 3
+  if (kind.value === 'compare') return cmpSteps.value.length
+  return 3
+})
+const stepLabel = computed(() => (kind.value === 'compare' ? '比一位' : '拨一拨'))
+
+function nextStep() {
+  step.value = step.value >= totalSteps.value ? 0 : step.value + 1
+  if (step.value > 0) emit('acted')
+}
+
+watch([h, t, o, a, b, abacusSel, kind], () => {
+  step.value = 0
+})
+
 /* ---------- 方块模型（组成） ---------- */
 const hundredCells = computed(() => list(h.value))
 </script>
@@ -126,7 +164,13 @@ const hundredCells = computed(() => list(h.value))
         <div class="pv-slot">
           <p class="slot-title">③ 计数器</p>
           <div class="counter">
-            <div v-for="row in placeRows" :key="row.unit" class="counter-col">
+            <div
+              v-for="(row, ri) in placeRows"
+              :key="row.unit"
+              class="counter-col"
+              :class="{ dim: doing && ri + 1 > curBead }"
+              :data-lit="!doing || ri + 1 <= curBead"
+            >
               <span class="counter-unit">{{ row.unit }}</span>
               <div class="counter-beads">
                 <span v-for="i in list(row.val)" :key="i" class="counter-bead" />
@@ -136,6 +180,18 @@ const hundredCells = computed(() => list(h.value))
         </div>
       </div>
       <p class="pv-num">{{ pvNumber }} = {{ h }}×100 + {{ t }}×10 + {{ o }}</p>
+      <div class="step-bar">
+        <button type="button" class="step-btn" data-test="step-next" @click="nextStep">
+          {{ stepLabel }}
+        </button>
+        <span class="step-say" data-test="step-say">
+          {{
+            doing
+              ? `拨到${curPlace}：现在计数器上是 ${curRunning}`
+              : '点「拨一拨」，从百位一档一档拨到个位'
+          }}
+        </span>
+      </div>
     </template>
 
     <!-- 三位数比大小：并排数位表 + 逐位高亮 -->
@@ -184,15 +240,28 @@ const hundredCells = computed(() => list(h.value))
       </div>
       <div class="cmp-scan" aria-label="逐位比较过程">
         <div
-          v-for="row in compareRows"
+          v-for="(row, ri) in compareRows"
           :key="row.place"
           class="scan-row"
-          :class="{ hit: row.hit, dim: row.dim }"
+          :class="{ hit: row.hit && (!doing || ri + 1 <= curScan), dim: doing ? ri + 1 > curScan : row.dim }"
+          :data-lit="!doing || ri + 1 <= curScan"
         >
           <span class="scan-place">{{ row.place }}</span>
           <span class="scan-digits">{{ row.leftDigit }} {{ row.relation }} {{ row.rightDigit }}</span>
           <span class="scan-note">{{ row.note }}</span>
         </div>
+      </div>
+      <div class="step-bar">
+        <button type="button" class="step-btn" data-test="step-next" @click="nextStep">
+          {{ stepLabel }}
+        </button>
+        <span class="step-say" data-test="step-say">
+          {{
+            doing
+              ? `比到${cmpSteps[curScan - 1]?.place ?? '个位'}：${cmpSteps[curScan - 1]?.left} ${cmpSteps[curScan - 1]?.relation} ${cmpSteps[curScan - 1]?.right}${cmpSteps[curScan - 1]?.decided ? '，已经分出大小' : '，相同，还要往下比'}`
+              : '点「比一位」，从百位开始一位一位比'
+          }}
+        </span>
       </div>
     </template>
 
@@ -204,20 +273,64 @@ const hundredCells = computed(() => list(h.value))
         <g v-for="(row, i) in abacusRows" :key="i">
           <line :x1="30 + i * 80" :y1="10" :x2="30 + i * 80" :y2="140" class="aba-rod" />
           <line :x1="46 + i * 80" :y1="10" :x2="46 + i * 80" :y2="140" class="aba-rod" />
-          <circle v-for="u in UPPER" :key="`u${i}`" :cx="30 + i * 80" :cy="u * 34" r="13" class="aba-bead upper" :class="{ on: row.upper >= u }" />
-          <circle v-for="l in LOWER" :key="`l${i}`" :cx="46 + i * 80" :cy="l * 20 + 86" r="13" class="aba-bead" :class="{ on: row.lower >= l }" />
+          <circle v-for="u in UPPER" :key="`u${i}`" :cx="30 + i * 80" :cy="u * 34" r="13" class="aba-bead upper" :class="{ on: row.upper >= u && (!doing || i + 1 <= curBead), off: doing && i + 1 > curBead }" />
+          <circle v-for="l in LOWER" :key="`l${i}`" :cx="46 + i * 80" :cy="l * 20 + 86" r="13" class="aba-bead" :class="{ on: row.lower >= l && (!doing || i + 1 <= curBead), off: doing && i + 1 > curBead }" />
           <text :x="30 + i * 80" y="75" class="aba-unit">{{ row.unit }}位</text>
         </g>
       </svg>
       <div class="aba-value">
         <span v-for="(row, i) in abacusRows" :key="i" class="aba-contrib">{{ row.unit }}位：{{ row.val }}×{{ row.weight }}</span>
       </div>
-      <p class="note">上珠 1 颗 = 5，下珠 1 颗 = 1。全部珠子的总数 = <b class="strong">{{ abacusTotal }}</b>（读作：{{ ABACUS_NUMS[abacusSel]!.how }}）</p>
+      <p class="note">
+        上珠 1 颗 = 5，下珠 1 颗 = 1。全部珠子的总数 =
+        <b class="strong">{{ curAbacus }}</b>（读作：{{ ABACUS_NUMS[abacusSel]!.how }}）
+      </p>
+      <div class="step-bar">
+        <button type="button" class="step-btn" data-test="step-next" @click="nextStep">
+          {{ stepLabel }}
+        </button>
+        <span class="step-say" data-test="step-say">
+          {{
+            doing
+              ? `拨好${beads[curBead - 1]?.place}：上珠 ${beads[curBead - 1]?.upper} 颗、下珠 ${beads[curBead - 1]?.lower} 颗，一共 ${curAbacus}`
+              : '点「拨一拨」，从百位一档一档拨珠'
+          }}
+        </span>
+      </div>
     </template>
   </div>
 </template>
 
 <style scoped>
+.dim {
+  opacity: 0.22;
+}
+.aba-bead.off {
+  opacity: 0.15;
+}
+.step-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.step-btn {
+  border: 1px solid var(--ui-primary);
+  background: var(--ui-bg);
+  color: var(--ui-primary);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.22rem 0.9rem;
+  cursor: pointer;
+}
+.step-say {
+  font-size: 0.8rem;
+  color: var(--ui-text-muted);
+  max-width: 26rem;
+  line-height: 1.4;
+}
 .num-wrap {
   display: flex;
   flex-direction: column;

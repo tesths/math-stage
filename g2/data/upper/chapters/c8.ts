@@ -13,7 +13,7 @@ export const c8Labs: LabDef[] = [
     kind: 'money',
     params: [{ key: 'sel', label: '面额', min: 0, max: 5, step: 1, default: 0, unit: '' }],
     formula: '1 元 = 10 角，1 角 = 10 分',
-    tip: '购物时要用人民币：1 元 = 10 角，1 角 = 10 分。',
+    tip: '人民币的单位是元、角、分，相邻单位间的进率是 10：1 元 = 10 角，1 角 = 10 分，所以 1 元 = 100 分。易错点：换钱时单位要统一，1 元不是 10 分。',
   },
   {
     id: 'g2-c8-money-calc',
@@ -29,6 +29,6 @@ export const c8Labs: LabDef[] = [
       { key: 'paid', label: '付出的钱', min: 5, max: 50, step: 5, default: 10, unit: '元' },
     ],
     formula: '找回的钱 = 付出的钱 - 商品价格',
-    tip: '付的钱比商品价格多时，多出的部分就是应找回的钱。',
+    tip: '付的钱比商品价格多时，多出的部分就是应找回的钱：找回 = 付出 − 价格。易错点：付出的钱比价格少时没有「找回」，要说「还差多少」。',
   },
 ]

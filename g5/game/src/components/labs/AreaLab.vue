@@ -15,7 +15,7 @@
 import { computed, ref } from 'vue'
 import { animate } from 'animejs'
 import type { LabDef, ParamValues } from '@data/schema/lab'
-import { areaOf, shapeFromCode, type AreaShape } from '@/lib/engine/math'
+import { areaOf, shapeFromCode, toFixed2, type AreaShape } from '@/lib/engine/math'
 import {
   bodyCells,
   copyCells as copyCellsOf,
@@ -48,6 +48,13 @@ const a = computed(() => props.values.a ?? 1)
 const b = computed(() => props.values.b ?? 1)
 const h = computed(() => props.values.h ?? 1)
 const slant = computed(() => props.values.slant ?? 0)
+
+/** 是否打开「找对应关系」标注（转化骨架里最容易被跳过的一步） */
+const corrOn = ref(false)
+function toggleCorr() {
+  corrOn.value = !corrOn.value
+  playClick()
+}
 
 const lengthUnit = computed(() => props.lab.units?.length ?? '格')
 const cellSize = computed<number | undefined>(() => props.lab.units?.cellSize)
@@ -109,7 +116,9 @@ const cell = computed(() => {
 const originX = computed(() => LEFT_PAD)
 const originY = computed(() => TOP_PAD + bounds.value.maxY * cell.value)
 const vbW = computed(() => Math.round(originX.value + (bounds.value.maxX - bounds.value.minX) * cell.value + RIGHT_PAD))
-const vbH = computed(() => Math.round(originY.value + BOTTOM_PAD))
+/** 打开对应关系标注时，底部要多留出一行文字的高度（对应关系的文字说明） */
+const bottomPad = computed(() => (corrOn.value ? 132 : BOTTOM_PAD))
+const vbH = computed(() => Math.round(originY.value + bottomPad.value))
 const px = (x: number) => originX.value + (x - bounds.value.minX) * cell.value
 const py = (y: number) => originY.value - y * cell.value
 const pts = (poly: Pt[]) => poly.map(([x, y]) => `${px(x)},${py(y)}`).join(' ')
@@ -234,8 +243,8 @@ const copyJoinOk = computed(() => {
 })
 const copyJoinText = computed(() =>
   activeShape.value === 'triangle'
-    ? `拼成的平行四边形：底 ${a.value}，高 ${h.value}，面积 ${a.value * h.value}`
-    : `拼成的平行四边形：底 ${a.value} + ${b.value} = ${a.value + b.value}，高 ${h.value}，面积 ${(a.value + b.value) * h.value}`,
+    ? `拼成的平行四边形：底 = 三角形的底 = ${a.value}，高 = ${h.value}，面积 = ${a.value * h.value} = 2 × ${(a.value * h.value) / 2}`
+    : `拼成的平行四边形：底 = 上底 + 下底 = ${a.value} + ${b.value} = ${a.value + b.value}，高 = ${h.value}，面积 = ${(a.value + b.value) * h.value} = 2 × ${((a.value + b.value) * h.value) / 2}`,
 )
 
 const counting = ref(false)
@@ -243,15 +252,22 @@ function toggleCounting() {
   counting.value = !counting.value
   playClick()
 }
-
 /* ---------------- 剪拼动画 ---------------- */
 /** 平行四边形剪下部分的水平位移（格，负值向左） */
 const cutShift = ref(0)
-/** 三角形/梯形复制件的滑入位移（px） */
-const copyDx = ref(0)
-const copyDy = ref(0)
 const animating = ref(false)
+/** 是否已剪拼到位（平行四边形）或已倍拼对齐（三角形/梯形） */
 const placed = ref(false)
+/**
+ * 倍拼步数：0 未开始 / 1 第二个图形已放在旁边（还没对齐）/ 2 已旋转 180° 并平移对齐
+ * 课本的倍拼是两步：先放第二个完全一样的图形，再旋转、平移让它拼成平行四边形。
+ */
+const copyStep = ref(0)
+/** 对齐进度：0 = 未对齐（偏移 + 转了 180°），1 = 完全重合 */
+const copyT = ref(0)
+const copyDx = computed(() => Math.round(26 * (1 - copyT.value)))
+const copyDy = computed(() => Math.round(-20 * (1 - copyT.value)))
+const copyRotate = computed(() => Math.round((1 - copyT.value) * 180))
 
 const cut = computed(() => {
   const av = a.value
@@ -272,9 +288,9 @@ const cut = computed(() => {
 function runCut() {
   if (animating.value) return
   if (activeShape.value === 'parallelogram' && !cut.value.canCut) return
-  animating.value = true
   playClick()
   if (activeShape.value === 'parallelogram') {
+    animating.value = true
     const dist = a.value - cutShift.value
     if (dist <= 0) {
       cutShift.value = a.value
@@ -295,21 +311,28 @@ function runCut() {
         placed.value = true
       },
     })
-  } else {
-    copyDx.value = 26
-    copyDy.value = -20
-    const state = { t: 0 }
+    return
+  }
+  // 倍拼第一步：先把第二个完全一样的图形放到旁边（还没有对齐）
+  if (copyStep.value === 0) {
+    copyStep.value = 1
+    copyT.value = 0
+    return
+  }
+  // 倍拼第二步：旋转 180° 再平移，与①拼成平行四边形
+  if (copyStep.value === 1) {
+    animating.value = true
+    const state = { t: copyT.value }
     animate(state, {
       t: 1,
       duration: 850,
       easing: 'easeOutCubic',
       update: () => {
-        copyDx.value = Math.round(26 * (1 - state.t))
-        copyDy.value = Math.round(-20 * (1 - state.t))
+        copyT.value = Math.round(state.t * 100) / 100
       },
       complete: () => {
-        copyDx.value = 0
-        copyDy.value = 0
+        copyT.value = 1
+        copyStep.value = 2
         animating.value = false
         placed.value = true
       },
@@ -319,8 +342,8 @@ function runCut() {
 
 function resetCut() {
   cutShift.value = 0
-  copyDx.value = 0
-  copyDy.value = 0
+  copyT.value = 0
+  copyStep.value = 0
   placed.value = false
   playClick()
 }
@@ -370,6 +393,107 @@ const derivation = computed(() => {
   }
   return [`两个完全一样的梯形：(${av} + ${bv}) × ${hv} = ${(av + bv) * hv}`, `一个梯形：${(av + bv) * hv} ÷ 2 = ${sv}`]
 })
+
+/* ---------------- 找对应关系（转化骨架的第 4 步） ---------------- */
+/**
+ * 一条对应关系 = 源图形上的特征线段 + 拼成图形上的特征线段 + 它们之间的虚线连线 + 同色文字标注。
+ * 坐标统一转成像素，模板直接画。
+ */
+function corrPair(
+  key: 'base' | 'height',
+  src: [Pt, Pt],
+  tgt: [Pt, Pt],
+  text: string,
+  labelDx = 0,
+  labelDy = 0,
+) {
+  const sm: [number, number] = [(src[0][0] + src[1][0]) / 2, (src[0][1] + src[1][1]) / 2]
+  const tm: [number, number] = [(tgt[0][0] + tgt[1][0]) / 2, (tgt[0][1] + tgt[1][1]) / 2]
+  return {
+    key,
+    text,
+    src: { x1: px(src[0][0]), y1: py(src[0][1]), x2: px(src[1][0]), y2: py(src[1][1]) },
+    tgt: { x1: px(tgt[0][0]), y1: py(tgt[0][1]), x2: px(tgt[1][0]), y2: py(tgt[1][1]) },
+    link: { x1: px(sm[0]), y1: py(sm[1]), x2: px(tm[0]), y2: py(tm[1]) },
+    label: { x: px(sm[0]) + labelDx, y: py(sm[1]) + labelDy, text },
+  }
+}
+
+/** 底↔拼成图形的底、高↔拼成图形的高（梯形还要把「上底＋下底」标出来） */
+const corrPairs = computed(() => {
+  const av = a.value
+  const bv = b.value
+  const hv = h.value
+  const t = targetCells.value
+  if (activeShape.value === 'parallelogram') {
+    return [
+      corrPair('base', [[0, 0], [av, 0]], [[0, hv], [av, hv]], `底 ${av} = 长 ${av}`, 0, 58),
+      corrPair('height', [[heightFoot.value, 0], [heightFoot.value, hv]], [[0, 0], [0, hv]], `高 ${hv} = 宽 ${hv}`, 46, -12),
+    ]
+  }
+  if (activeShape.value === 'triangle') {
+    const foot = (t[0]![0] + t[1]![0]) / 2
+    return [
+      corrPair('base', [[0, 0], [av, 0]], [t[3]!, t[2]!], `底 ${av} = 底 ${av}`, 0, 58),
+      corrPair('height', [[heightFoot.value, 0], [heightFoot.value, hv]], [[foot, 0], [foot, hv]], `高 ${hv} = 高 ${hv}`, 46, -12),
+    ]
+  }
+  const foot = (t[0]![0] + t[1]![0]) / 2
+  return [
+    corrPair('base', [[0, 0], [bv, 0]], [[t[0]![0], 0], [t[1]![0], 0]], `下底 ${bv} + 上底 ${av} = ${av + bv}`, 0, 58),
+    corrPair('height', [[0, 0], [0, hv]], [[foot, 0], [foot, hv]], `高 ${hv} = 高 ${hv}`, 46, -12),
+  ]
+})
+
+/** 梯形：在拼成的平行四边形的底上再标出「上底」那一段 */
+const corrUpper = computed(() => {
+  if (activeShape.value !== 'trapezoid') return null
+  const av = a.value
+  const bv = b.value
+  return {
+    x1: px(bv),
+    y1: py(0),
+    x2: px(av + bv),
+    y2: py(0),
+    lx: px(bv + av / 2),
+    ly: py(0) + 78,
+  }
+})
+
+/** 拼成图形（平行四边形 / 长方形）的底、高、面积，与单图形面积对照 */
+const joinBase = computed(() => (activeShape.value === 'trapezoid' ? a.value + b.value : a.value))
+const joinHeight = computed(() => h.value)
+const joinArea = computed(() => joinBase.value * joinHeight.value)
+const singleArea = computed(() => area.value)
+
+const corrShort = computed(() => {
+  if (activeShape.value === 'parallelogram') return `长方形的长 = 底 ${a.value}，宽 = 高 ${h.value}`
+  if (activeShape.value === 'triangle') return `平行四边形的底 = 三角形的底 ${a.value}，高 = 三角形的高 ${h.value}`
+  return `平行四边形的底 = 上底 + 下底 = ${a.value} + ${b.value} = ${a.value + b.value}，高 = 梯形的高 ${h.value}`
+})
+
+const corrVerify = computed(() => {
+  const u = lengthUnit.value
+  if (activeShape.value === 'parallelogram') {
+    return `✓ 找对应：长方形的长 = 平行四边形的底 = ${a.value} ${u}；长方形的宽 = 平行四边形的高 = ${h.value} ${u}`
+  }
+  if (activeShape.value === 'triangle') {
+    return `✓ 找对应：平行四边形的底 = 三角形的底 = ${a.value} ${u}；平行四边形的高 = 三角形的高 = ${h.value} ${u}；拼成图形的面积 ${joinArea.value} = 2 × 三角形面积 ${singleArea.value}`
+  }
+  return `✓ 找对应：平行四边形的底 = 上底 + 下底 = ${a.value} + ${b.value} = ${joinBase.value} ${u}；平行四边形的高 = 梯形的高 = ${h.value} ${u}；拼成图形的面积 ${joinArea.value} = 2 × 梯形面积 ${singleArea.value}`
+})
+
+/* ---------------- 单位与进率（麦田：米 → 公顷） ---------------- */
+/** 真实面积：有每格边长就按格换算；米制 Lab（无方格）直接就是平方米 */
+const metricArea = computed(() => {
+  if (cellSize.value !== undefined) return area.value * cellSize.value * cellSize.value
+  return lengthUnit.value === '米' ? area.value : undefined
+})
+const hectareHint = computed(() =>
+  metricArea.value === undefined || lengthUnit.value !== '米' || showGrid.value
+    ? ''
+    : `${metricArea.value} 平方米 = ${toFixed2(metricArea.value / 10000)} 公顷（1 公顷 = 10000 平方米）`,
+)
 </script>
 
 <template>
@@ -416,17 +540,23 @@ const derivation = computed(() => {
         <line v-if="cut.canCut" :x1="px(a)" :y1="py(0)" :x2="px(a)" :y2="py(h)" class="cut-line" />
       </template>
 
-      <!-- ===== 三角形 / 梯形：完全一样的复制件拼过来 ===== -->
+      <!-- ===== 三角形 / 梯形：完全一样的复制件拼过来（先放旁边，再旋转平移对齐） ===== -->
       <template v-else>
         <polygon :points="pts(polyCells)" class="shape-fill" />
         <polygon
           :points="pts(copyCells)"
           class="cut-solid"
-          :style="{ opacity: placed ? 1 : 0, transform: `translate(${copyDx}px, ${copyDy}px)` }"
+          :data-copy-step="copyStep"
+          :style="{
+            opacity: copyStep >= 1 ? 1 : 0,
+            transform: `translate(${copyDx}px, ${copyDy}px) rotate(${copyRotate}deg)`,
+            transformOrigin: 'center',
+            transformBox: 'fill-box',
+          }"
         />
         <text :x="centroid(polyCells)[0]" :y="centroid(polyCells)[1]" text-anchor="middle" class="piece-no">①</text>
         <text
-          v-if="placed"
+          v-if="copyStep >= 1"
           :x="centroid(copyCells)[0]"
           :y="centroid(copyCells)[1]"
           text-anchor="middle"
@@ -477,6 +607,68 @@ const derivation = computed(() => {
         <text :x="px(s) + 4" :y="py(h) - 18" class="offset-label">斜边偏移 {{ s }} 格</text>
       </template>
 
+      <!-- ===== 找对应关系：同色标注 + 虚线连线（底↔底、高↔高；梯形标出「上底+下底」） ===== -->
+      <g v-if="corrOn" class="corr-group" aria-label="对应关系">
+        <g v-for="c in corrPairs" :key="c.key">
+          <line
+            :x1="c.src.x1"
+            :y1="c.src.y1"
+            :x2="c.src.x2"
+            :y2="c.src.y2"
+            class="corr-src"
+            :class="`corr-${c.key}`"
+            :data-pair="c.key"
+          />
+          <line
+            :x1="c.tgt.x1"
+            :y1="c.tgt.y1"
+            :x2="c.tgt.x2"
+            :y2="c.tgt.y2"
+            class="corr-tgt"
+            :class="`corr-${c.key}`"
+            :data-pair="c.key"
+          />
+          <line
+            :x1="c.link.x1"
+            :y1="c.link.y1"
+            :x2="c.link.x2"
+            :y2="c.link.y2"
+            class="corr-link"
+            :class="`corr-${c.key}`"
+            :data-pair="c.key"
+          />
+          <text
+            :x="c.label.x"
+            :y="c.label.y"
+            text-anchor="middle"
+            class="corr-label"
+            :class="`corr-${c.key}`"
+            :data-pair="c.key"
+          >
+            {{ c.label.text }}
+          </text>
+        </g>
+        <template v-if="corrUpper">
+          <line
+            :x1="corrUpper.x1"
+            :y1="corrUpper.y1"
+            :x2="corrUpper.x2"
+            :y2="corrUpper.y2"
+            class="corr-src corr-base"
+            data-pair="base-add"
+          />
+          <text
+            :x="corrUpper.lx"
+            :y="corrUpper.ly"
+            text-anchor="middle"
+            class="corr-label corr-base"
+            data-pair="base-add"
+          >
+            上底 {{ a }}
+          </text>
+        </template>
+      </g>
+
       <!-- 无方格时给出比例尺 -->
       <g v-if="!showGrid" class="scale-bar">
         <line :x1="originX" :y1="vbH - 30" :x2="originX + cell * scaleBarLen" :y2="vbH - 30" />
@@ -502,7 +694,10 @@ const derivation = computed(() => {
         color="primary"
         variant="soft"
         icon="i-heroicons-cursor-arrow-rays"
-        :disabled="animating || (activeShape === 'parallelogram' && !cut.canCut)"
+        :disabled="
+          animating ||
+          (activeShape === 'parallelogram' ? !cut.canCut : copyStep === 2)
+        "
         @click="runCut"
       >
         {{
@@ -510,12 +705,29 @@ const derivation = computed(() => {
             ? cut.canCut
               ? '剪一剪 · 平移拼成长方形'
               : '已是长方形，无需剪拼'
-            : activeShape === 'triangle'
-              ? '拼一拼 · 两个三角形'
-              : '拼一拼 · 两个梯形'
+            : copyStep === 0
+              ? '拼一拼 · 先放第二个图形'
+              : copyStep === 1
+                ? '旋转平移 · 对齐拼成平行四边形'
+                : '已拼成平行四边形'
         }}
       </UButton>
-      <UButton v-if="placed || cutShift > 0 || counting" size="sm" variant="outline" color="neutral" @click="resetCut">
+      <UButton
+        size="sm"
+        color="primary"
+        variant="soft"
+        icon="i-heroicons-arrows-right-left"
+        @click="toggleCorr"
+      >
+        {{ corrOn ? '隐藏对应关系' : '显示对应关系' }}
+      </UButton>
+      <UButton
+        v-if="placed || cutShift > 0 || counting || copyStep > 0"
+        size="sm"
+        variant="outline"
+        color="neutral"
+        @click="resetCut"
+      >
         复位
       </UButton>
       <span class="area-value">S = <strong>{{ area }}</strong>（{{ areaText }}）</span>
@@ -527,15 +739,32 @@ const derivation = computed(() => {
       <span class="count-chip result">一共 {{ areaFromShape }} 格{{ realArea !== undefined && cellSize !== 1 ? ` = ${realArea} 平方${lengthUnit}` : ` 平方${lengthUnit}` }}</span>
     </div>
 
+    <p v-if="copyStep === 1" class="copy-step-hint">
+      ② 号图形先放在旁边：它和①完全一样，但转了 180°、还没有对齐 —— 下一步旋转平移，把它拼过来
+    </p>
     <p v-if="placed && activeShape === 'parallelogram' && pieceLandsInGap" class="verify-line">
       ✓ 剪下的三角形向左平移 {{ a }} 格，正好补上左边的缺口，拼成长 {{ a }}、宽 {{ h }} 的长方形
     </p>
     <p v-else-if="placed && copyJoinOk" class="verify-line">✓ {{ copyJoinText }}，是两个完全一样的{{ activeShape === 'triangle' ? '三角形' : '梯形' }}面积的和</p>
 
+    <p
+      v-if="corrOn"
+      class="corr-verify"
+      aria-label="对应关系说明"
+      :data-join-base="joinBase"
+      :data-join-height="joinHeight"
+      :data-join-area="joinArea"
+      :data-single-area="singleArea"
+    >
+      {{ corrVerify }}
+    </p>
+    <p v-if="hectareHint" class="unit-rate">{{ hectareHint }}</p>
+
     <div class="derive-row" aria-label="面积推导">
       <span v-for="(item, i) in derivation" :key="item" class="derive-chip" :class="{ result: i === derivation.length - 1 }">
         {{ item }}
       </span>
+      <span v-if="corrOn" class="derive-chip corr">找对应：{{ corrShort }}</span>
     </div>
   </div>
 </template>
@@ -696,6 +925,79 @@ svg {
   font-size: 0.86rem;
   font-weight: 700;
   padding: 0.3rem 0.75rem;
+}
+.copy-step-hint {
+  margin: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-warning, #f59e0b) 14%, var(--ui-bg));
+  color: #b45309;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  max-width: 42rem;
+  text-align: center;
+}
+.corr-verify {
+  margin: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, #2563eb 12%, var(--ui-bg));
+  color: #1d4ed8;
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  max-width: 44rem;
+  text-align: center;
+}
+.unit-rate {
+  margin: 0;
+  border-radius: 8px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.28rem 0.75rem;
+}
+.derive-chip.corr {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  background: color-mix(in srgb, #2563eb 10%, var(--ui-bg));
+}
+.corr-src,
+.corr-tgt,
+.corr-link {
+  fill: none;
+  stroke-width: 1.8;
+}
+.corr-src {
+  stroke-dasharray: 7 4;
+}
+.corr-tgt {
+  stroke-dasharray: 3 3;
+}
+.corr-link {
+  stroke-width: 1.3;
+  stroke-dasharray: 4 4;
+}
+.corr-base {
+  stroke: #2563eb;
+}
+.corr-height {
+  stroke: #d97706;
+}
+.corr-label {
+  font-size: 11px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: var(--ui-bg);
+  stroke-width: 3px;
+}
+.corr-label.corr-base {
+  fill: #2563eb;
+  stroke: var(--ui-bg);
+}
+.corr-label.corr-height {
+  fill: #d97706;
+  stroke: var(--ui-bg);
 }
 .derive-chip {
   border: 1px solid var(--ui-border);

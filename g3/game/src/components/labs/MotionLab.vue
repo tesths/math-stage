@@ -5,7 +5,7 @@
  * 旋转：固定中心 + 角度扇形 + 弧形箭头 + 前后叠影
  * 轴对称：形状居中于对称轴 + 对折重合动画（对称轴处压扁翻折脉冲）
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 
 const props = defineProps<{ lab: LabDef; values: ParamValues }>()
@@ -25,16 +25,47 @@ const shapeIdx = computed(() => Math.round(props.values.shape ?? 0))
 /* ---------- 平移 ---------- */
 const CELL_X = 34
 const CELL_Y = 30
+/**
+ * 过程态：一格一格地平移。
+ * 初始显示"平移完成"的终态（原文如此），点按钮后从 0 格开始，每次多移 1 格，
+ * 对应点连线、方向箭头、图上文字一起跟着变（真实过程，不是把参数滑到别的值）。
+ */
+const moved = ref(steps.value)
+const walked = computed(() => Math.max(0, Math.min(moved.value, steps.value)))
 const tx = computed(() => {
-  if (dir.value === 0) return steps.value * CELL_X
-  if (dir.value === 1) return -steps.value * CELL_X
+  if (dir.value === 0) return walked.value * CELL_X
+  if (dir.value === 1) return -walked.value * CELL_X
   return 0
 })
 const ty = computed(() => {
-  if (dir.value === 2) return -steps.value * CELL_Y
-  if (dir.value === 3) return steps.value * CELL_Y
+  if (dir.value === 2) return -walked.value * CELL_Y
+  if (dir.value === 3) return walked.value * CELL_Y
   return 0
 })
+function stepTranslate() {
+  if (moved.value >= steps.value) moved.value = 0
+  else moved.value += 1
+}
+function resetTranslate() {
+  moved.value = steps.value
+}
+
+/* ---------- 旋转过程态 ---------- */
+const rotProgress = ref(1)
+const shownRotDeg = computed(() => (clockwise.value ? -angle.value : angle.value) * rotProgress.value)
+function stepRotate() {
+  if (rotProgress.value >= 1) rotProgress.value = 0
+  else rotProgress.value = Math.min(1, Math.round((rotProgress.value + 0.25) * 100) / 100)
+}
+function resetRotate() {
+  rotProgress.value = 1
+}
+
+/* ---------- 轴对称过程态 ---------- */
+const folded = ref(false)
+function toggleFold() {
+  folded.value = !folded.value
+}
 
 const startTri = '80,128 124,128 102,88'
 const movedTri = computed(() => {
@@ -145,7 +176,7 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
       <!-- 方向主箭头 + 说明 -->
       <line :x1="arrow.x1" :y1="arrow.y1" :x2="arrow.x2" :y2="arrow.y2" class="motion-arrow" marker-end="url(#mtri-arrow)" />
       <text :x="102 + tx / 2" :y="82 + ty / 2" text-anchor="middle" class="dir-label">
-        向{{ dirs[dir] }}平移 {{ steps }} 格，形状、大小不变
+        向{{ dirs[dir] }}平移 {{ walked }} 格（共 {{ steps }} 格），形状、大小不变
       </text>
     </svg>
 
@@ -169,7 +200,7 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
       <path v-else :d="sector.d" class="sector" />
       <path :d="arcD" class="arc" marker-end="url(#mtri-arrow)" />
       <text :x="angleMid.x" :y="angleMid.y + 5" text-anchor="middle" class="angle-label">{{ angle }}°</text>
-      <g :transform="`rotate(${rotDeg} 170 110)`">
+      <g :transform="`rotate(${shownRotDeg} 170 110)`">
         <polygon class="shape" points="170,40 178,60 196,52 184,66 196,74 178,74 172,90 166,74 148,74 160,66 148,52 166,60" />
       </g>
       <g class="ghost-rot">
@@ -178,6 +209,9 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
       <circle cx="170" cy="110" r="5" class="pivot" />
       <text x="170" y="140" text-anchor="middle" class="dir-label">
         绕 O 点{{ clockwise ? '顺时针' : '逆时针' }}旋转 {{ angle }}°，形状、大小不变
+      </text>
+      <text x="170" y="158" text-anchor="middle" class="progress-label" data-test="rot-progress">
+        已转过 {{ Math.round(Math.abs(shownRotDeg)) }}° / {{ angle }}°
       </text>
     </svg>
 
@@ -188,7 +222,7 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
       <!-- 形状居中于对称轴 -->
       <path :d="axisShape.d" transform="translate(75 0)" class="shape" />
       <!-- 对折动画：整图以对称轴压扁翻折-->
-      <g class="fold-overlay">
+      <g class="fold-overlay" :class="{ folding: folded }">
         <path :d="axisShape.d" transform="translate(75 0)" class="fill-fold" />
       </g>
       <!-- 对应点到对称轴距离相等 -->
@@ -204,6 +238,27 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
         {{ axisShape.name }}：沿对称轴对折，折痕两边完全重合（对应点到对称轴距离相等）
       </text>
     </svg>
+
+    <div class="motion-bar">
+      <template v-if="kind === 'translate'">
+        <button type="button" class="mv-btn primary" data-test="mv-step" @click="stepTranslate">
+          试一试：一格一格平移（已移 {{ walked }} 格）
+        </button>
+        <button type="button" class="mv-btn ghost" data-test="mv-reset" @click="resetTranslate">重来</button>
+      </template>
+      <template v-else-if="kind === 'rotate'">
+        <button type="button" class="mv-btn primary" data-test="mv-step" @click="stepRotate">
+          试一试：一点点转过去（已转 {{ Math.round(Math.abs(shownRotDeg)) }}°）
+        </button>
+        <button type="button" class="mv-btn ghost" data-test="mv-reset" @click="resetRotate">重来</button>
+      </template>
+      <template v-else>
+        <button type="button" class="mv-btn primary" data-test="mv-step" @click="toggleFold">
+          试一试：沿对称轴对折
+        </button>
+        <span class="mv-state">{{ folded ? '对折中：两边正好重合' : '图形左右两边形状、大小完全相同' }}</span>
+      </template>
+    </div>
 
     <p class="tip">
       <template v-if="kind === 'translate'">
@@ -229,6 +284,55 @@ const axisShape = computed(() => axisShapes[shapeIdx.value % axisShapes.length]!
   min-height: 320px;
   width: 100%;
   padding: 0.5rem;
+}
+.motion-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.mv-btn {
+  border: 1px solid var(--ui-border);
+  border-radius: 9999px;
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-toned);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+  cursor: pointer;
+}
+.mv-btn.primary {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+}
+.mv-btn.ghost {
+  color: var(--ui-text-muted);
+}
+.mv-state {
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+}
+.progress-label {
+  fill: var(--ui-text-muted);
+  font-size: 10px;
+}
+.fold-overlay.folding {
+  animation: foldPulse 1.1s ease-in-out infinite;
+}
+@keyframes foldPulse {
+  0%,
+  100% {
+    transform: scaleX(1);
+    transform-origin: 170px 110px;
+    opacity: 0.15;
+  }
+  50% {
+    transform: scaleX(0.12);
+    transform-origin: 170px 110px;
+    opacity: 0.85;
+  }
 }
 .motion-svg {
   width: 100%;

@@ -11,6 +11,7 @@ import { c8Examples } from './chapters/c8'
 import { c9Examples } from './chapters/c9'
 
 export { chapters } from './chapters/meta'
+export { questionTips } from './chapters/tips'
 export type { ChapterMeta, GameQuestion } from './schema/example'
 
 /** 全部例题（按章节顺序） */

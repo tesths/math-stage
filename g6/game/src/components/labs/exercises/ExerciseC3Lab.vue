@@ -282,7 +282,7 @@ const fracNote = computed(() =>
 
         <!-- 过程态：换一种拆法，看同一个和（差）有多组拆法 -->
         <div class="ex-c3-steps">
-          <UButton size="sm" variant="outline" color="neutral" @click="nextSplit">换一种拆法</UButton>
+          <UButton size="sm" variant="outline" color="neutral" @click="nextSplit" data-act>换一种拆法</UButton>
           <span class="ex-c3-step-note">{{ splitNote }}</span>
         </div>
         <ul class="ex-c3-split-list">

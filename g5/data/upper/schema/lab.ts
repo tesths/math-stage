@@ -47,6 +47,12 @@ export interface LabParam {
   default: number
   /** 单位（米/厘米/千米/格/°…） */
   unit?: string
+  /**
+   * 离散选项：参数本质是「选一个」而不是「拖一个量」时给出按钮组。
+   * 有 options 时页面渲染按钮（不再显示滑块与 unit 里那串「0右 1下 2左 3上」），
+   * 学生看到的是「向右 / 向下 / 向左 / 向上」而不是数字。
+   */
+  options?: { label: string; value: number }[]
 }
 
 /** 可视化 Lab 类型 */

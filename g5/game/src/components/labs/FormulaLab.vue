@@ -27,6 +27,20 @@ const drawnFrogs = computed(() => Array.from({ length: Math.min(n.value, MAX_DRA
 const patternRows = computed(() => frogRows(5))
 const showNRow = computed(() => n.value > 5)
 
+/**
+ * 「代入求值」步进：0 收起 → 1 关系式(2n) → 2 代入(2×n) → 3 结果。
+ * 课本要建立的概念是「字母式既能表示关系、也能代入求值」，一步一步走比直接给结果更能看出这两件事。
+ */
+const frogStep = ref(0)
+function nextFrogStep() {
+  frogStep.value = Math.min(3, frogStep.value + 1)
+  playClick()
+}
+function resetFrogStep() {
+  frogStep.value = 0
+  playClick()
+}
+
 /* ---------- 正方形 ---------- */
 const a = computed(() => Math.max(1, Math.round(props.values.a ?? 1)))
 const maxA = computed(() => Math.max(...props.lab.params.filter((p) => p.key === 'a').map((p) => p.max), a.value))
@@ -38,6 +52,14 @@ const sqY = computed(() => (300 - sidePx.value) / 2 + 8)
 const perimeter = computed(() => 4 * a.value)
 const squareArea = computed(() => a.value * a.value)
 const gridLines = computed(() => Array.from({ length: Math.max(0, a.value - 1) }, (_, i) => (i + 1) * cell.value))
+
+/**
+ * a² 与 2a 对照（易错点：把 a² 读成 2×a）。
+ * a = 2 时两个值恰好都是 4，这时更要讲清「数值碰巧相等、含义不同」，不能笼统说"不相等"。
+ */
+const showCompare = ref(false)
+const doubleA = computed(() => 2 * a.value)
+const compareEqual = computed(() => squareArea.value === doubleA.value)
 
 /* ---------- 路程 ---------- */
 const v = computed(() => props.values.v ?? 0)
@@ -65,6 +87,22 @@ function resetMove() {
   moving.value = false
   playClick()
 }
+
+/**
+ * 「知二求一」：s = v × t 是一个模型，三个量知道任意两个就能求第三个。
+ * 三种问法各自给出算式与单位（这也是课本反复强调的"用字母表示数量关系"的用处）。
+ */
+const ASK_LABELS = ['求路程', '求速度', '求时间'] as const
+const speedAsk = ref(0)
+function pickAsk(i: number) {
+  speedAsk.value = i
+  playClick()
+}
+const askExpr = computed(() => {
+  if (speedAsk.value === 0) return `s = v × t = ${v.value} × ${t.value} = ${s.value} ${dUnit.value}`
+  if (speedAsk.value === 1) return `v = s ÷ t = ${s.value} ÷ ${t.value} = ${v.value} ${vUnit.value}`
+  return `t = s ÷ v = ${s.value} ÷ ${v.value} = ${t.value} ${tUnit.value}`
+})
 </script>
 
 <template>
@@ -114,6 +152,25 @@ function resetMove() {
         </tbody>
       </table>
       <p class="formula-line">n 只青蛙 → n 张嘴，<b>2n</b> 只眼睛，<b>4n</b> 条腿</p>
+      <div class="controls">
+        <UButton
+          size="sm"
+          variant="outline"
+          color="neutral"
+          :disabled="frogStep >= 3"
+          data-act
+          data-test="frog-subst-next"
+          @click="nextFrogStep"
+        >
+          {{ frogStep >= 3 ? '已算完' : '代入求值 · 一步一步算' }}
+        </UButton>
+        <UButton v-if="frogStep > 0" size="sm" variant="outline" color="neutral" @click="resetFrogStep">重来</UButton>
+      </div>
+      <div v-if="frogStep >= 1" class="subst-row" data-test="frog-subst" :data-step="frogStep">
+        <span class="formula-chip">眼睛 = 2n（先用字母表示关系）</span>
+        <span v-if="frogStep >= 2" class="formula-chip">= 2 × {{ n }}（把 n 代入 {{ n }}）</span>
+        <span v-if="frogStep >= 3" class="formula-chip primary">= {{ counts.eyes }} 只；腿 = 4 × {{ n }} = {{ counts.legs }} 条</span>
+      </div>
     </template>
 
     <!-- 正方形 -->
@@ -142,6 +199,27 @@ function resetMove() {
       <p class="verify-line">
         ✓ 边长为 {{ a }} 厘米：周长 = 4 × {{ a }} = {{ perimeter }} 厘米；面积 = {{ a }} × {{ a }} = {{ squareArea }} 平方厘米（图上有 {{ squareArea }} 个单位格）
       </p>
+      <div class="controls">
+        <UButton
+          size="sm"
+          variant="outline"
+          color="neutral"
+          :aria-pressed="showCompare"
+          data-test="square-compare-toggle"
+          @click="showCompare = !showCompare" data-act>
+          {{ showCompare ? '收起 a² 与 2a 对照' : '对比 a² 与 2a' }}
+        </UButton>
+      </div>
+      <div v-if="showCompare" class="subst-row" data-test="square-compare" :data-equal="compareEqual">
+        <span class="formula-chip">a² = a × a = {{ a }} × {{ a }} = {{ squareArea }}（面积，单位是平方厘米）</span>
+        <span class="formula-chip">2a = a + a = 2 × {{ a }} = {{ doubleA }}（长度，单位是厘米）</span>
+        <span v-if="compareEqual" class="formula-chip">
+          a = {{ a }} 时两者数值恰好都是 {{ squareArea }}，但含义不同：a² 是 a×a 个单位格，2a 是 2 条边长相加
+        </span>
+        <span v-else class="formula-chip primary">
+          a² = {{ squareArea }} ≠ 2a = {{ doubleA }}：所以 a² 表示 a × a，不是 2 × a
+        </span>
+      </div>
     </template>
 
     <!-- 路程 -->
@@ -188,7 +266,7 @@ function resetMove() {
         <span class="formula-chip primary">路程 s = v × t = {{ s }} {{ dUnit }}</span>
       </div>
       <div class="controls">
-        <UButton size="sm" color="primary" variant="soft" icon="i-heroicons-arrow-right" @click="runMove">
+        <UButton size="sm" color="primary" variant="soft" icon="i-heroicons-arrow-right" @click="runMove" data-act>
           {{ moving ? '行驶中…' : '走一走 · 看路程累加' }}
         </UButton>
         <UButton v-if="carX > 0" size="sm" variant="outline" color="neutral" @click="resetMove">复位</UButton>
@@ -198,6 +276,21 @@ function resetMove() {
         </span>
       </div>
       <p class="note">路程 = 速度 × 时间，用字母表示：s = v × t</p>
+      <div class="controls" data-test="speed-ask">
+        <UButton
+          v-for="(lb, i) in ASK_LABELS"
+          :key="lb"
+          size="sm"
+          :variant="speedAsk === i ? 'solid' : 'outline'"
+          :color="speedAsk === i ? 'primary' : 'neutral'"
+          :aria-pressed="speedAsk === i"
+          @click="pickAsk(i)"
+        >
+          {{ lb }}
+        </UButton>
+        <span class="formula-chip primary" data-test="speed-ask-expr">{{ askExpr }}</span>
+      </div>
+      <p class="note">知道速度、时间、路程中的任意两个，就能求出第三个——这就是 s = v × t 这个模型的用处。</p>
     </template>
   </div>
 </template>
@@ -329,7 +422,8 @@ function resetMove() {
   font-weight: 600;
 }
 .formula-row,
-.controls {
+.controls,
+.subst-row {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;

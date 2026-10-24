@@ -13,6 +13,7 @@
         :class="{ chosen: chosen.includes(card) }"
         :data-card="card"
         :disabled="done"
+        data-act
         @click="toggle(card)"
       >{{ card }}</button>
     </div>

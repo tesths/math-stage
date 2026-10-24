@@ -33,6 +33,16 @@ function fmt(v: number): string {
 /** 供练习题计算模块复用（保持一致的数字格式化） */
 export { fmt }
 
+/**
+ * 取 v 在第 pos 位小数的数字（**只截取、不四舍五入**；不足位补 0）。
+ * 用于「求近似值看下一位」：9.375 的第 2 位小数是 7，不能被第 3 位的 5 进位成 8。
+ */
+function digitAt(v: number, pos: number): number {
+  const s = Math.abs(v).toFixed(10)
+  const frac = s.slice(s.indexOf('.') + 1)
+  return Number(frac[pos - 1] ?? '0')
+}
+
 const PI = 3.14
 
 /** 三值结论的理由说明（避免"一定不够"后面还跟着"就一定够"） */
@@ -90,7 +100,9 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
       const exact = roundTo(price * count, 6)
       const approx = roundTo(exact, digits)
       const shown = fixedN(approx, digits)
-      const nextDigit = Number(fixedN(exact, digits + 1).slice(-1))
+      // 「看下一位」要的是**截取**第 digits+1 位小数，不是四舍五入到那一位：
+      // 例如 9.375 保留 1 位时，下一位是 7；若先 fixedN(9.375, 2) 会进位成 9.38，读到 8（错）。
+      const nextDigit = digitAt(exact, digits + 1)
       return {
         value: approx,
         text: `${fmt(price)} × ${fmt(count)} ≈ ${shown}`,
@@ -253,8 +265,9 @@ export function computeLab(kind: LabKind, p: ParamValues): LabResult {
           result: `${m.increase ? '+' : '-'} ${fmt(m.delta)} → ${fmt(m.result)} 天`,
         },
         {
+          // 用分率原样写，不要先把 2/7 四舍五入成 1.28571 再乘——那会让「14 × 1.28571 = 18」这句话本身不成立
           expr: `或：结果 = 原来 × (1 ${m.increase ? '+' : '-'} ${m.fraction})`,
-          result: `${fmt(m.base)} × ${fmt(1 + (m.increase ? 1 : -1) * (m.delta / (m.base || 1)))} = ${fmt(m.result)} 天`,
+          result: `${fmt(m.base)} × (1 ${m.increase ? '+' : '-'} ${m.fraction}) = ${fmt(m.result)} 天`,
         },
       ]
       if (!m.integral) {

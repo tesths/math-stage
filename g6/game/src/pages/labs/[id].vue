@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { animate } from 'animejs'
 import { findLabById, labsOfChapter, chapters } from '@data'
 import ParamControl from '@/components/lab/ParamControl.vue'
+import ConceptTip from '@shared/components/ConceptTip.vue'
 import type { LabDef, ParamValues } from '@data/schema/lab'
 import { labComponentFor } from '@/lib/labs/registry'
 import { computeLab } from '@/lib/labs/compute'
@@ -75,7 +76,12 @@ function goNext() {
   else void navigateTo(`/units/${lab.value!.chapter}`)
 }
 
-watch(labId, () => {
+watch(labId, (now, prev) => {
+  // 水合期 `route.params.id` 会先空、后到：这一次不是「换了一道题」，
+  // 绝不能 bump shapeKey —— 否则客户端挂载后整块 Lab 组件被重建，
+  // 学生/截图脚本在挂载后 1 秒内点出的过程态会被无声清回初始态
+  // （第 4 轮实测：g6-c4-ex-football-ratio 单次点击触发两次，随后组件重建，-act 与初始态逐字节相同）。
+  if (!prev || prev === now) return
   for (const p of lab.value!.params) values[p.key] = p.default
   if (lab.value!.fixed) for (const [k, v] of Object.entries(lab.value!.fixed)) values[k] = v
   shapeKey.value++
@@ -187,6 +193,11 @@ watch(labId, () => {
             💡 {{ result.conclusion }}
           </p>
         </div>
+
+        <!-- 重点概念：数据层 tip，默认收起（先动手、后看概念） -->
+        <div class="mt-4">
+          <ConceptTip :tip="lab.tip" :page="lab.page" :source="lab.source" />
+        </div>
       </UCard>
     </div>
 
@@ -205,11 +216,6 @@ watch(labId, () => {
 </template>
 
 <style scoped>
-.lab-range {
-  width: 100%;
-  accent-color: var(--ui-primary);
-  cursor: pointer;
-}
 .result-box {
   border: 1px dashed var(--ui-border-accented);
   border-radius: var(--ui-radius-lg);

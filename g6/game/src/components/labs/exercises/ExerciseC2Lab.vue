@@ -186,7 +186,7 @@ const eggNote = computed(() => {
         </svg>
       </div>
       <div class="ex-c2-steps">
-        <UButton size="sm" variant="outline" color="neutral" @click="toggleOverlap">
+        <UButton size="sm" variant="outline" color="neutral" @click="toggleOverlap" data-act>
           {{ revealOverlap ? '先看两条长条' : '揭示重叠部分' }}
         </UButton>
         <span class="ex-c2-step-note">{{ overlapNote }}</span>
@@ -312,7 +312,7 @@ const eggNote = computed(() => {
         </svg>
       </div>
       <div class="ex-c2-steps egg-steps">
-        <UButton size="sm" variant="outline" color="neutral" @click="nextEggStep">
+        <UButton size="sm" variant="outline" color="neutral" @click="nextEggStep" data-act>
           {{ eggButtonText }}
         </UButton>
         <span class="ex-c2-step-note egg-step-note">{{ eggNote }}</span>

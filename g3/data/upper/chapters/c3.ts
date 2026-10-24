@@ -16,7 +16,7 @@ export const c3Labs: LabDef[] = [
       { key: 'count', label: '一位数', min: 2, max: 9, step: 1, default: 3, unit: '' },
     ],
     formula: '整十整百数 × 一位数',
-    tip: '4 个十乘 3 得 12 个十，就是 120。先算 4 × 3，再在末尾添上 0 的个数。',
+    tip: '整十、整百数乘一位数：先算前面的数，再看末尾有几个 0 就在积的末尾添几个 0。易错点：40 × 3 算成 12（漏掉末尾的 0）。',
   },
   {
     id: 'g3-c3-mul-estimate',
@@ -33,7 +33,7 @@ export const c3Labs: LabDef[] = [
       { key: 'money', label: '带的钱', min: 40, max: 400, step: 10, default: 120, unit: '元' },
     ],
     formula: '单价（四舍五入）× 数量 ≤ 带的钱',
-    tip: '把 28 看作接近的整十数 30，30 × 4 = 120，28 × 4 < 120，够买。',
+    tip: '估算时把单价看作接近的整十数：估大不超、一定够；估小已超、一定不够；介于两者之间就不能只靠估算下结论。易错点：只看一个估计值就说「够买」。',
   },
   {
     id: 'g3-c3-mul-pen',
@@ -50,7 +50,7 @@ export const c3Labs: LabDef[] = [
       { key: 'multi', label: '一位数', min: 2, max: 9, step: 1, default: 3, unit: '' },
     ],
     formula: '(十位×10 + 个位) × 一位数',
-    tip: '用一位数依次去乘个位、十位上的数；哪一位乘得的数满几十，就向前一位进几。',
+    tip: '笔算两位数乘一位数：用一位数依次乘个位、十位；哪一位满几十就向前一位进几，下一步要先把进上来的数加上。易错点：十位相乘时漏加进位的 1。',
   },
   {
     id: 'g3-c3-mul-carry',
@@ -68,7 +68,7 @@ export const c3Labs: LabDef[] = [
       { key: 'multi', label: '一位数', min: 2, max: 9, step: 1, default: 3, unit: '' },
     ],
     formula: '(百×100 + 十×10 + 个) × 一位数',
-    tip: '3 个 234：4 × 3 = 12 满十进 1，十位 3 × 3 + 1 = 10 再进 1，百位 2 × 3 + 1 = 7。',
+    tip: '连续进位：个位 4 × 3 = 12 写 2 进 1；十位 3 × 3 + 进 1 = 10 写 0 再进 1；百位 2 × 3 + 进 1 = 7。易错点：进位只加一次或忘记加。',
   },
   {
     id: 'g3-c3-mul-zero',
@@ -77,15 +77,15 @@ export const c3Labs: LabDef[] = [
     source: '例题',
     title: '中间或末尾有 0 的乘法',
     prompt:
-      '每个大棚种植 102 棵茄子（或 120 棵番茄）。拖动数据，观察中间/末尾有 0 时怎样简便计算。',
+      '每个大棚种植 102 棵茄子（把十位拖成 0 就是中间有 0）；把个位拖成 0，就变成 120 棵番茄（末尾有 0）。观察两种情况下竖式怎样算。',
     kind: 'mul-pen',
     params: [
       { key: 'h', label: '百位', min: 1, max: 9, step: 1, default: 1, unit: '' },
-      { key: 'mid', label: '十位（中间 0）', min: 0, max: 0, step: 1, default: 0, unit: '' },
+      { key: 'mid', label: '十位', min: 0, max: 9, step: 1, default: 0, unit: '' },
       { key: 'o', label: '个位', min: 0, max: 9, step: 1, default: 2, unit: '' },
       { key: 'multi', label: '一位数', min: 2, max: 9, step: 1, default: 4, unit: '' },
     ],
     formula: '(百×100 + 十×10 + 个) × 一位数',
-    tip: '十位是 0：0 × 4 = 0，直接在积的十位写 0；末尾有 0 可以先算前面，再在末尾添 0。',
+    tip: '中间有 0：0 乘任何数都得 0，积的十位要写 0 占位；末尾有 0：先算前面的数，再在积的末尾添 0。易错点：102 × 4 写成 48。',
   },
 ]
