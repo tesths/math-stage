@@ -1,0 +1,901 @@
+{
+  "grade": "g2",
+  "baselineCommit": "f698a83",
+  "reviewedAt": "2026-10-24T02:51:11.365Z",
+  "reviewer": "agent A（g1/g2）",
+  "method": "L0/L1：逐个 compute/几何模块读代码 + 用课本 OCR 原文对照 + 全区间性质测试（面积/覆盖/进位退位）；L3：组件里把「过程」写成纯函数再从图形上按步渲染，单测断言的「第 k 步」数值 + 截图断言的「act≠初始态」；L2/L4 部分为同 kind 共用组件的静态判定，L2 的量化标注本轮没做（见 remaining）。",
+  "labs": [
+    {
+      "id": "g2-c1-groups-mult",
+      "page": 2,
+      "kind": "groups",
+      "before": {
+        "L0": "pass",
+        "L1": "fail",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L1 默认值是「每组 4 个、2 组」，与课本 p2「2+2+2+2=8」不符 → 改为每组 2 个、4 组",
+        "L3 点「数一数」一组一组数，连加算式逐项点亮",
+        "L4 ConceptTip 接入"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c1-groups-mult.png",
+          "g2-c1-groups-mult-act.png"
+        ],
+        "note": "act 截图点击的按钮：几个几：点「数一数」一组一组点亮，连加算式跟着变长"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g2-c1-mult-table-5",
+      "page": 10,
+      "kind": "mult-table",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：乘法口诀：点「数一数」一行一行数点阵",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c1-mult-table-5.png",
+          "g2-c1-mult-table-5-act.png"
+        ],
+        "note": "act 截图点击的按钮：乘法口诀：点「数一数」一行一行数点阵"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c1-mult-table-6",
+      "page": 12,
+      "kind": "mult-table",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：乘法口诀：点「数一数」一行一行数点阵",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c1-mult-table-6.png",
+          "g2-c1-mult-table-6-act.png"
+        ],
+        "note": "act 截图点击的按钮：乘法口诀：点「数一数」一行一行数点阵"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c10-review-calc",
+      "page": 99,
+      "kind": "table-calc",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：一句口诀三道算式：写一道，一道一道出现",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c10-review-calc.png",
+          "g2-c10-review-calc-act.png"
+        ],
+        "note": "act 截图点击的按钮：一句口诀三道算式：写一道，一道一道出现"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c2-divide-share",
+      "page": 20,
+      "kind": "divide-share",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：平均分：点「分一分」一轮一轮分，每份个数同步变",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c2-divide-share.png",
+          "g2-c2-divide-share-act.png"
+        ],
+        "note": "act 截图点击的按钮：平均分：点「分一分」一轮一轮分，每份个数同步变"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c2-divide-group",
+      "page": 22,
+      "kind": "divide-group",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：每几个一份：点「圈一份」一份一份圈",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c2-divide-group.png",
+          "g2-c2-divide-group-act.png"
+        ],
+        "note": "act 截图点击的按钮：每几个一份：点「圈一份」一份一份圈"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c2-quotient",
+      "page": 28,
+      "kind": "quotient",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：求商：点「装一辆车」一辆一辆装，口诀同步变",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c2-quotient.png",
+          "g2-c2-quotient-act.png"
+        ],
+        "note": "act 截图点击的按钮：求商：点「装一辆车」一辆一辆装，口诀同步变"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c3-tangram",
+      "page": 34,
+      "kind": "tangram",
+      "before": {
+        "L0": "fail",
+        "L1": "fail",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "P0「拼成长方形/平行四边形/三角形」是假的：7 块板只在原位改透明度，从未移动；且「长方形」与「平行四边形」都写 3、4、5 号板，同一组板不可能既是长方形又是平行四边形",
+        "P0 板型与课本不符：旧布局 2 个正方形、没有平行四边形，与课本「③⑤能拼成④正方形/⑥平行四边形/⑦中三角形」矛盾",
+        "重写为 lib/labs/tangram.ts：按课本 p34 原图逐像素实测的 7 块板坐标（面积 16+16+4+8+4+8+8=64），6 种拼法用刚性变换求解，动画逐帧插值保证每帧全等",
+        "L1 默认图案改为「长方形（③⑤④）」，一点就能看到板子搬家",
+        "L4 接入 ConceptTip（默认收起），tip 写「③⑤→④/⑥/⑦ + 板形不变、不重叠不留空」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/unit/tangram.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c3-tangram.png",
+          "g2-c3-tangram-act.png"
+        ],
+        "note": "act 截图点击的按钮：七巧板：点「拼一拼」板子按刚性变换真的搬过去"
+      },
+      "remaining": [
+        "图案切换仍是滑块，不是点图案缩略图（参数面板只支持 min/max 区间）",
+        "截图无法展示动画中间帧，只能展示终态"
+      ]
+    },
+    {
+      "id": "g2-c4-mult-table-7",
+      "page": 40,
+      "kind": "mult-table",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：乘法口诀：点「数一数」一行一行数点阵",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c4-mult-table-7.png",
+          "g2-c4-mult-table-7-act.png"
+        ],
+        "note": "act 截图点击的按钮：乘法口诀：点「数一数」一行一行数点阵"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c4-mult-table-8",
+      "page": 44,
+      "kind": "mult-table",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：乘法口诀：点「数一数」一行一行数点阵",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c4-mult-table-8.png",
+          "g2-c4-mult-table-8-act.png"
+        ],
+        "note": "act 截图点击的按钮：乘法口诀：点「数一数」一行一行数点阵"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c4-mult-table-9",
+      "page": 48,
+      "kind": "mult-table",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：乘法口诀：点「数一数」一行一行数点阵",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c4-mult-table-9.png",
+          "g2-c4-mult-table-9-act.png"
+        ],
+        "note": "act 截图点击的按钮：乘法口诀：点「数一数」一行一行数点阵"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c4-table-calc",
+      "page": 52,
+      "kind": "table-calc",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：一句口诀三道算式：写一道，一道一道出现",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c4-table-calc.png",
+          "g2-c4-table-calc-act.png"
+        ],
+        "note": "act 截图点击的按钮：一句口诀三道算式：写一道，一道一道出现"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c5-direction",
+      "page": 57,
+      "kind": "direction",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：方向：点「转一转」每转一次东南西北换一位，左右重新判定",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c5-direction.png",
+          "g2-c5-direction-act.png"
+        ],
+        "note": "act 截图点击的按钮：方向：点「转一转」每转一次东南西北换一位，左右重新判定"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c6-place-value",
+      "page": 65,
+      "kind": "place-value",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：数位：点「拨一拨」一档一档拨珠",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c6-place-value.png",
+          "g2-c6-place-value-act.png"
+        ],
+        "note": "act 截图点击的按钮：数位：点「拨一拨」一档一档拨珠"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c6-compare",
+      "page": 67,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：比大小：点「比一位」从百位逐位比",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c6-compare.png",
+          "g2-c6-compare-act.png"
+        ],
+        "note": "act 截图点击的按钮：比大小：点「比一位」从百位逐位比"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c6-abacus",
+      "page": 69,
+      "kind": "abacus",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：算盘：点「拨一拨」一档一档拨珠",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c6-abacus.png",
+          "g2-c6-abacus-act.png"
+        ],
+        "note": "act 截图点击的按钮：算盘：点「拨一拨」一档一档拨珠"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c7-twodigit-add",
+      "page": 79,
+      "kind": "twodigit-add",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：进位加：算一算 → 个位 / 满十进 1 / 十位",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」",
+        "数位模型：十位改为十连棒（一根画满 10 个点）、个位单珠；退位时「1 根棒拆成 10 颗散珠」是真实状态（54 → 4 根 + 14 颗），进位时「10 颗捆成 1 根棒、个位剩 2 颗」；组件断言「棒×10+珠 = 原数」在三张卡上都成立"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts",
+          "g2/game/test/component/labs.test.ts（数位模型 5 条断言）"
+        ],
+        "shots": [
+          "g2-c7-twodigit-add.png",
+          "g2-c7-twodigit-add-act.png"
+        ],
+        "note": "act 截图点击的按钮：进位加：算一算 → 个位 / 满十进 1 / 十位"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c7-twodigit-sub",
+      "page": 81,
+      "kind": "twodigit-sub",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "P0 被减数 < 减数时把两个数偷偷调换后相减，还教「被减数不够减时改比较大小、大数减小数」——36−54 被算成 18（那是另一道题的答案），组件端又没有交换，算理与图形不一致",
+        "改为：如实给出 a−b 的真值 + 明确的「本册不学负数，先把被减数调大」提示；退位算理按真实数位写",
+        "L3 加「减一减」三步：个位 → 退 1 当 10 → 十位与结果，图形按步揭示",
+        "数位模型：十位改为十连棒（一根画满 10 个点）、个位单珠；退位时「1 根棒拆成 10 颗散珠」是真实状态（54 → 4 根 + 14 颗），进位时「10 颗捆成 1 根棒、个位剩 2 颗」；组件断言「棒×10+珠 = 原数」在三张卡上都成立"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts",
+          "g2/game/test/component/labs.test.ts（数位模型 5 条断言）"
+        ],
+        "shots": [
+          "g2-c7-twodigit-sub.png",
+          "g2-c7-twodigit-sub-act.png"
+        ],
+        "note": "act 截图点击的按钮：退位减：减一减 → 个位 / 退 1 当 10 / 十位；被减数小于减数时明确提示"
+      },
+      "remaining": [
+        "被减数小于减数时参数仍可拖到该区间（用提示兜住，而不是禁用参数）"
+      ]
+    },
+    {
+      "id": "g2-c8-money",
+      "page": 87,
+      "kind": "money",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：人民币：点「数一张」一张一张数，「换一换」1 元 ↔ 10 角",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c8-money.png",
+          "g2-c8-money-act.png"
+        ],
+        "note": "act 截图点击的按钮：人民币：点「数一张」一张一张数，「换一换」1 元 ↔ 10 角"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c8-money-calc",
+      "page": 89,
+      "kind": "money-calc",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：找零：付钱 → 看价格 / 数付出 / 算找零",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c8-money-calc.png",
+          "g2-c8-money-calc-act.png"
+        ],
+        "note": "act 截图点击的按钮：找零：付钱 → 看价格 / 数付出 / 算找零"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c9-remainder",
+      "page": 92,
+      "kind": "remainder",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：有余数除法：再分一份，一份一份圈",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c9-remainder.png",
+          "g2-c9-remainder-act.png"
+        ],
+        "note": "act 截图点击的按钮：有余数除法：再分一份，一份一份圈"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    },
+    {
+      "id": "g2-c9-remainder-rule",
+      "page": 93,
+      "kind": "remainder-rule",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 从「静态一张图」改为分步操作：余数规则：再加 1，余数一个一个走",
+        "L4 接入 ConceptTip（默认收起，先想一想再看提示），tip 写「概念 + 易错点」"
+      ],
+      "evidence": {
+        "tests": [
+          "g2/game/test/component/labs.test.ts",
+          "g2/game/test/unit/process.test.ts",
+          "g2/game/test/component/concept-tip.test.ts"
+        ],
+        "shots": [
+          "g2-c9-remainder-rule.png",
+          "g2-c9-remainder-rule-act.png"
+        ],
+        "note": "act 截图点击的按钮：余数规则：再加 1，余数一个一个走"
+      },
+      "remaining": [
+        "L2 只做到「图形量与结果同屏」：没有尺寸线/单位方格/刻度（LabDef 无 units 字段，未新增），下一轮补"
+      ]
+    }
+  ],
+  "fakeActCount": 0,
+  "actSelfCheck": "scripts/visual-shots.mjs 逐张比对 <id>.png 与 <id>-act.png 的 md5，本轮 g2 汇总 = 0（22/22 张过程态与初始态不同）。",
+  "schemaNote": "g2 的 LabDef / ParamValues 目前没有 units 字段（只有 label 与 unit 字符串），本轮没有新增单位制字段，也没有实现尺寸线/单位方格/刻度——因此 L2 一律记为 partial，报告里不宣称「有单位」。"
+}

@@ -1,0 +1,1529 @@
+{
+  "grade": "g3",
+  "baselineCommit": "f698a83",
+  "reviewedAt": "2026-10-24T11:00:00.000Z",
+  "reviewer": "agent B（g3/g4）",
+  "method": "69 个 Lab（g3 41 / g4 28）逐个读实现代码并改；L0/L1 以代码推理 + 抽 lib/labs/*.ts 纯函数做单测复算（整数性/单位/坐标/面积/四舍五入）+ 课本 OCR 页码题干对照为主；L3 用可证伪证据（visual-shots 的 act≠初始态 md5 自检 + 组件测试断言点击前后 DOM/数据变化 + 11 次「改坏实现→断言变红→还原」）；L2/L4 是「改动的 22 个组件逐个核对 + 每册约 10 张截图抽样目视」，**不是 69 题逐张人眼验收**，因此有 10 处记 partial（g3 7、g4 3），见各 lab 的 remaining；L5 以全量重截（0 个控制台报错页面、0 个 notes.txt）为证据。partial 是本轮按 Lead 收口口径新增的取值（rubric 原文只有 pass/fail/n-a），含义为「基本达标但不完全满足」。",
+  "labs": [
+    {
+      "id": "g3-c1-mix-multadd",
+      "page": 2,
+      "kind": "mix-calc",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "乘加混合只有三块静态卡片，\"先算乘法、再算加法\"看不到步骤；改为逐条出现并高亮当前一步",
+        "算式与图上数据加了同一份来源的标注（乘加/减加/带括号三支）",
+        "tip 重写为\"概念 + 一句易错点\""
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c1-mix-multadd.png",
+          "g3-c1-mix-multadd-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c1-mix-divadd",
+      "page": 4,
+      "kind": "mix-calc",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "除加混合同样只有静态文字，补\"一步一步算\"过程与 live 算式",
+        "tip 增加易错点（把除法算完忘了再加）"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c1-mix-divadd.png",
+          "g3-c1-mix-divadd-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c1-mix-order",
+      "page": 5,
+      "kind": "bracket",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "运算顺序题原来只写一句\"先乘后加\"，加\"第 1/2 步\"逐条过程",
+        "tip 增易错点：从左往右依次算"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c1-mix-order.png",
+          "g3-c1-mix-order-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c1-mix-bracket",
+      "page": 7,
+      "kind": "bracket",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "带括号题补括号先行的高亮与分步过程",
+        "tip 增易错点：漏算括号"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c1-mix-bracket.png",
+          "g3-c1-mix-bracket-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c2-time24",
+      "page": 12,
+      "kind": "time24",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "24 时计时法用两个一模一样的 12 小时钟面并排，看不出 20:00 与 8:00 的对应关系；改为内圈 1–12 + 外圈 13–24 的双环钟面 + 对应连线 + 真实指针角度",
+        "另外修掉 math.ts 里 time12Text(0) 写成\"凌晨\"的问题（0 时应是晚上 12 时）"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/time.test.ts",
+          "test/unit/math.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c2-time24.png",
+          "g3-c2-time24-act.png"
+        ]
+      },
+      "remaining": [
+        "L2 判 partial：双环钟面在窄屏（<360px）外圈 13–24 与内圈 1–12 会重叠；课堂平板/投影窄屏场景未验证",
+        "双环钟面窄屏（<360px）字会重叠，未做响应式缩写"
+      ]
+    },
+    {
+      "id": "g3-c2-elapsed",
+      "page": 13,
+      "kind": "elapsed",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "经过时间只给结果，补\"一小时一小时往回倒\"的过程链与分步文本",
+        "tip 增易错点：跨整点时少算 1 小时"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/time.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c2-elapsed.png",
+          "g3-c2-elapsed-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c3-mul-oral",
+      "page": 18,
+      "kind": "mul-oral",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "整十整百的点子图是静态的，加\"一捆一捆地数\"过程（未数到的小棒变淡，计数同步）",
+        "tip 增易错点：末尾 0 的个数"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/arith.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c3-mul-oral.png",
+          "g3-c3-mul-oral-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c3-mul-estimate",
+      "page": 19,
+      "kind": "mul-oral",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "估算\"够不够买\"原来只看一个四舍五入后的估计值：24 → 20 时会把 24×9=216 > 180 判成\"够买\"（真错误）；改为估大/估小/精算三值判定",
+        "补\"先估大、再估小、最后精算\"三步过程",
+        "tip 增易错点"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/arith.test.ts",
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c3-mul-estimate.png",
+          "g3-c3-mul-estimate-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c3-mul-pen",
+      "page": 21,
+      "kind": "mul-pen",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "竖式乘法原来一次把结果全画出来，补\"演示下一步\"逐位出现（未算到的数位不显示）",
+        "逐位文字与 verticalMul 同一份数据（4×3=12 写 2 进 1）"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/arith.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c3-mul-pen.png",
+          "g3-c3-mul-pen-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c3-mul-carry",
+      "page": 24,
+      "kind": "mul-pen",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "连续进位的进位气泡一次全给，补逐步出现与进位说明",
+        "tip 增易错点：忘记加进位"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/arith.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c3-mul-carry.png",
+          "g3-c3-mul-carry-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c3-mul-zero",
+      "page": 27,
+      "kind": "mul-pen",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"中间有 0\"的参数 mid 只能取 0，滑块等于死的（学不到 102/120 的区别）；改为 0–9 并补两条易错分支",
+        "补逐步竖式与\"这一位写 0\"的提示"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/arith.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c3-mul-zero.png",
+          "g3-c3-mul-zero-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c4-equivalent",
+      "page": 31,
+      "kind": "equivalent",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"大象 = 几块石头\"是用石头总数反推象重再比石头，属于循环论证（真错误）；改为固定象重 + stonesToMatch 求所需块数并给出差额",
+        "补两块船 + 水位线 + \"再放一块石头\"过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/arith.test.ts",
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c4-equivalent.png",
+          "g3-c4-equivalent-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c4-weight",
+      "page": 34,
+      "kind": "weight",
+      "before": {
+        "L0": "pass",
+        "L1": "fail",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "partial",
+        "L5": "pass"
+      },
+      "fixed": [
+        "克/千克/吨只给换算结论，补 10×10 方格（每格 10 克 = 1 千克）与\"开始换算\"过程",
+        "tip 增易错点：进率 1000 写成 100"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c4-weight.png",
+          "g3-c4-weight-act.png"
+        ]
+      },
+      "remaining": [
+        "L4 判 partial：只有格子支撑，没有“吨级大宗货物”的实物情境，学用价值弱于其他题",
+        "没有吨级实物情境图，只有 10×10 格子"
+      ]
+    },
+    {
+      "id": "g3-c5-tally",
+      "page": 37,
+      "kind": "tally",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "画\"正\"字原来一次画满，补逐笔出现",
+        "tip 增易错点：一个正字是 5 笔"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c5-tally.png",
+          "g3-c5-tally-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c5-stat",
+      "page": 38,
+      "kind": "stat",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "统计图圆点被 Math.min 静默截断（数据画少了却仍标总数）；改为全部画出并按总数缩放",
+        "补一格一格填色过程与\"每个小圆点表示 1 人\"的标注"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c5-stat.png",
+          "g3-c5-stat-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c6-mm-cm",
+      "page": 51,
+      "kind": "length-convert",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"到哪个单位\"参数没有 choices，拖动与题意对不上（形数不同帧）；补单位选项",
+        "改为真实毫米刻度尺 + 数刻度过程",
+        "tip 增易错点"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts",
+          "test/unit/length.test.ts"
+        ],
+        "shots": [
+          "g3-c6-mm-cm.png",
+          "g3-c6-mm-cm-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c6-length-mix",
+      "page": 52,
+      "kind": "length-convert",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "综合换算的\"开始换算\"路径没有真的沿阶梯走，补 conversionSteps + 逐步高亮与实际数值",
+        "tip 增易错点：大单位→小单位用乘还是除"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/length.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c6-length-mix.png",
+          "g3-c6-length-mix-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c6-dm-m",
+      "page": 53,
+      "kind": "length-convert",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "分米条最多画 20 段（3 米 90 厘米这种就画不全）；改为 meterRows 按米分行、每行 10 格",
+        "补\"10 厘米一格，一格一格地量\"过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/length.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c6-dm-m.png",
+          "g3-c6-dm-m-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c6-km-m",
+      "page": 55,
+      "kind": "length-convert",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "单位阶梯上米→千米也写 ×10（真错误，应为 ×1000）；改为 rateBetween/rateLabel",
+        "千米路段原来是 i <= km*10/3 的假比例尺（3 千米填满 10 段、1 千米 3.33 段），改为每段 100 米、10 段 1 千米"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/length.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c6-km-m.png",
+          "g3-c6-km-m-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c7-translate",
+      "page": 60,
+      "kind": "translate",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "partial",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "平移只显示终点，补\"一格一格地移\"与方向/格数标注",
+        "tip 增易错点：数格子少数起点格"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts",
+          "test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g3-c7-translate.png",
+          "g3-c7-translate-act.png"
+        ]
+      },
+      "remaining": [
+        "参数 choices 已补；斜向平移仍只按横竖两个方向",
+        "L1 判 partial：课本含斜向平移情境，参数只有横/竖两个方向，题面覆盖不全",
+        "只支持横/竖平移，课本的斜向平移未实现（需重写坐标映射与格点吸附）"
+      ]
+    },
+    {
+      "id": "g3-c7-rotate",
+      "page": 61,
+      "kind": "rotate",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "旋转图形直接跳到终态，补旋转进度与角度标注（90°/180° 逐帧）",
+        "tip 增易错点：顺时针/逆时针搞反"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c7-rotate.png",
+          "g3-c7-rotate-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c7-axis",
+      "page": 63,
+      "kind": "axis",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "轴对称只画结果，补\"对折\"过程与对应点标记",
+        "tip 增易错点：对称轴不是图形的一半"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c7-axis.png",
+          "g3-c7-axis-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c7-symmetry",
+      "page": 64,
+      "kind": "axis",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "判断对称只给答案，补对折动画与对应点连线",
+        "tip 增易错点：把\"看起来像\"当对称"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c7-symmetry.png",
+          "g3-c7-symmetry-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c8-div-oral",
+      "page": 69,
+      "kind": "div-oral",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "整十数除法的分组图是静态的，加\"一份一份地分\"，答案在分完后才给出",
+        "tip 增易错点：商的末尾少写 0"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c8-div-oral.png",
+          "g3-c8-div-oral-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c8-div-pen",
+      "page": 71,
+      "kind": "div-pen",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "竖式除法一次画完，改为逐轮（开始下一轮/上一轮/重来）+ 每轮的\"拿 X 除以 Y，商写在…\"",
+        "商写到哪一位上面由竖式列号算出，不再手写"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c8-div-pen.png",
+          "g3-c8-div-pen-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c8-remainder",
+      "page": 72,
+      "kind": "remainder",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "有余数除法补逐轮过程与\"余数要比除数小\"的即时检查",
+        "tip 增易错点：余数等于除数还能再分"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c8-remainder.png",
+          "g3-c8-remainder-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c8-div-more",
+      "page": 75,
+      "kind": "div-pen",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "同上的逐轮过程；首位不够商 1 的分支补说明",
+        "tip 增易错点：前一位不够除要看前两位"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c8-div-more.png",
+          "g3-c8-div-more-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c8-div-zero",
+      "page": 81,
+      "kind": "div-pen",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "商中间有 0 的情况补占位 0 的显示与逐轮过程",
+        "tip 增易错点：漏写商中间的 0"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c8-div-zero.png",
+          "g3-c8-div-zero-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c9-interval",
+      "page": 86,
+      "kind": "interval",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"两端都放/只放一端/都不放\"的物体数与间隔数原来只在两端相同时才对（真错误）；改为 intervalCounts 分三种情形",
+        "补弧形间隔 + 逐个数间隔的过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/arith.test.ts",
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c9-interval.png",
+          "g3-c9-interval-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c9-interval-circle",
+      "page": 87,
+      "kind": "interval",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "封闭图形（围一圈）的间隔数与物体数关系同样按直线处理（真错误）；改为环形间隔计算",
+        "补逐段点亮的环形过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/arith.test.ts",
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c9-interval-circle.png",
+          "g3-c9-interval-circle-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c10-segment-total",
+      "page": 89,
+      "kind": "segment",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "三条线段原来都从 x=0 起画，互相压住（图形本身错）；改为累计偏移 + 间隔 + 尺寸线",
+        "补\"同一比例尺\"标注与逐步求数量关系的过程",
+        "tip 增易错点"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c10-segment-total.png",
+          "g3-c10-segment-total-act.png"
+        ]
+      },
+      "remaining": [
+        "多段线段图仍按总长等比缩放，段数很多时标注会挤",
+        "L2 判 partial：三条线段已用同一比例尺并加差值段/尺寸线，但段数多（如 60 幅）时整体缩放会把标注挤在一起，字会重叠",
+        "长线段仍靠整体缩放，段数多时标注互相挤压；治本需要局部放大镜或分页线段图"
+      ]
+    },
+    {
+      "id": "g3-c10-segment-more",
+      "page": 90,
+      "kind": "segment",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"多 15 个/多 20 个\"的对比段与主段重叠 → 改成拼接 + 差值标注",
+        "补数量关系式与分步过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c10-segment-more.png",
+          "g3-c10-segment-more-act.png"
+        ]
+      },
+      "remaining": [
+        "L2 判 partial：同上：多段线段图整体等比缩放，段数多时标注拥挤",
+        "同上的缩放/挤压问题"
+      ]
+    },
+    {
+      "id": "g3-c10-times-word",
+      "page": 90,
+      "kind": "segment",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"少 13 幅\"的线段与总线段没有对齐关系，改为同一比例尺 + 差值段",
+        "补关系式与分步过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c10-times-word.png",
+          "g3-c10-times-word-act.png"
+        ]
+      },
+      "remaining": [
+        "L2 判 partial：同上：多段线段图整体等比缩放，段数多时标注拥挤",
+        "同上的缩放/挤压问题"
+      ]
+    },
+    {
+      "id": "g3-c10-rows",
+      "page": 91,
+      "kind": "segment",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"每行几个 × 几行\"原来是静态网格，加一行一行出现的过程",
+        "tip 增易错点（行数与每行个数搞反）"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c10-rows.png",
+          "g3-c10-rows-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c11-views3d",
+      "page": 96,
+      "kind": "views3d",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "partial",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "3D 视图缺少与三视图的对应关系，补 viewGrids 驱动的投影与\"绕物体转一圈\"",
+        "tip 增易错点：把上面看的形状当成前面"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/views.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c11-views3d.png",
+          "g3-c11-views3d-act.png"
+        ]
+      },
+      "remaining": [
+        "3D 旋转只改变观察角度，不改变方块数据（L3 的\"过程\"是观察过程，不是数量过程）",
+        "L3 判 partial：“绕物体转一圈”只改变相机视角，方块数据不变：属于观察过程，不是“多放一块多一格”的数量过程",
+        "3D 视角不是数量过程：转的是相机、方块数据不变；要做成“多放一块多一格”需要可拖拽方块编辑器，本轮没做"
+      ]
+    },
+    {
+      "id": "g3-c11-views-cube",
+      "page": 98,
+      "kind": "views",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "结论\"前面 6 个方格一排\"是硬编码字符串，与画的 2×3×1 立体图矛盾（真错误）；改为 viewGrids 由同一份方块数据算出三视图",
+        "三视图加尺寸标注（几列 × 几行）与\"一列一列放\"过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/views.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c11-views-cube.png",
+          "g3-c11-views-cube-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c11-views-match",
+      "page": 100,
+      "kind": "views",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "三视图与立体图原来各画一套数据；改为共享 viewGrids",
+        "补逐格放置过程与行列数标注"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/views.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c11-views-match.png",
+          "g3-c11-views-match-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c12-times-concept",
+      "page": 112,
+      "kind": "times",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"几个几\"是静态卡片，加\"一盒一盒地数\"（未数到的盒子变淡，计数同步变化）",
+        "tip 增易错点：3 个 4 与 4 个 3"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c12-times-concept.png",
+          "g3-c12-times-concept-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c12-times-mul",
+      "page": 113,
+      "kind": "times-mul",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"求几倍\"静态展示，加\"一组一组摆出来\"过程",
+        "tip 增易错点：把\"几倍\"当\"多几\""
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c12-times-mul.png",
+          "g3-c12-times-mul-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c12-times-div",
+      "page": 115,
+      "kind": "times-div",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"求一个数是另一个数的几倍\"原来直接给 2.33 这种非整数倍（与\"倍\"的定义矛盾）；改为商 + 余数并说明不是整倍数",
+        "补\"一圈一圈地分\"过程",
+        "tip 增易错点"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c12-times-div.png",
+          "g3-c12-times-div-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g3-c12-times-mix",
+      "page": 116,
+      "kind": "times-div",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "混合题用\"≈ 5 倍\"把非整倍数四舍五入成倍（真错误）；改为如实给商和余数",
+        "补\"先求爸爸年龄、再求倍数\"两步过程",
+        "tip 增易错点"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g3-c12-times-mix.png",
+          "g3-c12-times-mix-act.png"
+        ]
+      },
+      "remaining": []
+    }
+  ],
+  "fakeActCount": 0,
+  "actSelfCheck": "scripts/visual-shots.mjs 逐张比对 <id>.png 与 <id>-act.png 的 md5：本轮 g3 汇总 = 0（41/41 张过程态与初始态不同），脚本汇总行「假过程态 0 个」；Lead 独立复现同为 0。",
+  "globalRemaining": [
+    "过程按钮都没有 aria-live 播报：键盘可用，但读屏体验未验证（跨 g3/g4 全体）",
+    "69 条 tip 按“概念 + 一句易错点”统一重写，但没有与 g5/g6 的既有 tip 风格逐条比对，可能存在措辞风格差异",
+    "L2/L4 的人眼验收是抽样（每册约 10 张截图 + 组件级断言），不是 69 题逐题人眼过一遍；标注为 partial 的 10 处即抽样时发现的不达标点"
+  ],
+  "summary": "g3 共 41 个 Lab：L0 41 pass；L2 有 4 处 partial、L1/L3/L4 各有少量 partial（合计 7 处），L5 全 pass。不宣称「全部达标」。",
+  "schemaNote": "L2/L4 的 pass 是「组件级静态判定 + 抽样人眼」的结论，不是逐题人眼验收；有 10 处已如实记为 partial。本轮没有给所有 Lab 做响应式（窄屏 <360px）与读屏（aria-live）验证，相关条目在 globalRemaining。"
+}

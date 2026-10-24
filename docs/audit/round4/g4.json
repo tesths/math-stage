@@ -1,0 +1,1023 @@
+{
+  "grade": "g4",
+  "baselineCommit": "f698a83",
+  "reviewedAt": "2026-10-24T11:00:00.000Z",
+  "reviewer": "agent B（g3/g4）",
+  "method": "69 个 Lab（g3 41 / g4 28）逐个读实现代码并改；L0/L1 以代码推理 + 抽 lib/labs/*.ts 纯函数做单测复算（整数性/单位/坐标/面积/四舍五入）+ 课本 OCR 页码题干对照为主；L3 用可证伪证据（visual-shots 的 act≠初始态 md5 自检 + 组件测试断言点击前后 DOM/数据变化 + 11 次「改坏实现→断言变红→还原」）；L2/L4 是「改动的 22 个组件逐个核对 + 每册约 10 张截图抽样目视」，**不是 69 题逐张人眼验收**，因此有 10 处记 partial（g3 7、g4 3），见各 lab 的 remaining；L5 以全量重截（0 个控制台报错页面、0 个 notes.txt）为证据。partial 是本轮按 Lead 收口口径新增的取值（rubric 原文只有 pass/fail/n-a），含义为「基本达标但不完全满足」。",
+  "labs": [
+    {
+      "id": "g4-c1-div-oral",
+      "page": 2,
+      "kind": "div-oral",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "整十数口算只有静态\"几包\"，补\"一包一包地分\"（未分到的包变淡）",
+        "tip 增易错点：把 60÷20 算成 30"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c1-div-oral.png",
+          "g4-c1-div-oral-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c1-div-try",
+      "page": 5,
+      "kind": "div-try",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "试商是循环论证：直接用精确商再\"验算\"，永远通过（学生会以为试商不必调商）；改为 roundDivisor + trialRound 真试商（估除数→初商→乘积超了调小/余数不小于除数调大）",
+        "补\"一步一步试商\"过程，192÷24 会显示\"初商偏大，调小成 8\""
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/divTry.test.ts",
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c1-div-try.png",
+          "g4-c1-div-try-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c1-div-pen",
+      "page": 9,
+      "kind": "div-pen",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "竖式一次全画完，补\"开始下一轮/上一轮/重来\"与每轮数位说明（商写在哪一位）",
+        "修掉商为两位数时最前面多画一个空商位（被除数三位、商两位）"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c1-div-pen.png",
+          "g4-c1-div-pen-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c1-div-route",
+      "page": 11,
+      "kind": "div-route",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "两步连除只有公式，补\"两步算下去\"逐条出现与进度",
+        "tip 增易错点：连除顺序与括号"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/compute.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c1-div-route.png",
+          "g4-c1-div-route-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c2-peri-rect",
+      "page": 24,
+      "kind": "peri-rect",
+      "before": {
+        "L0": "pass",
+        "L1": "fail",
+        "L2": "pass",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "参数默认值 12×8 与题干 36×24 不一致（学生调不到课本数据）；改为 36/24 并放宽上限",
+        "补两侧尺寸线（带端点）与\"把四条边拉直\"过程（长+宽+长+宽 拉成一条直线）",
+        "tip 增易错点：只算一条长加一条宽"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c2-peri-rect.png",
+          "g4-c2-peri-rect-act.png"
+        ]
+      },
+      "remaining": [
+        "长宽比很大时仍靠整体缩放，格子会变小",
+        "L2 判 partial：长宽比极端时（如 40×1）单位方格与尺寸线偏挤，只做了整体等比缩放",
+        "极端长宽比时方格/尺寸线偏挤，未做自适应换行标注"
+      ]
+    },
+    {
+      "id": "g4-c2-peri-square",
+      "page": 25,
+      "kind": "peri-square",
+      "before": {
+        "L0": "pass",
+        "L1": "fail",
+        "L2": "pass",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "边长默认 12 与题干 25 不一致；改为 25",
+        "补尺寸线与四条边拉直过程",
+        "tip 增易错点：周长与面积公式混用"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c2-peri-square.png",
+          "g4-c2-peri-square-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c2-area-grid",
+      "page": 29,
+      "kind": "area-grid",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "格子只在 CSS 里生成、没有单位标注与过程；改为 SVG 单位方格 + 一排一排铺满 + 每排个数×排数标注",
+        "tip 增易错点：把每排个数与排数相加"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c2-area-grid.png",
+          "g4-c2-area-grid-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c2-area-rect",
+      "page": 31,
+      "kind": "area-rect",
+      "before": {
+        "L0": "pass",
+        "L1": "fail",
+        "L2": "pass",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "只标了长，没有宽、没有单位方格，S=a×b 只能背；补两侧尺寸线 + 40 个 1 平方厘米方格 + 逐排铺满",
+        "tip 增易错点：用周长公式算面积"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c2-area-rect.png",
+          "g4-c2-area-rect-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c2-area-square",
+      "page": 32,
+      "kind": "area-square",
+      "before": {
+        "L0": "pass",
+        "L1": "fail",
+        "L2": "pass",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "同上：补尺寸线、单位方格与铺满过程",
+        "tip 增易错点：边长×4 当面积"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c2-area-square.png",
+          "g4-c2-area-square-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c2-area-unit",
+      "page": 36,
+      "kind": "area-unit",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "100 个小正方形一次全亮，\"1 平方分米 = 100 平方厘米\"只能背；补一排一排铺满（10/20/…/100）",
+        "tip 增易错点：面积进率当成 10"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c2-area-unit.png",
+          "g4-c2-area-unit-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c3-peri-area-change",
+      "page": 43,
+      "kind": "peri-area-change",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "只能看参数对应的一种拼法，补\"换一种拼法\"在 5 种拼法间切换（面积不变、周长变）",
+        "tip 增易错点：以为面积不变周长就不变"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c3-peri-area-change.png",
+          "g4-c3-peri-area-change-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c4-mul-meaning",
+      "page": 46,
+      "kind": "mul-meaning",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "点阵静态，补\"一组一组地数\"与每组个数标注",
+        "tip 增易错点：3 个 4 与 4 个 3"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c4-mul-meaning.png",
+          "g4-c4-mul-meaning-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c4-mul-total",
+      "page": 49,
+      "kind": "mul-total",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "数量超过 12 就\"…共 N 个\"（30 支时只画 12 支），改为全部画出并按数量缩小；补\"一个一个地买\"过程",
+        "tip 增易错点：单价×数量 与 单价+数量"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c4-mul-total.png",
+          "g4-c4-mul-total-act.png"
+        ]
+      },
+      "remaining": [
+        "数量很大时单个商品图标停止缩小（>10 支时仍有可能换行）",
+        "L2 判 partial：数量 >30 支时图标缩到 34px 仍会换行，不如课本“一盒一盒”的排法",
+        "数量很大时单个图标停止缩小、会换行，未做“按盒分组”的图标排布"
+      ]
+    },
+    {
+      "id": "g4-c4-mul-distance",
+      "page": 51,
+      "kind": "mul-distance",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "小人位置用 min(300, 米×2.2) 封顶（超过 136 米就不动了，图与数值脱钩，假比例尺）；改为每分钟一段、段长恒定、段数=分钟数",
+        "补\"走 1 分钟\"过程与已走米数实时标注",
+        "tip 增易错点：路程用除法"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c4-mul-distance.png",
+          "g4-c4-mul-distance-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c4-mul-solve",
+      "page": 55,
+      "kind": "mul-solve",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "题干\"3 本 18 元\"写死在文字里，改单价参数后文字与算式矛盾（真错误）；改为由单价算出已知条件",
+        "补\"先求单价，再求总价\"两步过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c4-mul-solve.png",
+          "g4-c4-mul-solve-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c5-mix-three",
+      "page": 59,
+      "kind": "mix-three",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "三步混合只有柱状图 + 三条算式，补\"一步一步算\"（先乘、再加、最后减）",
+        "tip 增易错点：从左往右依次算"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c5-mix-three.png",
+          "g4-c5-mix-three-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c5-mix-bracket",
+      "page": 61,
+      "kind": "mix-bracket",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "小括号题补\"一步一步算\"（括号里的乘法→减法→除法）",
+        "tip 增易错点：漏算括号"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c5-mix-bracket.png",
+          "g4-c5-mix-bracket-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c5-mix-segment",
+      "page": 62,
+      "kind": "mix-segment",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "fail"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "\"橘子比梨少\"可能比梨还多 → 画出负数长度线段、算式出现负数箱（真错误）；改为 segModel 约束并如实提示",
+        "苹果那一条改为 times 段、每段 = 梨 + 橘子；补\"先画梨→再画橘子→最后苹果\"三步过程"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/segment.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c5-mix-segment.png",
+          "g4-c5-mix-segment-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c6-travel-plan",
+      "page": 65,
+      "kind": "travel-plan",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "四项费用一次全给，补\"一项一项算\"（含已算合计）",
+        "tip 增易错点：漏算住宿或餐费"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c6-travel-plan.png",
+          "g4-c6-travel-plan-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c7-num-count",
+      "page": 69,
+      "kind": "num-count",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "不是整份数时显示\"2.5 个万\"（真错误）；改为\"2 个万，还剩 5000\"",
+        "补一个一个数的过程（从 0 开始，计数与方块同步）"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/number.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c7-num-count.png",
+          "g4-c7-num-count-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c7-num-multidigit",
+      "page": 75,
+      "kind": "num-multidigit",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "补四位一级分级的展示与切换（从右边起分级）",
+        "tip 增易错点：从左边开始分级"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/number.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c7-num-multidigit.png",
+          "g4-c7-num-multidigit-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c7-num-place",
+      "page": 78,
+      "kind": "num-place",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "数位顺序表静态，补\"从高位往低位一位一位看\"的过程",
+        "tip 增易错点：数位与计数单位说反"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c7-num-place.png",
+          "g4-c7-num-place-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c7-num-approx",
+      "page": 81,
+      "kind": "num-approx",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "用 digitsOf(v)[3] 取\"千位\"，实际取到百位：385204 会被判成\"不满 5 舍去\"却进位到 39 万（真错误）；改为 thousandsDigit/roundToWan",
+        "补\"看千位决定进不进\"的过程按钮"
+      ],
+      "evidence": {
+        "tests": [
+          "test/unit/number.test.ts",
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c7-num-approx.png",
+          "g4-c7-num-approx-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c7-num-idcode",
+      "page": 83,
+      "kind": "num-idcode",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "身份证只标了出生日期一段，补一段一段读的过程与三段分区标注",
+        "tip 增易错点：月、日不补 0"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c7-num-idcode.png",
+          "g4-c7-num-idcode-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c8-measure-story",
+      "page": 90,
+      "kind": "measure-story",
+      "before": {
+        "L0": "pass",
+        "L1": "fail",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "三张换算卡片没有任何图形支撑；补 1 尺 = 23 厘米 与 1 米 的同一比例尺长短对比图",
+        "补一件一件量的过程",
+        "tip 增易错点：把古代 1 尺当 1 米"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c8-measure-story.png",
+          "g4-c8-measure-story-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c9-big-mul",
+      "page": 96,
+      "kind": "big-mul",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "数位没对齐（真错误）：两个因数画在 x=130~190，两个部分积却各自右对齐到 250/220，还有个孤立的 0 落在 230，照着抄必然错位；改为共用个位线，第二部分积整体左移一位、个位补 0",
+        "补\"先乘个位、再乘十位、再相加\"三步过程与数位列标注"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c9-big-mul.png",
+          "g4-c9-big-mul-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c9-big-calc",
+      "page": 101,
+      "kind": "big-calc",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "规律只给结果，补\"末两位 25、前面 n×(n+1)\"两步验算过程",
+        "tip 增易错点：前面算成 n×n"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c9-big-calc.png",
+          "g4-c9-big-calc-act.png"
+        ]
+      },
+      "remaining": []
+    },
+    {
+      "id": "g4-c9-big-1yi",
+      "page": 105,
+      "kind": "big-1yi",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "fail",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "纸堆高度用 min(140, 米/20) 假比例尺（一超过就压平，1 亿张与 1000 万张看起来一样高）；改为与珠峰共用同一比例尺",
+        "补\"和珠穆朗玛峰比一比\"的对比结论"
+      ],
+      "evidence": {
+        "tests": [
+          "test/component/labs.test.ts"
+        ],
+        "shots": [
+          "g4-c9-big-1yi.png",
+          "g4-c9-big-1yi-act.png"
+        ]
+      },
+      "remaining": [
+        "珠峰仍画成示意三角，没有按真实地形绘制",
+        "L2 判 partial：纸堆与珠峰已共用同一比例尺（谁高是真的），但珠峰是三角剪影，不是真实轮廓",
+        "珠峰仍是三角剪影，未引入真实轮廓资源"
+      ]
+    }
+  ],
+  "fakeActCount": 0,
+  "actSelfCheck": "scripts/visual-shots.mjs 逐张比对 <id>.png 与 <id>-act.png 的 md5：本轮 g4 汇总 = 0（28/28 张过程态与初始态不同），脚本汇总行「假过程态 0 个」；Lead 独立复现同为 0。",
+  "globalRemaining": [
+    "过程按钮都没有 aria-live 播报：键盘可用，但读屏体验未验证（跨 g3/g4 全体）",
+    "69 条 tip 按“概念 + 一句易错点”统一重写，但没有与 g5/g6 的既有 tip 风格逐条比对，可能存在措辞风格差异",
+    "L2/L4 的人眼验收是抽样（每册约 10 张截图 + 组件级断言），不是 69 题逐题人眼过一遍；标注为 partial 的 10 处即抽样时发现的不达标点"
+  ],
+  "summary": "g4 共 28 个 Lab：L0 28 pass；L2 有 3 处 partial、L1/L3/L4 各有少量 partial（合计 3 处），L5 全 pass。不宣称「全部达标」。",
+  "schemaNote": "L2/L4 的 pass 是「组件级静态判定 + 抽样人眼」的结论，不是逐题人眼验收；有 10 处已如实记为 partial。本轮没有给所有 Lab 做响应式（窄屏 <360px）与读屏（aria-live）验证，相关条目在 globalRemaining。"
+}

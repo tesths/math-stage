@@ -1,0 +1,1692 @@
+{
+  "grade": "g6",
+  "baselineCommit": "f698a83",
+  "reviewedAt": "2026-10-24T02:48:12.386Z",
+  "reviewer": "agent C（g5/g6）",
+  "method": "L0/L1 以代码推理 + 数值复算 + OCR 原文对照为主（compute/几何模块逐个读、全区间性质测试），L2–L5 以组件代码静态检查 + 全量重截图为证据，几何图形做截图裁切人工核对（未逐题 80 张全看，抽样 20+ 张）。L2/L3 的 hasDims/action 是同一 kind 共用组件的静态判定，不等价于每题人工验收。",
+  "labs": [
+    {
+      "id": "g6-c1-mul-decimal",
+      "page": 2,
+      "kind": "mul-decimal",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "fail",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 补「做一次」：方格模型可「一行一行地数」，点一次点亮一行 6 格、读数 6/100 = 0.06 → 18/100 → 24/100 = 0.24，数满 4 行按钮变灰（`DecimalLab.vue` 的 mulRow/nextMulRow/…）",
+        "同一次修改让 `-act.png` 与初始态 md5 不同（改前逐字节相同：只有 a/b 两个滑块）"
+      ],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c1-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/data.test.ts",
+          "g6/game/test/unit/decimal-regression.test.ts",
+          "g6/game/test/component/round4-step-ops.test.ts"
+        ],
+        "shots": [
+          "g6-c1-mul-decimal.png",
+          "g6-c1-mul-decimal-act.png"
+        ],
+        "note": "act 截图点击的按钮：data-act（再数一行）；act≠初始态：是（md5 已核）；L2 有方格标注（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）；新断言自我破坏验证过（去掉 .grid-cell 的 row-on 绑定后 3 条断言转红）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c1-mul-compare",
+      "page": 6,
+      "kind": "mul-compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/data-params.test.ts",
+          "g6/game/test/unit/decimal-regression.test.ts"
+        ],
+        "shots": [
+          "g6-c1-mul-compare.png",
+          "g6-c1-mul-compare-act.png"
+        ],
+        "note": "act 截图点击的按钮：= DIV_STEP_COUNT - 1\" @click；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c1-mul-approx",
+      "page": 4,
+      "kind": "mul-approx",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/ops-g6-c1-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/data-params.test.ts",
+          "g6/game/test/unit/decimal-regression.test.ts"
+        ],
+        "shots": [
+          "g6-c1-mul-approx.png",
+          "g6-c1-mul-approx-act.png"
+        ],
+        "note": "act 截图点击的按钮：= DIV_STEP_COUNT - 1\" @click；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c1-div-decimal",
+      "page": 7,
+      "kind": "div-decimal",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c1-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/data-params.test.ts"
+        ],
+        "shots": [
+          "g6-c1-div-decimal.png",
+          "g6-c1-div-decimal-act.png"
+        ],
+        "note": "act 截图点击的按钮：= DIV_STEP_COUNT - 1\" @click；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c1-div-approx",
+      "page": 9,
+      "kind": "div-approx",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "fail",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 补「做一次」：商的近似值可「一位一位地试」，点一次写一行「400 ÷ 60 = 6 …… 余 40」，商从 666… → 666.6… → 666.66… → 666.666，试满三位后给出「末位 6 ≥ 5 → 前一位进 1 → ≈ 666.67」的判定位（`DecimalLab.vue` 的 divDigitStep/nextDivDigit/…）",
+        "同一次修改让 `-act.png` 与初始态 md5 不同（改前逐字节相同）"
+      ],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c1-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/component/round4-step-ops.test.ts"
+        ],
+        "shots": [
+          "g6-c1-div-approx.png",
+          "g6-c1-div-approx-act.png"
+        ],
+        "note": "act 截图点击的按钮：data-act（再试一位商）；act≠初始态：是（md5 已核）；L2 有竖式标注；L4 概念追问由 ConceptTip 组件提供（组件级）；逐位试商与独立长除复算在 30–60 千米/时全区间逐位对齐（新测试 31 组全绿）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c1-round-life",
+      "page": 10,
+      "kind": "round-life",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/decimal-regression.test.ts"
+        ],
+        "shots": [
+          "g6-c1-round-life.png",
+          "g6-c1-round-life-act.png"
+        ],
+        "note": "act 截图点击的按钮：= DIV_STEP_COUNT - 1\" @click；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c1-ex-div11-cycle",
+      "page": 13,
+      "kind": "ex-c1-div11-cycle",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c1.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c1-ex-div11-cycle.png",
+          "g6-c1-ex-div11-cycle-act.png"
+        ],
+        "note": "act 截图点击的按钮：再多算一位 / revealExact ? '先只看估算' : '再看精；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c1-ex-pgram-area",
+      "page": 5,
+      "kind": "ex-c1-pgram-area",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c1.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c1-ex-pgram-area.png",
+          "g6-c1-ex-pgram-area-act.png"
+        ],
+        "note": "act 截图点击的按钮：再多算一位 / revealExact ? '先只看估算' : '再看精；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c2-frac-mix",
+      "page": 15,
+      "kind": "frac-mix",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/quantity.test.ts"
+        ],
+        "shots": [
+          "g6-c2-frac-mix.png",
+          "g6-c2-frac-mix-act.png"
+        ],
+        "note": "act 截图点击的按钮：fracJoinOpen ? '收起「1 米彩绳从哪来」 / = PW_MAX_STEP\" @click=\"pwSte；act≠初始态：是；L2 不适用（数值/表格类）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c2-estimate-shop",
+      "page": 16,
+      "kind": "estimate-shop",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c2-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/quantity.test.ts"
+        ],
+        "shots": [
+          "g6-c2-estimate-shop.png",
+          "g6-c2-estimate-shop-act.png"
+        ],
+        "note": "act 截图点击的按钮：fracJoinOpen ? '收起「1 米彩绳从哪来」 / = PW_MAX_STEP\" @click=\"pwSte；act≠初始态：是；L2 不适用（数值/表格类）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c2-segment",
+      "page": 19,
+      "kind": "segment",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c2-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/data-params.test.ts"
+        ],
+        "shots": [
+          "g6-c2-segment.png",
+          "g6-c2-segment-act.png"
+        ],
+        "note": "act 截图点击的按钮：= MORE_MAX_STEP\" @click=\"mor / = WORK_MAX_STEP\" @click=\"wor；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c2-segment-more",
+      "page": 20,
+      "kind": "segment-more",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "步骤 3 把分率先四舍五入再相乘：屏幕出现「14 × 1.28571 = 18 天」，而 14 × 1.28571 = 17.99994，等式不成立",
+        "改为按分率原样写：`14 × (1 + 2/7) = 18 天`，并加断言锁定「分率必须以分数形式出现」"
+      ],
+      "evidence": {
+        "tests": [
+          "g6/game/test/unit/round4-display-truth.test.ts"
+        ],
+        "shots": [
+          "g6-c2-segment-more.png",
+          "g6-c2-segment-more-act.png"
+        ],
+        "note": "act 截图点击的按钮：= MORE_MAX_STEP\" @click=\"mor / = WORK_MAX_STEP\" @click=\"wor；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c2-work-together",
+      "page": 23,
+      "kind": "work-together",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c1c2.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c2-work-together.png",
+          "g6-c2-work-together-act.png"
+        ],
+        "note": "act 截图点击的按钮：= MORE_MAX_STEP\" @click=\"mor / = WORK_MAX_STEP\" @click=\"wor；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c2-piecewise",
+      "page": 26,
+      "kind": "piecewise",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c1c2.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/quantity.test.ts"
+        ],
+        "shots": [
+          "g6-c2-piecewise.png",
+          "g6-c2-piecewise-act.png"
+        ],
+        "note": "act 截图点击的按钮：fracJoinOpen ? '收起「1 米彩绳从哪来」 / = PW_MAX_STEP\" @click=\"pwSte；act≠初始态：是；L2 不适用（数值/表格类）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c2-ex-overlap-club",
+      "page": 22,
+      "kind": "ex-c2-overlap-club",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c2.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c2-ex-overlap-club.png",
+          "g6-c2-ex-overlap-club-act.png"
+        ],
+        "note": "act 截图点击的按钮：revealOverlap ? '先看两条长条' : '；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c2-ex-egg-crate",
+      "page": 18,
+      "kind": "ex-c2-egg-crate",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c2.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c2-ex-egg-crate.png",
+          "g6-c2-ex-egg-crate-act.png"
+        ],
+        "note": "act 截图点击的按钮：revealOverlap ? '先看两条长条' : '；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c3-place-value",
+      "page": 31,
+      "kind": "place-value",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/number-sys.test.ts"
+        ],
+        "shots": [
+          "g6-c3-place-value.png",
+          "g6-c3-place-value-act.png"
+        ],
+        "note": "act 截图点击的按钮：换一个计数单位（第 opViewIdx + 1 / op；act≠初始态：是；L2 不适用（数值/表格类）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c3-compare-unit",
+      "page": 32,
+      "kind": "compare-unit",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/number-sys.test.ts"
+        ],
+        "shots": [
+          "g6-c3-compare-unit.png",
+          "g6-c3-compare-unit-act.png"
+        ],
+        "note": "act 截图点击的按钮：换一个计数单位（第 opViewIdx + 1 / op；act≠初始态：是；L2 不适用（数值/表格类）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c3-op-consistency",
+      "page": 38,
+      "kind": "op-consistency",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c3c7-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/number-sys.test.ts"
+        ],
+        "shots": [
+          "g6-c3-op-consistency.png",
+          "g6-c3-op-consistency-act.png"
+        ],
+        "note": "act 截图点击的按钮：换一个计数单位（第 opViewIdx + 1 / op；act≠初始态：是；L2 不适用（数值/表格类）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c3-binary",
+      "page": 42,
+      "kind": "binary",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "n-a",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c3c7-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/data-params.test.ts",
+          "g6/game/test/unit/number-sys.test.ts"
+        ],
+        "shots": [
+          "g6-c3-binary.png",
+          "g6-c3-binary-act.png"
+        ],
+        "note": "act 截图点击的按钮：换一个计数单位（第 opViewIdx + 1 / op；act≠初始态：是；L2 不适用（数值/表格类）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c3-ex-div-to-mul",
+      "page": 41,
+      "kind": "ex-c3-div-to-mul",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c3.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c3-ex-div-to-mul.png",
+          "g6-c3-ex-div-to-mul-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步： nextDivLabel / 换一种拆法；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c3-ex-frac-split",
+      "page": 40,
+      "kind": "ex-c3-frac-split",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c3.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c3-ex-frac-split.png",
+          "g6-c3-ex-frac-split-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步： nextDivLabel / 换一种拆法；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-ratio-intro",
+      "page": 45,
+      "kind": "ratio-intro",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c4-ops.test.ts",
+          "g6/game/test/component/ratio-lab.audit.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-ratio-intro.png",
+          "g6-c4-ratio-intro-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步：同乘 / 同除 / 下一步： distNextLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-ratio-value",
+      "page": 47,
+      "kind": "ratio-value",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c4-ops.test.ts",
+          "g6/game/test/component/ratio-lab.audit.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-ratio-value.png",
+          "g6-c4-ratio-value-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步：同乘 / 同除 / 下一步： distNextLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-ratio-simplify",
+      "page": 53,
+      "kind": "ratio-simplify",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c4-ops.test.ts",
+          "g6/game/test/component/ratio-lab.audit.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-ratio-simplify.png",
+          "g6-c4-ratio-simplify-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步：同乘 / 同除 / 下一步： distNextLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-ratio-distribute",
+      "page": 54,
+      "kind": "ratio-distribute",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c4-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-ratio-distribute.png",
+          "g6-c4-ratio-distribute-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步：同乘 / 同除 / 下一步： distNextLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-proportion-basic",
+      "page": 59,
+      "kind": "proportion-basic",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c4-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-proportion-basic.png",
+          "g6-c4-proportion-basic-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步：同乘 / 同除 / 下一步： distNextLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-solve-proportion",
+      "page": 60,
+      "kind": "solve-proportion",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c4-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-solve-proportion.png",
+          "g6-c4-solve-proportion-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步：同乘 / 同除 / 下一步： distNextLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-golden-ratio",
+      "page": 64,
+      "kind": "golden-ratio",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c3c4.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-golden-ratio.png",
+          "g6-c4-golden-ratio-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步：同乘 / 同除 / 下一步： distNextLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-ex-cube-ratio",
+      "page": 55,
+      "kind": "ex-c4-cube-ratio",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c4.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-ex-cube-ratio.png",
+          "g6-c4-ex-cube-ratio-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步： nextCubeLabel / 下一步： nextFootLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c4-ex-football-ratio",
+      "page": 54,
+      "kind": "ex-c4-football-ratio",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "补 data-act 标记，让截图脚本能稳定点到「下一步：先求 1 份」"
+      ],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c4.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c4-ex-football-ratio.png",
+          "g6-c4-ex-football-ratio-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步： nextCubeLabel / 下一步： nextFootLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": [
+        "`scripts/visual-shots.mjs` 对这一页的 `-act.png` 会拍成初始态：本页客户端会挂载两次（实测 onMounted 打点 2 次），脚本在「加载可视化」消失后固定只等 600ms 就点，点击落在第一次挂载的实例上、随第二次挂载被丢弃，于是 -act 与初始态逐字节相同。组件本身操作是真的（基线测试 `exercise-c4.test.ts`「点按钮先只留每份…」三条断言覆盖；实测点击后 class c4-foot-step-2 → c4-foot-step-0）。交付态 `g6-c4-ex-football-ratio-act.png`（md5 69c0fbfa…，与初始态 3c411ea5… 不同）是等到挂载稳定 1.8s 后点击重拍的，画面是真正的「先求 1 份」一步；用原脚本再跑全量会退回同图，要根治需在脚本里加「水合完成」哨兵（脚本属 A 侧，本轮没动）"
+      ]
+    },
+    {
+      "id": "g6-c5-circle-feature",
+      "page": 70,
+      "kind": "circle-feature",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/circle-lab.audit.test.ts",
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c5-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c5-circle-feature.png",
+          "g6-c5-circle-feature-act.png"
+        ],
+        "note": "act 截图点击的按钮：quarterOverride ? '取消对折，跟随滑块 / 滚一周 · 看前进多少米；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c5-sector",
+      "page": 72,
+      "kind": "sector",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/circle-lab.audit.test.ts",
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c5-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/decimal-regression.test.ts"
+        ],
+        "shots": [
+          "g6-c5-sector.png",
+          "g6-c5-sector-act.png"
+        ],
+        "note": "act 截图点击的按钮：quarterOverride ? '取消对折，跟随滑块 / 滚一周 · 看前进多少米；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c5-circumference",
+      "page": 77,
+      "kind": "circumference",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/circle-lab.audit.test.ts",
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c5-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/decimal-regression.test.ts"
+        ],
+        "shots": [
+          "g6-c5-circumference.png",
+          "g6-c5-circumference-act.png"
+        ],
+        "note": "act 截图点击的按钮：quarterOverride ? '取消对折，跟随滑块 / 滚一周 · 看前进多少米；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c5-circle-area",
+      "page": 80,
+      "kind": "circle-area",
+      "before": {
+        "L0": "fail",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "剪拼长方形的文案写成「拼成的长方形：15.31 × 5 ≈ 76.54 平方米」——15.31 × 5 = 76.55，乘法式本身打不上（长提前舍到两位小数，面积却按三位小数算）",
+        "长改按三位小数显示：15.307 × 5 ≈ 76.54；同时「长与 πr 的差」那一栏保留真实值差（避免\"份数越多差越小\"被二次舍入破坏，见 remaining）",
+        "两次舍入噪点已修：「现在的长 15.31 米（精确 15.307 米）与 πr = 15.71 米（精确 15.708 米）的差 = 0.401 米」——两位正文表述保留给学生读，三位精确值让 15.708 − 15.307 = 0.401 真成立"
+      ],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/round4-circle-area-text.test.ts",
+          "g6/game/test/unit/round4-display-truth.test.ts",
+          "g6/game/test/component/round4-circle-area-text.test.ts"
+        ],
+        "shots": [
+          "g6-c5-circle-area.png",
+          "g6-c5-circle-area-act.png"
+        ],
+        "note": "act 截图点击的按钮：quarterOverride ? '取消对折，跟随滑块 / 滚一周 · 看前进多少米；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c5-annulus",
+      "page": 81,
+      "kind": "annulus",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/circle-lab.audit.test.ts",
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c5-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/decimal-regression.test.ts"
+        ],
+        "shots": [
+          "g6-c5-annulus.png",
+          "g6-c5-annulus-act.png"
+        ],
+        "note": "act 截图点击的按钮：quarterOverride ? '取消对折，跟随滑块 / 滚一周 · 看前进多少米；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c5-circle-composite",
+      "page": 81,
+      "kind": "circle-composite",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/circle-lab.audit.test.ts",
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c5-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/decimal-regression.test.ts"
+        ],
+        "shots": [
+          "g6-c5-circle-composite.png",
+          "g6-c5-circle-composite-act.png"
+        ],
+        "note": "act 截图点击的按钮：quarterOverride ? '取消对折，跟随滑块 / 滚一周 · 看前进多少米；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c5-ex-wheel-roll",
+      "page": 85,
+      "kind": "ex-c5-wheel-roll",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c5.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c5-ex-wheel-roll.png",
+          "g6-c5-ex-wheel-roll-act.png"
+        ],
+        "note": "act 截图点击的按钮：= ROLL_FULL\" @click=\"rollOnc / = rows\" @click=\"placeRow\"> 再；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c5-ex-circle-packing",
+      "page": 86,
+      "kind": "ex-c5-circle-packing",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c5.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c5-ex-circle-packing.png",
+          "g6-c5-ex-circle-packing-act.png"
+        ],
+        "note": "act 截图点击的按钮：= ROLL_FULL\" @click=\"rollOnc / = rows\" @click=\"placeRow\"> 再；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c6-scale-shape",
+      "page": 93,
+      "kind": "scale-shape",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c5c6c7.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c6-scale-shape.png",
+          "g6-c6-scale-shape-act.png"
+        ],
+        "note": "act 截图点击的按钮：allMeasured ? '再量一遍' : '量下一条；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": [
+        "课本第 93 页的原题是「文辉用电脑软件放大缩小照片」，本例题干写的是「方格纸」；概念一致但情境措辞没对上课本，属 P3 文案，未改"
+      ]
+    },
+    {
+      "id": "g6-c6-map-scale",
+      "page": 98,
+      "kind": "map-scale",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/unit/compute.test.ts",
+          "g6/game/test/unit/data-params.test.ts"
+        ],
+        "shots": [
+          "g6-c6-map-scale.png",
+          "g6-c6-map-scale-act.png"
+        ],
+        "note": "act 截图点击的按钮：allMeasured ? '再量一遍' : '量下一条；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c6-ex-scale-area",
+      "page": 97,
+      "kind": "ex-c6-scale-area",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c6.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c6-ex-scale-area.png",
+          "g6-c6-ex-scale-area-act.png"
+        ],
+        "note": "act 截图点击的按钮：再放大 1 倍 / 先只看第 1 步；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c6-ex-two-maps",
+      "page": 102,
+      "kind": "ex-c6-two-maps",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c6.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c6-ex-two-maps.png",
+          "g6-c6-ex-two-maps-act.png"
+        ],
+        "note": "act 截图点击的按钮：再放大 1 倍 / 先只看第 1 步；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c7-coordinate",
+      "page": 104,
+      "kind": "coordinate",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c5c6c7.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c7-coordinate.png",
+          "g6-c7-coordinate-act.png"
+        ],
+        "note": "act 截图点击的按钮：向东走一格：第一个数 +1 / 向北走一格：第二个数 +1；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c7-direction",
+      "page": 106,
+      "kind": "direction",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/labs.test.ts",
+          "g6/game/test/component/ops-g6-c3c7-ops.test.ts",
+          "g6/game/test/unit/compute.test.ts"
+        ],
+        "shots": [
+          "g6-c7-direction.png",
+          "g6-c7-direction-act.png"
+        ],
+        "note": "act 截图点击的按钮：向东走一格：第一个数 +1 / 向北走一格：第二个数 +1；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c7-ex-route-path",
+      "page": 109,
+      "kind": "ex-c7-route-path",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c7.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c7-ex-route-path.png",
+          "g6-c7-ex-route-path-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步： oNextStepLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    },
+    {
+      "id": "g6-c7-ex-observer-point",
+      "page": 111,
+      "kind": "ex-c7-observer-point",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "pass",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [],
+      "evidence": {
+        "tests": [
+          "g6/game/test/component/exercise-c7.test.ts",
+          "g6/game/test/unit/exercise-compute.test.ts"
+        ],
+        "shots": [
+          "g6-c7-ex-observer-point.png",
+          "g6-c7-ex-observer-point-act.png"
+        ],
+        "note": "act 截图点击的按钮：下一步： oNextStepLabel；act≠初始态：是；L2 有 SVG 标注/刻度（启发式）；L4 概念追问由 ConceptTip 组件提供（组件级）"
+      },
+      "remaining": []
+    }
+  ],
+  "summary": {
+    "labCount": 47,
+    "p0_fixed": 2,
+    "l1_fixed": 0,
+    "l2_fixed": 0,
+    "still_l3_fail": [],
+    "remaining_labs": 2,
+    "l3_fixed": 2
+  }
+}

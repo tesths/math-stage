@@ -1,0 +1,3079 @@
+{
+  "grade": "g1",
+  "baselineCommit": "f698a83",
+  "reviewedAt": "2026-10-24T02:51:27.089Z",
+  "reviewer": "agent A（g1/g2）",
+  "method": "78 道例题按 type 分成 11 组（count 14 / addsub 20 / compare 8 / numberline 6 / write 5 / split 5 / ten 5 / shape3d 5 / position 4 / ordinal 4 / sequence 2）：L0/L1 逐题核对 config 与课本口径；L3 只对存在「空转」的 3 个组做真过程改造（shape3d/compare/numberline）并对 write 补拨珠；L4 用 ConceptTip + 逐题/按题型两级 tip 覆盖全部 78 道（单测遍历断言）。",
+  "labs": [
+    {
+      "id": "c1-count-01",
+      "page": 2,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c1-count-01.png",
+          "c1-count-01-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c1-count-02",
+      "page": 3,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c1-count-02.png",
+          "c1-count-02-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c1-count-03",
+      "page": 4,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c1-count-03.png",
+          "c1-count-03-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c1-compare-01",
+      "page": 4,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」",
+        "L4 接入 ConceptTip（默认收起）：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c1-compare-01.png",
+          "c1-compare-01-act.png"
+        ],
+        "note": "题型 compare：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c1-count-04",
+      "page": 5,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c1-count-04.png",
+          "c1-count-04-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c1-count-05",
+      "page": 6,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c1-count-05.png",
+          "c1-count-05-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-count-01",
+      "page": 12,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-count-01.png",
+          "c2-count-01-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-write-01",
+      "page": 13,
+      "kind": "write",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮",
+        "L4 接入 ConceptTip（默认收起）：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-write-01.png",
+          "c2-write-01-act.png"
+        ],
+        "note": "题型 write：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-count-02",
+      "page": 14,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-count-02.png",
+          "c2-count-02-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-write-02",
+      "page": 15,
+      "kind": "write",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮",
+        "L4 接入 ConceptTip（默认收起）：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-write-02.png",
+          "c2-write-02-act.png"
+        ],
+        "note": "题型 write：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-ordinal-01",
+      "page": 16,
+      "kind": "ordinal",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：序数：数第几个的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-ordinal-01.png",
+          "c2-ordinal-01-act.png"
+        ],
+        "note": "题型 ordinal：序数：数第几个的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-count-03",
+      "page": 18,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 认识 0 原来只有四个选项可选、图上什么也没有（学生看不到「0 是怎么来的」）→ 加「套一圈」过程：一次扔一个圈，套中数始终是 0，最后落在「一个也没有就用 0 表示」",
+        "L4 接入 ConceptTip（默认收起）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-count-03.png",
+          "c2-count-03-act.png"
+        ],
+        "note": "题型 count（认识 0）：act 截图点击「套一圈」，圈逐个亮起，套中数保持 0"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-compare-01",
+      "page": 20,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」",
+        "L4 接入 ConceptTip（默认收起）：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-compare-01.png",
+          "c2-compare-01-act.png"
+        ],
+        "note": "题型 compare：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-compare-02",
+      "page": 21,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」",
+        "L4 接入 ConceptTip（默认收起）：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-compare-02.png",
+          "c2-compare-02-act.png"
+        ],
+        "note": "题型 compare：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-addsub-01",
+      "page": 25,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-addsub-01.png",
+          "c2-addsub-01-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-addsub-02",
+      "page": 27,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-addsub-02.png",
+          "c2-addsub-02-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-addsub-03",
+      "page": 26,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-addsub-03.png",
+          "c2-addsub-03-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c2-addsub-04",
+      "page": 28,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c2-addsub-04.png",
+          "c2-addsub-04-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c3-position-01",
+      "page": 32,
+      "kind": "position",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：方位：点物品找位置的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c3-position-01.png",
+          "c3-position-01-act.png"
+        ],
+        "note": "题型 position：方位：点物品找位置的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c3-position-02",
+      "page": 32,
+      "kind": "position",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：方位：点物品找位置的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c3-position-02.png",
+          "c3-position-02-act.png"
+        ],
+        "note": "题型 position：方位：点物品找位置的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c3-position-03",
+      "page": 33,
+      "kind": "position",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：方位：点物品找位置的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c3-position-03.png",
+          "c3-position-03-act.png"
+        ],
+        "note": "题型 position：方位：点物品找位置的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c3-position-04",
+      "page": 34,
+      "kind": "position",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：方位：点物品找位置的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c3-position-04.png",
+          "c3-position-04-act.png"
+        ],
+        "note": "题型 position：方位：点物品找位置的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c3-ordinal-01",
+      "page": 32,
+      "kind": "ordinal",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：序数：数第几个的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c3-ordinal-01.png",
+          "c3-ordinal-01-act.png"
+        ],
+        "note": "题型 ordinal：序数：数第几个的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-count-01",
+      "page": 36,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-count-01.png",
+          "c4-count-01-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-count-02",
+      "page": 37,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-count-02.png",
+          "c4-count-02-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-write-01",
+      "page": 37,
+      "kind": "write",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮",
+        "L4 接入 ConceptTip（默认收起）：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-write-01.png",
+          "c4-write-01-act.png"
+        ],
+        "note": "题型 write：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-count-03",
+      "page": 39,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-count-03.png",
+          "c4-count-03-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-ordinal-01",
+      "page": 38,
+      "kind": "ordinal",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：序数：数第几个的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-ordinal-01.png",
+          "c4-ordinal-01-act.png"
+        ],
+        "note": "题型 ordinal：序数：数第几个的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-split-01",
+      "page": 39,
+      "kind": "split",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-split-01.png",
+          "c4-split-01-act.png"
+        ],
+        "note": "题型 split：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-addsub-01",
+      "page": 40,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-addsub-01.png",
+          "c4-addsub-01-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-addsub-02",
+      "page": 40,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-addsub-02.png",
+          "c4-addsub-02-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-addsub-03",
+      "page": 41,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-addsub-03.png",
+          "c4-addsub-03-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-addsub-04",
+      "page": 42,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-addsub-04.png",
+          "c4-addsub-04-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-addsub-05",
+      "page": 43,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-addsub-05.png",
+          "c4-addsub-05-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-addsub-06",
+      "page": 44,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-addsub-06.png",
+          "c4-addsub-06-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-addsub-07",
+      "page": 45,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-addsub-07.png",
+          "c4-addsub-07-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c4-compare-01",
+      "page": 39,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」",
+        "L4 接入 ConceptTip（默认收起）：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c4-compare-01.png",
+          "c4-compare-01-act.png"
+        ],
+        "note": "题型 compare：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c5-shape3d-01",
+      "page": 54,
+      "kind": "shape3d",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas",
+        "L4 接入 ConceptTip（默认收起）：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c5-shape3d-01.png",
+          "c5-shape3d-01-act.png"
+        ],
+        "note": "题型 shape3d：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c5-shape3d-02",
+      "page": 54,
+      "kind": "shape3d",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas",
+        "L4 接入 ConceptTip（默认收起）：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c5-shape3d-02.png",
+          "c5-shape3d-02-act.png"
+        ],
+        "note": "题型 shape3d：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c5-shape3d-03",
+      "page": 55,
+      "kind": "shape3d",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas",
+        "L4 接入 ConceptTip（默认收起）：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c5-shape3d-03.png",
+          "c5-shape3d-03-act.png"
+        ],
+        "note": "题型 shape3d：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c5-shape3d-04",
+      "page": 55,
+      "kind": "shape3d",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas",
+        "L4 接入 ConceptTip（默认收起）：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c5-shape3d-04.png",
+          "c5-shape3d-04-act.png"
+        ],
+        "note": "题型 shape3d：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c5-shape3d-05",
+      "page": 56,
+      "kind": "shape3d",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas",
+        "L4 接入 ConceptTip（默认收起）：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c5-shape3d-05.png",
+          "c5-shape3d-05-act.png"
+        ],
+        "note": "题型 shape3d：立体图形：加「数一数」一个面一个面地数（长方体 6 面/圆柱 2 平面+1 曲面/球 1 曲面），原来只有一张自动转的 canvas"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c5-ordinal-01",
+      "page": 59,
+      "kind": "ordinal",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：序数：数第几个的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c5-ordinal-01.png",
+          "c5-ordinal-01-act.png"
+        ],
+        "note": "题型 ordinal：序数：数第几个的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-count-01",
+      "page": 63,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-count-01.png",
+          "c6-count-01-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-count-02",
+      "page": 64,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-count-02.png",
+          "c6-count-02-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-write-01",
+      "page": 63,
+      "kind": "write",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮",
+        "L4 接入 ConceptTip（默认收起）：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-write-01.png",
+          "c6-write-01-act.png"
+        ],
+        "note": "题型 write：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-compare-01",
+      "page": 64,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」",
+        "L4 接入 ConceptTip（默认收起）：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-compare-01.png",
+          "c6-compare-01-act.png"
+        ],
+        "note": "题型 compare：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-split-01",
+      "page": 70,
+      "kind": "split",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-split-01.png",
+          "c6-split-01-act.png"
+        ],
+        "note": "题型 split：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-split-02",
+      "page": 70,
+      "kind": "split",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-split-02.png",
+          "c6-split-02-act.png"
+        ],
+        "note": "题型 split：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-split-03",
+      "page": 70,
+      "kind": "split",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-split-03.png",
+          "c6-split-03-act.png"
+        ],
+        "note": "题型 split：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-addsub-01",
+      "page": 66,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-addsub-01.png",
+          "c6-addsub-01-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-addsub-02",
+      "page": 66,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-addsub-02.png",
+          "c6-addsub-02-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-addsub-03",
+      "page": 68,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-addsub-03.png",
+          "c6-addsub-03-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-addsub-04",
+      "page": 69,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-addsub-04.png",
+          "c6-addsub-04-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c6-ten-01",
+      "page": 66,
+      "kind": "ten",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c6-ten-01.png",
+          "c6-ten-01-act.png"
+        ],
+        "note": "题型 ten：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c7-ten-01",
+      "page": 75,
+      "kind": "ten",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c7-ten-01.png",
+          "c7-ten-01-act.png"
+        ],
+        "note": "题型 ten：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c7-ten-02",
+      "page": 75,
+      "kind": "ten",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c7-ten-02.png",
+          "c7-ten-02-act.png"
+        ],
+        "note": "题型 ten：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c7-ten-03",
+      "page": 76,
+      "kind": "ten",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c7-ten-03.png",
+          "c7-ten-03-act.png"
+        ],
+        "note": "题型 ten：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c7-ten-04",
+      "page": 76,
+      "kind": "ten",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c7-ten-04.png",
+          "c7-ten-04-act.png"
+        ],
+        "note": "题型 ten：凑十：点卡片挑成 10（原有过程，本轮补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-numberline-01",
+      "page": 79,
+      "kind": "numberline",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步",
+        "L4 接入 ConceptTip（默认收起）：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-numberline-01.png",
+          "c8-numberline-01-act.png"
+        ],
+        "note": "题型 numberline：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-numberline-02",
+      "page": 79,
+      "kind": "numberline",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步",
+        "L4 接入 ConceptTip（默认收起）：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-numberline-02.png",
+          "c8-numberline-02-act.png"
+        ],
+        "note": "题型 numberline：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-numberline-03",
+      "page": 80,
+      "kind": "numberline",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步",
+        "L4 接入 ConceptTip（默认收起）：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-numberline-03.png",
+          "c8-numberline-03-act.png"
+        ],
+        "note": "题型 numberline：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-numberline-04",
+      "page": 81,
+      "kind": "numberline",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步",
+        "L4 接入 ConceptTip（默认收起）：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-numberline-04.png",
+          "c8-numberline-04-act.png"
+        ],
+        "note": "题型 numberline：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-numberline-05",
+      "page": 81,
+      "kind": "numberline",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步",
+        "L4 接入 ConceptTip（默认收起）：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-numberline-05.png",
+          "c8-numberline-05-act.png"
+        ],
+        "note": "题型 numberline：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-sequence-01",
+      "page": 80,
+      "kind": "sequence",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：顺数接龙：点数字按顺序接龙（原有过程，本轮补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-sequence-01.png",
+          "c8-sequence-01-act.png"
+        ],
+        "note": "题型 sequence：顺数接龙：点数字按顺序接龙（原有过程，本轮补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-sequence-02",
+      "page": 81,
+      "kind": "sequence",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：顺数接龙：点数字按顺序接龙（原有过程，本轮补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-sequence-02.png",
+          "c8-sequence-02-act.png"
+        ],
+        "note": "题型 sequence：顺数接龙：点数字按顺序接龙（原有过程，本轮补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-addsub-01",
+      "page": 82,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-addsub-01.png",
+          "c8-addsub-01-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-addsub-02",
+      "page": 83,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-addsub-02.png",
+          "c8-addsub-02-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-addsub-03",
+      "page": 83,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-addsub-03.png",
+          "c8-addsub-03-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-compare-01",
+      "page": 81,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」",
+        "L4 接入 ConceptTip（默认收起）：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-compare-01.png",
+          "c8-compare-01-act.png"
+        ],
+        "note": "题型 compare：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c8-compare-02",
+      "page": 86,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」",
+        "L4 接入 ConceptTip（默认收起）：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c8-compare-02.png",
+          "c8-compare-02-act.png"
+        ],
+        "note": "题型 compare：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c9-write-01",
+      "page": 90,
+      "kind": "write",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮",
+        "L4 接入 ConceptTip（默认收起）：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c9-write-01.png",
+          "c9-write-01-act.png"
+        ],
+        "note": "题型 write：写数：加「拨一拨」三步（先十位 → 再个位 → 写数），原来三块内容一次全亮"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c9-count-01",
+      "page": 91,
+      "kind": "count",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c9-count-01.png",
+          "c9-count-01-act.png"
+        ],
+        "note": "题型 count：数一数：点方格手口一致地数（原本就有过程，本轮只补 L4）"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c9-compare-01",
+      "page": 90,
+      "kind": "compare",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」",
+        "L4 接入 ConceptTip（默认收起）：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c9-compare-01.png",
+          "c9-compare-01-act.png"
+        ],
+        "note": "题型 compare：比多少：点「配对」一对一对配，连线一条一条亮，多出的列最后才标「多」"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c9-addsub-01",
+      "page": 91,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c9-addsub-01.png",
+          "c9-addsub-01-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c9-addsub-02",
+      "page": 91,
+      "kind": "addsub",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c9-addsub-02.png",
+          "c9-addsub-02-act.png"
+        ],
+        "note": "题型 addsub：加减法：加进来 / 拿走 ▶ 步进保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c9-numberline-01",
+      "page": 90,
+      "kind": "numberline",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "fail",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L3 十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步",
+        "L4 接入 ConceptTip（默认收起）：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c9-numberline-01.png",
+          "c9-numberline-01-act.png"
+        ],
+        "note": "题型 numberline：十几：点「数一数」从 10 一格一格往右数，数轴高亮与「个一」方块同步"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    },
+    {
+      "id": "c9-split-01",
+      "page": 91,
+      "kind": "split",
+      "before": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "fail",
+        "L5": "pass"
+      },
+      "after": {
+        "L0": "pass",
+        "L1": "pass",
+        "L2": "partial",
+        "L3": "pass",
+        "L4": "pass",
+        "L5": "pass"
+      },
+      "fixed": [
+        "L4 接入 ConceptTip（默认收起）：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      ],
+      "evidence": {
+        "tests": [
+          "g1/game/test/unit/lib/tips.test.ts",
+          "g1/game/test/component/games/process.test.ts",
+          "g1/game/test/unit/lib/solid.test.ts"
+        ],
+        "shots": [
+          "c9-split-01.png",
+          "c9-split-01-act.png"
+        ],
+        "note": "题型 split：分与合：搬动一个到另一边的过程保留，本轮补 L4"
+      },
+      "remaining": [
+        "L2 量化标注（格数/刻度/尺寸线）本轮未做"
+      ]
+    }
+  ],
+  "fakeActCount": 0,
+  "actSelfCheck": "scripts/visual-shots.mjs 会逐张比对 <id>.png 与 <id>-act.png 的 md5，相同即打印「⚠ 过程态与初始态相同」，并在结尾汇总「假过程态 N 个」。本轮 g1 汇总 = 0（78/78 张过程态与初始态不同）。",
+  "schemaNote": "g1 只新增了 BaseQuestion.tip?: string（可选）与 g1/data/upper/chapters/tips.ts 逐题文案；没有改动 shared/。"
+}
