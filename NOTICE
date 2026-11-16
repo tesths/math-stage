@@ -1,0 +1,42 @@
+Math Stage — 小学数学互动学习平台
+Copyright (c) 2026 tesths
+
+本仓库包含两部分内容，分别适用不同条款：
+
+1. 软件代码（Software）
+   ------------------------------------------------------------------
+   仓库中的源代码、配置、脚本、构建产物模板等（包括但不限于 g1/ ~ g6/ 下的
+   game/ 工程、shared/、portal/、scripts/、以及各类配置文件），以 MIT 许可证
+   授权，详见根目录 LICENSE 文件。任何人都可以自由使用、修改、分发，包括
+   商业用途，只需保留版权与许可声明。
+
+2. 教材内容与衍生素材（Textbook content and derived materials）
+   ------------------------------------------------------------------
+   以下内容源自中国人民教育出版社 / 江苏凤凰教育出版社出版、依据《义务教育
+   数学课程标准（2022 年版）》编写的现行小学数学教科书，其著作权归原出版方
+   及编写者所有：
+
+   - 各年级课本扫描件（*.pdf，仅本地使用，未纳入版本库）
+   - OCR 识别文字（gX/ocr/**/pages/*.txt）
+   - 合订正文与目录（gX/ocr/**/book/*.md）
+   - 由课本例题、练习题整理而来的结构化数据与可视化参数（gX/data/**）
+
+   上述内容仅用于教学研究、技术演示与学习交流，**不随本仓库的 MIT 许可证
+   授权**，不得用于任何商业用途或再分发。若你是教材版权方并认为本仓库的
+   使用方式不妥，请通过仓库 Issue 联系我们，我们会及时处理。
+
+3. 第三方依赖（Third-party dependencies）
+   ------------------------------------------------------------------
+   本项目依赖 Nuxt、Vue、Nuxt UI、three.js、Chart.js、Anime.js、jsxgraph 等
+   开源软件，均遵循其各自的许可证，详见 package.json 与各依赖包内的 LICENSE。
+
+English summary
+--------------------------------------------------------------------
+The source code in this repository is licensed under the MIT License (see
+LICENSE). Textbook scans, their OCR text, the merged book Markdown, and the
+example/exercise data derived from the textbooks (PEP / Jiangsu Phoenix
+Education Press, 2022 curriculum standards) remain the copyright of their
+respective publishers and authors. They are included solely for educational
+research and demonstration, are NOT covered by the MIT License, and may not be
+used commercially or redistributed. Third-party dependencies keep their own
+licenses.

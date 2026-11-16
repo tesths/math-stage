@@ -16,7 +16,7 @@
 | --- | --- | --- | --- |
 | 共享设计系统 | `shared/` | 年级注册表 / 主题令牌 / 工具函数 / runtime adapters / 统一布局组件 GradeShell / 共享 Nuxt 配置片段 | 纯 TS + CSS + 1 个 .vue；无外部运行时依赖 |
 | 门户 | `portal/` | 年级入口（卡片由 `shared/grades` 生成） | Nuxt 4 + Nuxt UI（emerald） |
-| 一年级 | `g1/data/upper/` + `g1/game/` | 人教版一年级上册：78 道例题答题游戏 + 20 个小游戏 | Nuxt 4 + Nuxt UI（emerald） |
+| 一年级 | `g1/data/upper/` + `g1/game/` | 苏教版一年级上册：78 道例题答题游戏 + 20 个小游戏 | Nuxt 4 + Nuxt UI（emerald） |
 | 二年级 | `g2/data/upper/` + `g2/game/` | 苏教版二年级上册：22 个可调参数可视化 Lab + 12 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
 | 三年级 | `g3/data/upper/` + `g3/game/` | 苏教版三年级上册：41 个可调参数可视化 Lab + 16 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ three.js / animejs |
 | 四年级 | `g4/data/upper/` + `g4/game/` | 苏教版四年级上册：28 个可调参数可视化 Lab + 10 个训练游戏 | Nuxt 4 + Nuxt UI（emerald）+ animejs |
@@ -67,7 +67,7 @@ vitest 侧需用 `#components` 桩（`shared/test/stubs/components.ts`）。为�
 
 | 年级 | 课本 | PDF | 页数 | 书页偏移 |
 | --- | --- | --- | --- | --- |
-| 一年级 | 人教版（2022 课标） | `（根据2022年版课程标准修订）义务教育教科书•数学一年级上册.pdf` | 105 | 书页 = PDF页 - 7 |
+| 一年级 | 苏教版（2022 课标） | `（根据2022年版课程标准修订）义务教育教科书•数学一年级上册.pdf` | 105 | 书页 = PDF页 - 7 |
 | 二年级 | 苏教版（2022 课标，2025 新编） | 扫描 PDF（120 页，文件名带"人教版"实为凤凰教育出版社） | 120 | 书页 = PDF页 - 8 |
 | 三年级 | 苏教版（2022 课标） | `（根据2022年版课程标准修订）义务教育教科书•数学三年级上册.pdf` | 132 | 书页 = PDF页 - 8 |
 | 四年级 | 苏教版（2022 课标，2026 新编） | `最新【苏教版】4年级数学课本•上册.pdf` | 121 | 书页 = PDF页 - 3 |
@@ -80,12 +80,20 @@ vitest 侧需用 `#components` 桩（`shared/test/stubs/components.ts`）。为�
 
 ```
 math/
-├── README.md                  总入口说明（含部署章节）
+├── README.md / README.en.md   中英文总入口说明（含部署章节）
+├── LICENSE / NOTICE           MIT 许可证 / 教材版权声明
 ├── shared/                    共享设计系统（年级注册表/主题令牌/工具/GradeShell/测试）
 ├── docs/
+│   ├── README.md              文档索引（先看这里）
 │   ├── DEVELOPMENT.md         本文件（开发文档）
-│   ├── example-audit.md       一年级例题核对报告
-│   └── 游戏形式调研.md        一年级 20 个小游戏的课本出处调研
+│   ├── DEPLOYMENT.md          单 Cloudflare Pages 部署详解
+│   ├── example-audit*.md      例题↔OCR 核对报告
+│   ├── example-visual-*.md    逐题可视化评审 / 改进记录 / 验收口径
+│   ├── audit/                 六年级逐 Lab 审查 + 第 4 轮审计 JSON
+│   ├── reports/round4/        第 4 轮分册报告与总报告
+│   ├── research/              数学可视化与游戏形式调研
+│   ├── assets/                README 横幅与精选截图
+│   └── 游戏形式调研.md        20 个小游戏的课本出处调研
 ├── portal/                    门户（Nuxt 4 + Nuxt UI 应用：pages/index.vue 年级卡片，由 shared/grades 生成）
 ├── package.json               根：workspaces / 统一依赖 / build:site / typecheck / test:shared
 ├── package-lock.json          全仓库唯一 lockfile（各年级不再维护独立 package-lock）
@@ -100,7 +108,7 @@ math/
 │   ├── real-click-test.mjs    真实浏览器点击验收（npm run test:click，46 项）
 │   └── verify_examples.py     一年级例题↔课本 OCR 机器核对
 │
-├── ── 一年级工程（人教版上册）──
+├── ── 一年级工程（苏教版上册）──
 ├── g1/
 │   ├── README.md              一年级上下册目录约定
 │   ├── data/upper/
@@ -257,7 +265,7 @@ math/
 
 ---
 
-## 3. 一年级工程（人教版上册）
+## 3. 一年级工程（苏教版上册）
 
 ### 3.1 数据层 `g1/data/upper/`
 

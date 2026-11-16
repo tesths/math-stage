@@ -15,3 +15,29 @@ deploy/
 # GLM OCR 批处理产物（原始 JSON + md）不入库
 work/
 __pycache__/
+
+# 环境变量与本地配置
+.env
+.env.*
+!.env.example
+*.local
+
+# 日志
+*.log
+npm-debug.log*
+
+# 编辑器 / 系统
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+**/.DS_Store
+
+# 构建 / 工具缓存
+*.tsbuildinfo
+.eslintcache
+.turbo/
+
+# 生成的多媒体（图片 / 视频工具）
+generated-images/
+generated-videos/

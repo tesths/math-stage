@@ -1,7 +1,7 @@
 # 第 4 轮：全六册例题可视化优化 · 总报告
 
 > 日期：2026-10-24 ｜ 基线提交：`f698a83`（六册 1376 条测试全绿）
-> 执行：Lead + 3 个 agent（`vis-a-g1g2` / `vis-b-g3g4` / `vis-c-g5g6`），统一口径见 [`example-visual-rubric-v4.md`](example-visual-rubric-v4.md)
+> 执行：Lead + 3 个 agent（`vis-a-g1g2` / `vis-b-g3g4` / `vis-c-g5g6`），统一口径见 [`example-visual-rubric-v4.md`](../../example-visual-rubric-v4.md)
 > 逐题记录：`docs/audit/round4/{g1..g6}.json`、客观度量 `docs/round4-metrics.md`
 > 分册报告：[`round4-g1g2.md`](round4-g1g2.md)、[`round4-g3g4.md`](round4-g3g4.md)、[`round4-g5g6.md`](round4-g5g6.md)
 
@@ -19,7 +19,7 @@
 
 | 动作 | 说明 |
 | --- | --- |
-| 统一验收口径 | 先写 [`example-visual-rubric-v4.md`](example-visual-rubric-v4.md)：L0 数学正确性（一票否决）/ L1 教材对齐 / L2 形数同帧与量化标注 / L3 过程可分步 / L4 师用学用价值 / L5 渲染健康，P0–P3 优先级，证据强制项 |
+| 统一验收口径 | 先写 [`example-visual-rubric-v4.md`](../../example-visual-rubric-v4.md)：L0 数学正确性（一票否决）/ L1 教材对齐 / L2 形数同帧与量化标注 / L3 过程可分步 / L4 师用学用价值 / L5 渲染健康，P0–P3 优先级，证据强制项 |
 | 3 agent 分册并行 | A=g1+g2（78+22）、B=g3+g4（41+28）、C=g5+g6（47+33）；端口隔离，写作用域隔离，互不改对方目录 |
 | 反"自证"机制 | Lead 亲自看截图 + 独立跑测试 + 用 **md5 比对 `<id>.png` 与 `<id>-act.png`** 抽查"过程态是不是假的"；agent 的 JSON 里出现"全 pass"时要求降级为 `partial` 并给理由 |
 | 反复横评 | C 复核 A/B 之外的一册时发现"截图脚本只认 20 个固定词"的流程级缺陷，Lead 复核复现后统一修正脚本，并要三册全部重截 |

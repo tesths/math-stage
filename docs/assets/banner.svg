@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="340" viewBox="0 0 1280 340" role="img" aria-label="Math Stage — 小学数学互动学习平台">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#064e3b"/>
+      <stop offset="55%" stop-color="#047857"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="100%" stop-color="#5eead4"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="340" fill="url(#bg)"/>
+  <rect width="1280" height="340" fill="url(#grid)"/>
+
+  <!-- decorative math shapes -->
+  <g opacity="0.9">
+    <circle cx="1085" cy="120" r="74" fill="none" stroke="url(#accent)" stroke-width="3"/>
+    <polygon points="1180,196 1256,196 1218,120" fill="none" stroke="#a7f3d0" stroke-width="3"/>
+    <polygon points="1060,246 1200,246 1160,196 1020,196" fill="#34d399" fill-opacity="0.22" stroke="#6ee7b7" stroke-width="3"/>
+    <line x1="1005" y1="260" x2="1005" y2="215" stroke="#a7f3d0" stroke-width="2" stroke-dasharray="5 5"/>
+  </g>
+
+  <!-- title -->
+  <g font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',system-ui,-apple-system,'Segoe UI',sans-serif">
+    <text x="64" y="118" fill="#ffffff" font-size="52" font-weight="700" letter-spacing="1">小学数学互动学习平台</text>
+    <text x="66" y="166" fill="#a7f3d0" font-size="23" font-weight="600" letter-spacing="4">MATH STAGE · INTERACTIVE PRIMARY MATH</text>
+    <text x="66" y="208" fill="#d1fae5" fill-opacity="0.9" font-size="19">例题可视化 · 可调参数 Lab · 训练小游戏 · 一至六年级</text>
+
+    <!-- chips -->
+    <g font-size="16" font-weight="600">
+      <rect x="66" y="246" width="118" height="34" rx="17" fill="#ffffff" fill-opacity="0.12" stroke="#6ee7b7" stroke-opacity="0.5"/>
+      <text x="125" y="268" fill="#ecfdf5" text-anchor="middle">Nuxt 4</text>
+
+      <rect x="196" y="246" width="104" height="34" rx="17" fill="#ffffff" fill-opacity="0.12" stroke="#6ee7b7" stroke-opacity="0.5"/>
+      <text x="248" y="268" fill="#ecfdf5" text-anchor="middle">Vue 3</text>
+
+      <rect x="312" y="246" width="128" height="34" rx="17" fill="#ffffff" fill-opacity="0.12" stroke="#6ee7b7" stroke-opacity="0.5"/>
+      <text x="376" y="268" fill="#ecfdf5" text-anchor="middle">Nuxt UI</text>
+
+      <rect x="452" y="246" width="168" height="34" rx="17" fill="#ffffff" fill-opacity="0.12" stroke="#6ee7b7" stroke-opacity="0.5"/>
+      <text x="536" y="268" fill="#ecfdf5" text-anchor="middle">TypeScript</text>
+
+      <rect x="632" y="246" width="196" height="34" rx="17" fill="#ffffff" fill-opacity="0.12" stroke="#6ee7b7" stroke-opacity="0.5"/>
+      <text x="730" y="268" fill="#ecfdf5" text-anchor="middle">Cloudflare Pages</text>
+    </g>
+  </g>
+</svg>

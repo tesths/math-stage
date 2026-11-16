@@ -22,7 +22,7 @@ export interface GradeInfo {
   label: string
   /** 应用标题（顶栏 / HTML title） */
   title: string
-  /** 课标版本标签，如 '人教版 · 2022 版课标' */
+  /** 课标版本标签，如 '苏教版 · 2022 版课标' */
   standard: string
   /** 课本全名 */
   book: string

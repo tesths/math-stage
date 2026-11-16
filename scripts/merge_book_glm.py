@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 IMG_TOKEN = re.compile(r"!\[[^\]]*\]\(page=\d+,bbox=[^)]*\)")
 
 BOOKS = {
-    "g1": dict(title="义务教育教科书·数学一年级上册（2022课标·人教版）", offset=-7, toc=[6, 7]),
+    "g1": dict(title="义务教育教科书·数学一年级上册（2022课标·苏教版）", offset=-7, toc=[6, 7]),
     "g2": dict(title="义务教育教科书·数学二年级上册（2022课标·苏教版2025新编）", offset=-8, toc=[7]),
     "g3": dict(title="义务教育教科书·数学三年级上册（2022课标·苏教版）", offset=-8, toc=[7]),
     "g4": dict(title="苏教版数学四年级上册（2026新编）", offset=-3, toc=[3]),

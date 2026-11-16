@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this project in teaching or research, please cite it as below."
+title: "Math Stage: Interactive Primary Math Learning Platform"
+abstract: >-
+  An interactive, parameter-driven math learning site for primary grades 1-6,
+  turning textbook worked examples into manipulable visualization Labs and
+  training mini-games. Built with Nuxt 4, Vue 3 and Nuxt UI, deployed as a
+  single static site on Cloudflare Pages.
+type: software
+authors:
+  - name: "tesths"
+license: MIT
+repository-code: "https://github.com/tesths/math-stage"
+url: "https://github.com/tesths/math-stage"
+keywords:
+  - mathematics
+  - education
+  - primary school
+  - interactive learning
+  - visualization
+  - nuxt
+  - vue

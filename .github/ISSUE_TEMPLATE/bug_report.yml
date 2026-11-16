@@ -1,0 +1,78 @@
+name: 🐞 Bug 报告 / Bug report
+description: 报告一个可复现的错误（页面报错、数学算错、渲染异常等）
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！提交前请先搜索是否已有同类 Issue。
+        Thanks for reporting! Please search existing issues first.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述 / What happened
+      description: 清楚描述发生了什么
+      placeholder: 例如：在五年级「平行四边形的面积」Lab 拖动「高」时，面积数字没有更新。
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为 / Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      placeholder: |
+        1. 打开 ...
+        2. 拖动 ...
+        3. 看到 ...
+    validations:
+      required: true
+
+  - type: input
+    id: page
+    attributes:
+      label: 影响页面 / Affected page
+      description: 年级、单元、Lab id 或路由
+      placeholder: 例如：/g5/labs/g5-c3-area-parallelogram/
+
+  - type: dropdown
+    id: grade
+    attributes:
+      label: 年级 / Grade
+      options:
+        - 门户 portal
+        - 一年级 g1
+        - 二年级 g2
+        - 三年级 g3
+        - 四年级 g4
+        - 五年级 g5
+        - 六年级 g6
+        - shared / 构建脚本
+
+  - type: input
+    id: environment
+    attributes:
+      label: 环境 / Environment
+      placeholder: 例如：macOS 15 / Chrome 131；或 Node 24.19 + npm run build:site:local
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图或日志 / Screenshots or logs
+      description: 可直接拖拽图片，或粘贴控制台报错
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认 / Checklist
+      options:
+        - label: 我已搜索过现有 Issue，没有重复
+          required: true

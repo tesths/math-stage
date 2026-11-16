@@ -1,8 +1,29 @@
 {
   "name": "math-platform",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "小学数学互动学习平台：门户 + 一至六年级单 Pages 聚合构建",
+  "license": "MIT",
+  "author": "tesths",
+  "homepage": "https://github.com/tesths/math-stage#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tesths/math-stage.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tesths/math-stage/issues"
+  },
+  "keywords": [
+    "math",
+    "education",
+    "primary-school",
+    "nuxt",
+    "vue",
+    "visualization",
+    "interactive-learning",
+    "cloudflare-pages"
+  ],
   "engines": {
     "node": ">=24 <25",
     "npm": ">=11"

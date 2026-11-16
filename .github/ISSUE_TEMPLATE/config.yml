@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 开发与部署文档 / Docs
+    url: https://github.com/tesths/math-stage/blob/main/docs/README.md
+    about: 先看开发文档、部署说明与常见问题，可能已有答案。
+  - name: 🔐 安全漏洞 / Security
+    url: https://github.com/tesths/math-stage/security/advisories/new
+    about: 请勿公开提交安全漏洞，使用私密报告渠道。

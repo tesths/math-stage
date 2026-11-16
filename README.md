@@ -1,333 +1,194 @@
-# 义务教育教科书·数学 —— OCR 与例题可视化 / 小游戏
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="Math Stage — 小学数学互动学习平台" width="100%">
+</p>
 
-> 📖 **开发者请看**：完整开发文档 `docs/DEVELOPMENT.md`（架构、数据格式、新增例题/Lab/游戏的标准流程、OCR 管线、测试、单 Cloudflare Pages 部署、排错速查）。
+<h1 align="center">小学数学互动学习平台 · Math Stage</h1>
 
-本仓库包含六个年级的独立工程，以及全平台共享的 `shared/` 设计系统（主样式以五年级为基准，全站统一 emerald）：
+<p align="center">
+  把一至六年级的数学课本例题做成「可拖动参数、实时联动」的互动可视化 Lab 与小游戏。<br>
+  <sub>苏教版 · 2022 版课标 · Nuxt 4 静态站点 · 单 Cloudflare Pages 聚合部署</sub>
+</p>
 
-| 年级 | 课本 | 位置 | 内容 |
-| --- | --- | --- | --- |
-| 共享层 | — | `shared/`（年级注册表/主题令牌/GradeShell 布局/工具函数/runtime adapters） | 新增年级只改 `shared/grades` 一处；存储/音效逻辑在 shared 统一实现 |
-| 门户 | — | `portal/`（Nuxt 静态站）+ 聚合脚本 `scripts/site-build.mjs` | **单 Cloudflare Pages 部署**：`/` 门户、`/g1/` 一年级、`/g2/` 二年级、`/g3/` 三年级、`/g4/` 四年级、`/g5/` 五年级、`/g6/` 六年级（详见文末部署章节） |
-| 一年级（人教版·2022 课标） | 一年级上册扫描 PDF | `g1/data/upper/` + `g1/game/`（下册预留 `g1/data/lower/`） | 78 道例题答题游戏 + 20 个小游戏（详见下） |
-| 二年级（苏教版·2022 课标·2025 新编） | 义务教育教科书•数学二年级上册.pdf | `g2/`（独立文件夹） | **22 个可调参数例题可视化 Lab**（七巧板/算盘/计数器/方向板/人民币等）+ 12 个训练小游戏（详见 `g2/README.md`） |
-| 三年级（苏教版·2022 课标） | 义务教育教科书•数学三年级上册.pdf | `g3/`（独立文件夹） | **41 个可调参数例题可视化 Lab**（24 时记时法钟面、竖式 SVG、曹冲称象、three.js 三视图、线段图等）+ 16 个训练小游戏（详见 `g3/README.md`） |
-| 四年级（苏教版·2022 课标·2026 新编） | 最新【苏教版】4年级数学课本•上册.pdf | `g4/`（独立文件夹） | **28 个可调参数例题可视化 Lab**（除法竖式试商、周长面积、数位表、大数运算等）+ 10 个训练小游戏（详见 `g4/README.md`） |
-| 五年级（苏教版·2022 课标） | 最新【苏教版】5年级数学课本•上册.pdf | `g5/`（独立文件夹） | **33 个可调参数例题可视化 Lab**（three.js 三视图可拖拽、chart.js 统计图、多边形面积剪拼等）+ 10 个训练小游戏（详见 `g5/README.md`） |
-| 六年级（苏教版·2022 课标） | 最新【苏教版】6年级数学课本•上册.pdf | `g6/`（独立文件夹） | **47 个可调参数可视化 Lab**：33 个例题 Lab（小数方格模型、圆/扇形 SVG、线段图、二进制、黄金比等）+ **14 个练习题 Lab**（C1~C7 每单元 2 个，由 DeepSeek 从课本练习题判定生成，详见 `g6/README.md`）+ 12 个训练小游戏 |
+<p align="center">
+  <a href="https://github.com/tesths/math-stage/actions/workflows/ci.yml"><img src="https://github.com/tesths/math-stage/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D24%20%3C25-339933?logo=node.js&logoColor=white" alt="Node">
+  <img src="https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt&logoColor=white" alt="Nuxt 4">
+  <img src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" alt="Vue 3">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+</p>
+
+<p align="center">
+  <b>简体中文</b> · <a href="README.en.md">English</a>
+</p>
 
 ---
 
-# 一年级：例题游戏（人教版上册）
+## 这是什么
 
-将人教版（2022 版课标）一年级上册扫描 PDF，通过 macOS Vision 做图文识别，产出**图文对照的合订正文**；再人工整理为结构化"例题"，在一个 Nuxt4 + Vue3 的互动小游戏网站上以游戏形式呈现。
+**Math Stage** 是一套面向小学一至六年级的互动数学学习站点。它把课本里的每一道例题，从「静态的图 + 文字」重做成**可操作的参数实验室（Lab）**：拖动底、高、半径、时间、单价等参数，图形、公式与计算过程随之实时联动，帮助学生看见「为什么这样算」。
 
-## 目录结构
+项目以**一至六年级 + 门户共 7 个 Nuxt 4 应用**组织，共用一套设计系统，构建时聚合为一个静态产物，用**一个 Cloudflare Pages 项目**即可上线。
 
-```
-math/
-├── README.md                      本文件（维护总入口，含 g1/ 到 g6/ 指引）
-├── shared/                        全平台共享设计系统（主样式 = 五年级 emerald）
-│   ├── grades/index.ts            年级注册表：新增年级只改这里
-│   ├── theme/                     主题令牌 + 统一 CSS 覆盖层 + 共享 Nuxt 配置片段
-│   ├── components/GradeShell.vue  统一布局壳（顶栏年级切换/页脚，由注册表驱动）
-│   ├── utils/                     共享工具函数
-│   ├── runtime/                   localStorage / WebAudio 共享 runtime adapter
-│   └── test/                      独立 vitest（32 用例，覆盖率 100%）
-├── g1/                             一年级（人教版）独立文件夹：
-│   ├── README.md                  一年级上下册目录约定
-│   ├── data/upper/                当前上册例题数据（78 道）
-│   ├── data/lower/                未来下册例题数据占位
-│   ├── ocr/upper/pages/           当前上册 OCR（文字 + 整页图 + 插图）
-│   ├── ocr/upper/book/            当前上册合订 Markdown
-│   ├── ocr/lower/                 未来下册 OCR 占位
-│   └── game/                      一年级 Nuxt4 应用；未来同一应用内挂上下册入口
-├── g2/                             二年级（苏教版上册）独立文件夹：
-│   ├── README.md                  二年级工程说明
-│   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 8）
-│   ├── ocr/upper/book/            上册 GLM 合订正文（上册_正文.md + 目录）
-│   ├── ocr/lower/                 未来下册 OCR 占位
-│   ├── data/upper/                上册 22 个可调参数 Lab 数据
-│   ├── data/lower/                未来下册 Lab 数据占位
-│   ├── game/                      二年级 Nuxt4 应用（Nuxt UI）
-│   └── docs/                      课本 OCR 与页面映射
-├── g3/                             三年级（苏教版上册）独立文件夹：
-│   ├── README.md                  三年级工程说明
-│   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 8，132 页）
-│   ├── ocr/upper/book/            上册 GLM 合订正文
-│   ├── ocr/lower/                 未来下册 OCR 占位
-│   ├── data/upper/                上册 41 个可调参数 Lab 数据
-│   ├── data/lower/                未来下册 Lab 数据占位
-│   ├── game/                      三年级 Nuxt4 应用（Nuxt UI + three.js）
-│   └── docs/                      课本 OCR 与页面映射
-├── g4/                             四年级（苏教版上册）独立文件夹：
-│   ├── README.md                  四年级工程说明
-│   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 3，121 页）
-│   ├── ocr/upper/book/            上册 GLM 合订正文
-│   ├── ocr/lower/                 未来下册 OCR 占位
-│   ├── data/upper/                上册 28 个可调参数 Lab 数据
-│   ├── data/lower/                未来下册 Lab 数据占位
-│   ├── game/                      四年级 Nuxt4 应用（Nuxt UI）
-│   └── docs/                      课本 OCR 与页面映射
-├── g5/                             五年级（苏教版上册）独立文件夹：
-│   ├── README.md                  五年级工程说明
-│   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 2）
-│   ├── ocr/upper/book/            上册 GLM 合订正文
-│   ├── ocr/lower/                 未来下册 OCR 占位
-│   ├── data/upper/                上册 33 个可调参数 Lab 数据
-│   ├── data/lower/                未来下册 Lab 数据占位
-│   ├── game/                      五年级 Nuxt4 应用（Nuxt UI + three.js）
-│   └── docs/                      课本 OCR 与页面映射
-├── g6/                             六年级（苏教版上册）独立文件夹：
-│   ├── README.md                  六年级工程说明
-│   ├── ocr/upper/pages/           上册课本 OCR（书页 = PDF页 - 2）
-│   ├── ocr/upper/book/            上册 GLM 合订正文
-│   ├── ocr/lower/                 未来下册 OCR 占位
-│   ├── data/upper/                上册 47 个可调参数 Lab 数据（33 例题 + 14 练习题）
-│   ├── data/upper/exercises/      练习题候选（candidates.json + briefs/，由抽取脚本生成）
-│   ├── data/lower/                未来下册 Lab 数据占位
-│   ├── game/                      六年级 Nuxt4 应用（Nuxt UI）
-│   └── docs/                      课本 OCR 与页面映射 + 练习题候选清单
-├── （…）·数学一年级上册.pdf        原始扫描 PDF（105 页）
-├── ocr/                           共享 OCR 工具源码（各年级输出到 gX/ocr/{upper,lower}/）
-│   ├── src/ocr.swift              可执行 OCR：文字 + 整页图 + 插图自动裁剪（macOS Vision）
-│   ├── src/ocr_bin                ocr.swift 的编译产物（swiftc -O 生成）
-│   └── src/merge.py               Vision txt/图 → g1 合订 Markdown（GLM 版本见 scripts/merge_book_glm.py）
-├── work/glm_ocr/                  GLM-OCR 批处理产物（不入库）：每页 pNNN.json + pNNN.md
-├── scripts/
-│   ├── site-build.mjs       单 Pages 聚合构建脚本（六个年级 Nuxt 应用 + 门户）
-│   ├── app-registry.mjs     聚合构建/验收共享应用注册表（六个年级 + 门户）
-│   ├── prepare-nuxt.mjs     全应用 Nuxt prepare（清理代理变量，支持 Node 24）
-│   ├── run-app-script.mjs   根层运行单个应用脚本（generate:g1 等）
-│   ├── test-shared.mjs      共享层测试（npm run test:shared）
-│   ├── real-click-test.mjs  真实点击验收（npm run test:click，46 项）
-│   ├── verify_examples.py   一年级例题 ↔ Vision OCR 机器核对（STRONG/MEDIUM/FIG 三级证据）
-│   ├── glm_ocr_math.py      六本全量 GLM-OCR 批处理（729 页 → work/glm_ocr/）
-│   ├── verify_glm_examples.py 六本例题 ↔ GLM OCR 全量核对（→ docs/example-audit-glm.md）
-│   ├── merge_book_glm.py    用 GLM 文字重建六本合订正文 gX/ocr/upper/book/
-│   ├── extract_g6_exercises.py 六年级练习题抽取（合订正文 → candidates.json + briefs + 候选清单，供可视化适配度判定）
-│   ├── gen_concept_list.mjs  生成《五六年级例题重点概念清单》（逐题：书页/题源/参数/重点概念）
-│   └── visual-shots.mjs     例题可视化批量截图回归（初始态 + 过程态，控制台报错落 notes）
-└── docs/                          其他文档
-    ├── example-audit.md           一年级例题逐条核对报告（Vision OCR，含需看图复核清单）
-    ├── example-audit-glm.md       六本例题 ↔ GLM OCR 全量核对报告（2026-08，含 FIG 复核结论与数据修正记录）
-    ├── example-visual-review.md   六册逐题可视化 review（截图 + 问题 + 改进方案 + 优先级）
-    ├── example-visual-improvements.md 五、六年级逐题改进记录（本轮：改了什么、数学错在哪、怎么验证）
-    ├── research/                  数学例题可视化调研（国内实践 / 国际平台与前端实现）
-    │   └── 五六年级例题重点概念清单.md 逐题「这道例题要建立什么概念」（含单元教材意图/教案环节/常见误区）
-    ├── audit/                     g6 逐 Lab 数学审查报告（含坐标复算与行号证据）
-    └── 游戏形式调研.md            20 个小游戏的课本出处/玩法设计调研
-```
+- 🧮 **171 个可调参数可视化 Lab**（二至六年级）+ 一年级 78 道例题答题游戏
+- 🎮 **80 个训练小游戏**，随机出题、反复练习
+- 📐 覆盖数与代数、图形与几何、统计与概率、综合实践等主要单元
+- 📱 纯静态、全预渲染、移动端可用，无后端依赖
 
-### 例题可视化改进闭环（五年级 / 六年级）
+## ✨ 功能特性
 
-调研 → 逐题审查 → 纯几何 + 单元测试 → 组件改造 → 截图回归，四步都留证据：
+| 能力 | 说明 |
+| --- | --- |
+| 参数化可视化 | 每个 Lab 用滑块 / 选项驱动 SVG、Canvas、three.js 场景，图形与算式同步变化 |
+| 分步思考 | 每道例题给出「先想一想 → 再看提示」的分步推导与结论，服务于课堂讲解 |
+| 教材对齐 | 逐题标注课本页码与题源（例题 / 练一练 / 练习 / 活动），可核对到原书 |
+| 训练小游戏 | 按单元组织的随机练习，覆盖口算、竖式、单位换算、图形辨认等 |
+| 无障碍与响应式 | 移动端适配、键盘可用、色彩令牌统一，离线不依赖外部字体 |
+| 一键部署 | 单仓库、单构建、单 Pages 项目，`npm run build:site` 产出 `deploy/` |
 
-```bash
-# 1) 单元测试（含剪拼/旋转/反射/滚圆/等分几何与十进制安全四舍五入的断言）
-cd g5/game && npx vitest run && npx vue-tsc --noEmit
-cd g6/game && npx vitest run && npx vue-tsc --noEmit
+## 🎓 各年级内容
 
-# 2) 截图回归：<id>.png 为初始态，<id>-act.png 为点击「剪一剪/拼一拼/数方格/对折/滚一周」后的过程态
-cd g5/game && PORT=3105 npx nuxt dev --port 3105 &
-node scripts/visual-shots.mjs --base http://localhost:3105 --grade g5 --all-labs
-cd g6/game && PORT=3106 npx nuxt dev --port 3106 &
-node scripts/visual-shots.mjs --base http://localhost:3106 --grade g6 --all-labs
-```
-
-逐题改动清单与证据见 [`docs/example-visual-improvements.md`](docs/example-visual-improvements.md)。
-
-## OCR 管线（文字 + 图片）
-
-命令行：`swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin && ./ocr/src/ocr_bin "<pdf>" 1 105 "g1/ocr/upper/pages"`
-
-每页输出三样产物：
-
-| 产物 | 来源 | 用途 |
+| 年级 | 教材（2022 版课标） | 互动内容 |
 | --- | --- | --- |
-| `g1/ocr/upper/pages/pNNN.txt` | Vision `VNRecognizeTextRequest`（zh-Hans + en-US，`.accurate`） | 纯文字提取 |
-| `g1/ocr/upper/pages/pNNN.jpg` | 页面 PDFKit 2.0x 渲染 → JPEG(0.85) | 整页原图（图文对照） |
-| `g1/ocr/upper/pages/pNNN-N.jpg` | 网格瓦片聚簇自动裁出"非文本 + 非纯白"区域 | 插图/示意图片段 |
+| 一年级 | 苏教版 · 上册 | 9 单元 · **78 道例题答题游戏** + **20 个课本主题小游戏**（数一数 / 加减法 / 图形 / 位置…） |
+| 二年级 | 苏教版 · 2025 新编 | **22 个可视化 Lab**（表内乘除法 / 七巧板 / 算盘 / 计数器 / 方向 / 人民币…）+ **12 个游戏** |
+| 三年级 | 苏教版 · 上册 | **41 个 Lab**（24 时记时法 / 竖式 / 曹冲称象 / three.js 三视图 / 线段图…）+ **16 个游戏** |
+| 四年级 | 苏教版 · 上册 | **28 个 Lab**（除法竖式试商 / 周长面积 / 数位表 / 大数运算…）+ **10 个游戏** |
+| 五年级 | 苏教版 · 上册 | **33 个 Lab**（three.js 三视图 / Chart.js 统计图 / 多边形面积剪拼…）+ **10 个游戏** |
+| 六年级 | 苏教版 · 上册 | **47 个 Lab**（33 例题 + 14 练习题：小数方格模型 / 圆与扇形 / 二进制 / 黄金比…）+ **12 个游戏** |
 
-插图识别启发式：页面按 6×5 网格分瓦片，某瓦片"文字覆盖率 ≤55% 且采样子像素非白占比 ≥10%"则标为插图候选，8-连通聚簇为矩形；要求面积 ≥ 2×2 瓦片、≤整页 75%（更大即整页，避免与整页图重复）。
+> 各年级详细说明见 [`g1/README.md`](g1/README.md) ~ [`g6/README.md`](g6/README.md)。
 
-然后 `python3 ocr/src/merge.py` 生成合订 `g1/ocr/upper/book/上册_正文.md`：每页即"标题 → 整页图 → OCR 文字 → 插图片段"，共嵌入 182 张图（105 整页 + 77 插图）。
+## 🖼️ 界面预览
 
-### GLM-OCR 强化识别（六本全量）
+<table>
+  <tr>
+    <td align="center"><img src="docs/assets/screenshot-g1-count.png" width="420"><br><sub>一年级 · 数一数答题游戏</sub></td>
+    <td align="center"><img src="docs/assets/screenshot-g5-area.png" width="420"><br><sub>五年级 · 平行四边形面积（剪拼）</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/assets/screenshot-g5-views3d.png" width="420"><br><sub>五年级 · three.js 三视图</sub></td>
+    <td align="center"><img src="docs/assets/screenshot-g6-circle.png" width="420"><br><sub>六年级 · 圆的面积（剪拼成长方形）</sub></td>
+  </tr>
+</table>
 
-2026-08 在 Vision OCR 之上，用智谱 GLM-OCR（`layout_parsing` + `glm-ocr` 模型）对六本课本逐页做版面感知识别（共 729 页），小号/嵌图文字质量显著优于 Vision。
+## 🧭 仓库结构
 
-- 批处理：`scripts/glm_ocr_math.py`（key 从环境变量 `ZHIPU_API_KEY` 读取，不落盘）。
-  遍历 `gX/ocr/upper/pages/pNNN.jpg` → `work/glm_ocr/<年级>/pNNN.json|md`（原始响应 +
-  `md_results`）；断点续跑、失败清单、`summary.json`，遇"欠费/401"即停。
-- 例题核对：`scripts/verify_glm_examples.py` 按书页偏移（g1 -7 / g2、g3 -8 / g4 -3 /
-  g5、g6 -2）对每年级每条例题在对应书页 GLM 文字中查印刷证据（g1 复用 11 种题型逻辑；
-  g2-g6 提取关键数字与关键词），三级结论见 `docs/example-audit-glm.md`。
-- 合订正文：`scripts/merge_book_glm.py` 用 GLM 文字重建六本
-  `gX/ocr/upper/book/上册_正文.md`（+`上册_目录.md`），保留整页图与插图裁剪。
-- 产物不入库（`.gitignore` 含 `work/`）；GLM 漏读的嵌入小字以 Vision OCR 交叉验证兜底。
+```text
+math-stage/
+├── README.md / README.en.md   中英文说明（本文件）
+├── LICENSE / NOTICE           MIT 许可证 / 教材版权声明
+├── docs/                      文档中心（索引见 docs/README.md）
+├── shared/                    全平台共享设计系统（年级注册表 / 主题令牌 / GradeShell / 工具）
+├── portal/                    门户首页（Nuxt 4）
+├── g1/ … g6/                  各年级独立工程
+│   ├── data/{upper,lower}/    结构化例题 / Lab 数据
+│   ├── ocr/{upper,lower}/     课本 OCR（文字 + 整页图 + 插图）
+│   └── game/                  Nuxt 4 应用
+├── scripts/                   聚合构建、OCR、核对、截图回归等脚本
+└── package.json               根 workspace（Node 24 + npm workspaces）
+```
 
-### 页面映射约定
+各年级保持独立工程边界，依赖与构建入口统一收敛到仓库根，只维护一份 `package-lock.json`。
 
-- 书页页码 = PDF 页码 - 7（书页 1 = PDF p8）。
-- 前页：p1 封面 / p2 书名 / p3 版权 / p4 致同学 / p5 空白 / p6-7 目录。
-- 后页：p102-103 附页卡片 / p104 后记 / p105 空白。
-- 空白页 p005 / p007 / p105 → 无文字、跳过插图。
+## 🛠 技术栈
 
-## 例题数据
+- **框架**：Nuxt 4（`srcDir: src/`）+ Vue 3 + vue-router
+- **UI**：Nuxt UI v4，主色统一为 emerald，离线字体 + 本地图标集
+- **可视化**：three.js（三视图 / 3D 场景）、Chart.js（统计图）、Anime.js v4（动画）、SVG 自绘、jsxgraph（备用）
+- **质量**：Vitest（单元 / 组件）+ Playwright（E2E）+ `vue-tsc` 类型检查
+- **部署**：Nitro `cloudflare-pages` preset，聚合静态导出
+- **运行环境**：Node 24（见 `.nvmrc` / `.node-version`）、npm ≥ 11 workspace
 
-`g1/data/upper/` 以 TS 类型 + 运行时校验器（`validate.ts`）保证结构正确，共 78 道，覆盖
-11 类题型：count / write / split / addsub / compare / position / ordinal /
-shape3d / numberline / sequence / ten。位置判定规则：左/上/前取前一项，否则取后一项。
+## 🚀 快速开始
 
-分类字段：
-- `source`（题源小节）：例题 36 / 想想做做 14 / 练习 14 / 活动 10 / 试一试 4；
-  单元列表与答题卡显示该标签，区分课本"主情景例题"与"习题改编"。
-- `tocLabel`（课本目录序号）：一~五，仅五个编号单元有；游戏/活动单元为空，
-  首页与单元页按课本目录样式显示。
-
-新增一道例题 = 在对应 `g1/data/upper/chapters/cN.ts` 加一条符合 `schema/example.ts` 的记录并保证通过校验器。
-
-**例题准确性（机器核对）**：源码 `scripts/verify_examples.py` 对每条例题在该题
-标注书页的 OCR 文字中查"印刷证据"，三级结论：STRONG 64（算式/不等式/填空/关键数
-与课本印刷一致）、MEDIUM 9（故事题/文字题可在该页印证）、FIG 5（仅图内数量，全在
-第 1 单元，需人工看图）。跨课本逐条对照见 `docs/example-audit.md`。
-
-**GLM 全量核对（2026-08）**：`scripts/verify_glm_examples.py` 以 GLM OCR 文字对六本
-235 条例题全量核对：STRONG 200 / MEDIUM 27 / FIG 8（图内内容类，人工复核全部确认）。
-核对发现并修正 2 处数据：`g4-c3-peri-area-change` 页码 42→43、`g3-c10-segment-more`
-篮球基数 25→50。完整报告与 FIG 复核结论见 `docs/example-audit-glm.md`。
-
-## 测试与构建
-
-`g1/game/` 目录内：
+前置要求：**Node 24**（`>=24 <25`）、**npm ≥ 11**。仓库根开启了 `engine-strict`，版本不符会直接报错。
 
 ```bash
-npm run test          # vitest（单元 + 组件），311 用例全绿
-npm run test:coverage # 覆盖率（statements 100% / branches 99.8% / lines 100% / functions 100%）
-npm run test:e2e      # Playwright 34 个 E2E（含 20 个小游戏页矩阵，构建产物运行）
-npm run dev           # 开发（PORT 3000）
-npm run build | nuxt build
-npm run generate      # 静态导出 .output/public（含 units/、play/、games/ 全部路由）
+# 1) 克隆并安装（依赖只在仓库根安装一次）
+git clone https://github.com/tesths/math-stage.git
+cd math-stage
+npm ci --ignore-scripts
+
+# 2) 本地开发某一个年级（以五年级为例）
+npm run dev --workspace math-game-g5
+# 或：cd g5/game && npm run dev
+
+# 3) 构建并预览完整站点（门户 + 六个年级 → deploy/）
+npm run build:site:local
+npx serve deploy          # 打开 http://localhost:3000
 ```
 
-共享层（`shared/`）、二/三/五年级与六年级测试：
+> 若 npm 安装需要代理，安装时临时设置 `HTTP_PROXY` / `HTTPS_PROXY` 即可；`prepare` / `generate`
+> 脚本会自动清理代理变量，避免 `socks5h://` 被 Undici 误读。
+
+## 🧪 测试与校验
 
 ```bash
-npm install          # 仓库根：Node 24 + npm workspace 单一依赖树
-npm run typecheck    # 仓库根：先 prepare 七个 Nuxt 应用，再跑全部 typecheck
-npm run test:shared    # 仓库根：共享层 32 用例（覆盖率 100%）
-npm run test:shared:coverage
-npm run test:click     # 仓库根：真实点击验收 46 项（需先 npm run build:site:local）
-cd g2/game && npm run test          # 二年级单元 + 组件用例全绿
-cd g2/game && npm run test:coverage # 二年级四指标均 ≥95%
-cd g3/game && npm run test          # 三年级 112 用例全绿
-cd g3/game && npm run test:e2e      # 三年级 Playwright 6 用例
-cd g4/game && npm run test          # 四年级 121 用例全绿
-cd g4/game && npm run test:coverage # 四年级 statements/lines/functions 100%，branches ≥95%
-cd g4/game && npm run test:e2e      # 四年级 Playwright 6 用例
-cd g5/game && npm run test          # 五年级 105 用例全绿
-cd g5/game && npm run test:coverage # 五年级四指标均 ≥95%（99.6/96/95/99.6）
-cd g6/game && npm run test          # 六年级 196 用例全绿
-cd g6/game && npm run test:coverage # 六年级 statements/lines/functions 100%、branches 98.99%
+npm run typecheck       # 先 prepare 七个 Nuxt 应用，再全量类型检查
+npm run test:unit       # 全部 workspace 单元 / 组件测试
+npm run test:shared     # 共享层测试（覆盖率 100%）
+npm run test:coverage   # 覆盖率汇总
+
+# 单年级
+cd g5/game && npm run test && npm run test:coverage
+cd g5/game && npm run test:e2e
+
+# 部署后验收（需先 npm run build:site:local）
+npm run test:click      # 真实点击验收
+node scripts/link-audit.mjs --live   # 线上全站链接审计
 ```
 
-Node 约定：开发基线为 Node 24（见 `.nvmrc` / `.node-version`），依赖版本由仓库根 `package.json` + 根 `package-lock.json` 统一管理；各年级目录保留独立工程结构，但不再维护各自 lockfile。
-如 npm 联网需要代理，可在安装时设置代理变量；Nuxt 本地 `prepare` / `generate` 由脚本自动清理代理变量，避免 `socks5h://` 被 Undici 误读。
+## 📦 部署
 
-已知约定（极易踩坑）：
-- `test/nuxt/`（`@vitest-environment nuxt`）页面测试在本工程环境本就无法初始化
-  （最小 smoke 同样失败），`npm run test` 不含它们；页面由 Playwright e2e 覆盖，
-  不要尝试单独启用。
-- 覆盖率分支统计对 `??`/`||`/可选链判空等防御分支零容忍：组件内禁止
-  出现测试覆盖不到的空值兜底，用 `!`/索引断言（`deck.value[a]!`）替代
-  `?? 0`/`?.x ?? 0`，否则会拉低 branches 阈值。
-- emoji 数量统计必须用 `visibleUnits()/countUnits()`（剥变体选择符），否则 ⛹=2 码会数错。
-- animejs v4 无 default 导出，用 `import { animate }`。
-- Nuxt UI v4 的 `ui.fonts` 需显式置 `false`（离线环境不拉 Google Fonts），
-  自定义图标须安装 `@iconify-json/heroicons`、`@iconify-json/lucide` 并开启
-  `icon.clientBundle.scan`，否则 SSR 运行时图标无法解析。
-- Nuxt UI v4 必须显式提供 CSS 入口；本仓库由 `shared/theme/app.css` 统一注入
-  `@import "tailwindcss"; @import "@nuxt/ui";`，缺失时全站无任何样式。
-- Nuxt 4 中 `appConfig` 是**顶层配置键**（写在 `app:` 下会静默失效），
-  UI 主题色在 `nuxt.config.ts` 顶层 `appConfig.ui.colors.primary`。
-- 游戏组件样式统一使用 Nuxt UI 设计令牌（`--ui-primary`、`--ui-bg-*`、
-  `--ui-border-*`、`--ui-text-*`、`--ui-radius-*`、`--ui-color-{color}-{shade}`），
-  禁止硬编码色值；文本淡化统一用 `text-(--ui-text-muted)`（`--ui-muted` 不是有效令牌）。
-- 游戏组件自带答题反馈浮层，页面层不要再叠加 FeedbackOverlay。
-- 小游戏引擎/组件新增时必须同步：`src/lib/arcade/registry.ts` 注册路由 slug、
-  组件级 vitest 测试、`e2e/games.spec.ts` 矩阵 [slug, 根类, 交互类] 三条，否则 E2E 漏覆盖。
-- 游戏元数据 `src/lib/arcade/index.ts` 的 `chapters` 字段标注适用单元（c1~c9），
-  驱动首页按单元分组和 `/games` 卡片徽章；增删游戏务必同步该字段与 `unitNoOf()` 测试
-  （`test/unit/arcade/games.test.ts` 最后一组 describe），缺口会让首页分组/徽章失真。
+一个 GitHub 仓库、**一个** Cloudflare Pages 项目：门户在 `/`，一年级到六年级在 `/g1/` ~ `/g6/`。
 
-## 单 Cloudflare Pages 部署（门户 + 一/二/三/四/五/六年级）
+| 配置项 | 值 |
+| --- | --- |
+| 构建命令 | `npm run build:site` |
+| 构建输出目录 | `deploy` |
+| 框架预设 | None |
 
-一个 GitHub 仓库、**一个** Cloudflare Pages 项目，门户在 `/`、一年级在 `/g1/`、二年级在 `/g2/`、三年级在 `/g3/`、四年级在 `/g4/`、五年级在 `/g5/`、六年级在 `/g6/`。
-各年级仍是独立 Nuxt 工程（管理上分开），构建时聚合为一个产物 `deploy/`。
+推送 `main` 即自动构建。完整面板操作、参数详解与排错见 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)。
 
-```
-部署产物 deploy/
-├── index.html    门户（portal/，链接 ./g1/、./g2/、./g3/、./g4/、./g5/ 与 ./g6/）
-├── g1/           一年级（g1/game/，BASE_URL=/g1/ 静态导出，111 页）
-├── g2/           二年级（g2/game/，BASE_URL=/g2/ 静态导出）
-├── g3/           三年级（g3/game/，BASE_URL=/g3/ 静态导出，73 页）
-├── g4/           四年级（g4/game/，BASE_URL=/g4/ 静态导出，51 页）
-├── g5/           五年级（g5/game/，BASE_URL=/g5/ 静态导出，55 页）
-├── g6/           六年级（g6/game/，BASE_URL=/g6/ 静态导出，56 页）
-└── _redirects    仅注释；真实页面全部预渲染，禁止 SPA 200 重写
-```
+## 📚 文档
 
-### 本地构建与预览
+完整文档放在 [`docs/`](docs/)，入口为 [`docs/README.md`](docs/README.md)。常用几篇：
 
-```bash
-npm run build:site:local   # 聚合构建（复用根 node_modules，跳过 npm ci）
-npx serve deploy           # 或 cd deploy && python3 -m http.server 4100
-```
+| 文档 | 内容 |
+| --- | --- |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | 架构、数据格式、新增 Lab / 游戏 / 年级的标准流程、OCR 管线、测试、排错速查 |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | 单 Cloudflare Pages 部署详解、参数全景表、部署后核对清单 |
+| [`docs/example-audit-glm.md`](docs/example-audit-glm.md) | 六册 235 条例题 ↔ GLM-OCR 全量核对报告 |
+| [`docs/example-visual-review.md`](docs/example-visual-review.md) | 六册逐题可视化 review（截图 + 问题 + 改进方案 + 优先级） |
+| [`docs/example-visual-improvements.md`](docs/example-visual-improvements.md) | 五、六年级逐题改进记录（改了什么、错在哪、怎么验证） |
 
-GitHub Actions 使用 Node 24 + npm 12，按根 workspace 顺序执行 `npm ci --ignore-scripts`、`npm run typecheck`、`npm run test:unit`、`npm run build:site:local`。
+## 🤝 参与贡献
 
-### Cloudflare Pages 配置（一次）
+欢迎 Issue、PR 与教学建议！请先阅读：
 
-1. 把本仓库推送到 GitHub。
-2. Cloudflare Dashboard → Workers & Pages → Create → **Pages → Connect to Git**，选本仓库。
-3. 构建设置：
-   | 项 | 值 |
-   | --- | --- |
-   | 框架预设 | None |
-   | 构建命令 | `npm run build:site`（根目录执行一次 `npm ci --ignore-scripts`，再并发生成 g1/game/、g2/game/、g3/game/、g4/game/、g5/game/、g6/game/、portal/） |
-   | 构建输出目录 | `deploy` |
-4. 保存并部署。以后推送 `main` 分支即自动构建。
+- [贡献指南 CONTRIBUTING.md](CONTRIBUTING.md) —— 开发环境、分支与提交规范、如何新增一道例题 / 一个 Lab / 一个小游戏
+- [行为准则 CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [安全策略 SECURITY.md](SECURITY.md)
+- 变更记录见 [CHANGELOG.md](CHANGELOG.md)
 
-> 依赖安装已经集中到根 workspace；本地冷安装验证约 15 秒量级，Cloudflare 缓存命中后只需复用根 lockfile。
-> 年级构建默认并发 2，可用 `SITE_BUILD_CONCURRENCY=1` 降低内存压力。
+**适合上手的贡献**：补充例题的「重点概念」文案、修正图示细节、新增训练小游戏、改进无障碍与移动端体验、完善文档与英文翻译。
 
-> ⚠️ **Node/npm 版本（务必保持）**：根 `.npmrc` 为 `engine-strict`，`engines` 必须保持
-> `node >=24 <25`、`npm >=11`（Cloudflare 自带 node 24.13.1 + npm 11.8.0）。
-> **根 `package.json` 禁止添加 `packageManager` 字段**（npm 11 会因此切换执行 npm@12 → EBADENGINE 构建失败，2026-08 线上事故）。
-> 详见 `docs/DEPLOYMENT.md` §4.2 与 `docs/DEVELOPMENT.md` §13 排错速查。
+## ⚖️ 许可证与版权声明
 
-### 部署后验证
+- **源代码**以 [MIT License](LICENSE) 授权，Copyright © 2026 tesths。
+- **教材内容**（课本扫描件、OCR 文字、合订正文、由例题整理的数据）版权归原作者 / 出版社所有，
+  **不在 MIT 授权范围内**，仅用于教学研究与学习交流，不得商用或再分发。详见 [NOTICE](NOTICE)。
 
-```bash
-node scripts/link-audit.mjs        # 本地产物全量链接审计（期望 ✅ 无断链）
-node scripts/link-audit.mjs --live # 浏览器级爬取线上全站逐页核对（部署完成后必跑）
-npm run test:click                 # 真实点击验收 46 项（需先 npm run build:site:local）
-```
+> 本项目与任何出版社无隶属关系；例题内容仅作教学演示。若版权方有异议，请通过 Issue 联系，我们会及时处理。
 
-### 新增年级（三年级等）
+## 🙏 致谢
 
-1. 新建独立 Nuxt 工程（如 `g3/`，管理上独立），复制现有 nuxt.config 骨架（引入 `sharedNuxtConfig`）。
-2. **`shared/grades/index.ts` 加一条 `GradeInfo` 记录**——门户卡片、顶栏切换、页脚文案自动生成。
-3. `scripts/app-registry.mjs` 加一项应用记录；`scripts/site-build.mjs`、门户验收脚本会自动复用。
+- 框架与组件：[Nuxt](https://nuxt.com)、[Vue](https://vuejs.org)、[Nuxt UI](https://ui.nuxt.com)
+- 可视化库：[three.js](https://threejs.org)、[Chart.js](https://www.chartjs.org)、[Anime.js](https://animejs.com)、[jsxgraph](https://jsxgraph.org)
+- README 与开源规范参考了 [KaTeX](https://github.com/KaTeX/KaTeX)、[Manim](https://github.com/3b1b/manim)、[Nuxt](https://github.com/nuxt/nuxt) 的写法，以及 [Contributor Covenant](https://www.contributor-covenant.org/)、[Keep a Changelog](https://keepachangelog.com/)、[Choose a License](https://choosealicense.com/) 等社区约定
 
-## 维护提示
+---
 
-- 改 OCR/数据后顺序：改产物 → `ocr/src/merge.py` 重生成 md → 抽查
-  `g1/ocr/upper/book/上册_正文.md`；数据改动跑 `npm run test`，游戏改动补跑 E2E。
-- 例题准确性回归：增改例题后跑 `python3 scripts/verify_examples.py`
-  （STRONG/MEDIUM/FIG 三级证据），并同步 `docs/example-audit.md`。
-- 六年级练习题可视化：候选由 `python3 scripts/extract_g6_exercises.py` 从 GLM 合订正文重建
-  （→ `g6/data/upper/exercises/candidates.json` + `briefs/cN.md` + `g6/docs/练习题候选清单.md`）；
-  增删练习题 Lab 见 `g6/README.md`「新增一个练习题 Lab」，并同步 `docs/DEVELOPMENT.md` §7.2.1 清单。
-- 运行预览：`g1/game/` 内 `npm run dev`（PORT 3000），或 `npm run build` 后
-  `PORT=3000 node .output/server/index.mjs`。
+<p align="center"><sub>如果这个项目对教学有帮助，欢迎点一个 ⭐ Star。</sub></p>
