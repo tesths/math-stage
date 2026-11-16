@@ -25,6 +25,11 @@
 
 ---
 
+> [!NOTE]
+> **Project status**: This project is still a work in progress. Much of the content was produced with AI
+> assistance and still needs ongoing maintenance and refinement. We open-sourced it in the hope that it
+> helps teachers with lesson preparation and classroom demonstrations — contributions and fixes are welcome.
+
 ## What is this?
 
 **Math Stage** is an interactive math learning site for grades 1–6. It reworks each textbook worked example from a *static figure + text* into a **parameter-driven lab**: drag the base, height, radius, time, price and other parameters, and the figure, formula and computation update in real time — so students can see *why* a method works.
@@ -52,7 +57,7 @@ The project is organised as **seven Nuxt 4 apps** (grades 1–6 plus a portal) t
 | Grade | Textbook (2022 standards) | Interactive content |
 | --- | --- | --- |
 | Grade 1 | Jiangsu Phoenix · Vol. 1 | 9 units · **78 answer-game examples** + **20 textbook-themed mini-games** |
-| Grade 2 | Jiangsu Phoenix · 2025 edition | **22 Labs** (multiplication tables, tangram, abacus, place value, directions, RMB…) + **12 games** |
+| Grade 2 | Jiangsu Phoenix · 2025 edition · Vol. 1 | **22 Labs** (multiplication tables, tangram, abacus, place value, directions, RMB…) + **12 games** |
 | Grade 3 | Jiangsu Phoenix · Vol. 1 | **41 Labs** (24-hour clock, written methods, three-view via three.js, segment diagrams…) + **16 games** |
 | Grade 4 | Jiangsu Phoenix · Vol. 1 | **28 Labs** (long-division trial quotient, perimeter & area, place-value chart, large numbers…) + **10 games** |
 | Grade 5 | Jiangsu Phoenix · Vol. 1 | **33 Labs** (three-view, Chart.js statistics, polygon-area dissection…) + **10 games** |
