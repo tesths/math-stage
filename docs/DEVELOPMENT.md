@@ -74,6 +74,11 @@ vitest 侧需用 `#components` 桩（`shared/test/stubs/components.ts`）。为�
 | 五年级 | 苏教版（2022 课标） | `最新【苏教版】5年级数学课本•上册.pdf` | 131 | 书页 = PDF页 - 2 |
 | 六年级 | 苏教版（2022 课标） | `最新【苏教版】6年级数学课本•上册.pdf` | 120 | 书页 = PDF页 - 2 |
 
+> 教材 PDF **未随仓库分发**。原始电子版来自国家中小学智慧教育平台
+> <https://basic.smartedu.cn/elecEdu>，可用开源工具
+> [tchMaterial-parser](https://github.com/happycola233/tchMaterial-parser) 下载后，
+> 按 [`docs/OCR.md`](OCR.md) 重新生成整页图与 OCR 产物。
+
 ---
 
 ## 2. 仓库结构

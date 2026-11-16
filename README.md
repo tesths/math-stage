@@ -64,6 +64,15 @@
 
 > 各年级详细说明见 [`g1/README.md`](g1/README.md) ~ [`g6/README.md`](g6/README.md)。
 
+## 📚 教材来源与获取
+
+本项目**不随仓库分发教材 PDF**（版权归原出版方，且体积较大）。课本原始电子版来自**国家中小学智慧教育平台**：
+
+- 平台：[https://basic.smartedu.cn/elecEdu](https://basic.smartedu.cn/elecEdu)
+- 下载工具：推荐开源项目 **[tchMaterial-parser](https://github.com/happycola233/tchMaterial-parser)**（MIT，跨平台），可解析并批量下载平台电子课本 PDF，自动命名、自动加书签。
+
+拿到 PDF 后，放到仓库根目录（或任意路径），再按 [`docs/OCR.md`](docs/OCR.md) 的脚本重新生成整页图、OCR 文本与合订正文。教材内容的版权与使用限制见 [`NOTICE`](NOTICE)。
+
 ## 🖼️ 界面预览
 
 <table>

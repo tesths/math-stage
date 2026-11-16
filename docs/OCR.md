@@ -115,4 +115,6 @@ python3 scripts/verify_glm_examples.py          # 重新生成 docs/example-audi
 - **代码**（`ocr/src/*.swift|py`、`scripts/glm_ocr_math.py`、`scripts/merge_book_glm.py`、`scripts/verify_*.py`）：MIT。
 - **OCR 文本与合订正文**（`gX/ocr/**/*.txt|md`）：由教材扫描件识别而来，著作权归原出版方，**不属于 MIT 授权**，仅供教学研究，不得商用或再分发，详见 [NOTICE](../NOTICE)。
 - **教材 PDF、整页图/插图、GLM 原始响应**：不入库，由使用者自备 PDF 并通过上述脚本自行生成。
+  课本原始电子版可从**国家中小学智慧教育平台**（<https://basic.smartedu.cn/elecEdu>）获取，
+  推荐使用开源下载工具 [tchMaterial-parser](https://github.com/happycola233/tchMaterial-parser)（MIT）。
 - 预编译二进制 `ocr/src/ocr_bin` 仅适用于 arm64 macOS，**不再纳入版本库**；请按第 3 节自行编译。

@@ -65,6 +65,15 @@ The project is organised as **seven Nuxt 4 apps** (grades 1–6 plus a portal) t
 
 > See [`g1/README.md`](g1/README.md) … [`g6/README.md`](g6/README.md) for per-grade details (Chinese).
 
+## 📚 Textbook sources & obtaining
+
+This repo does **not** redistribute textbook PDFs (copyright and size). The original e-textbooks come from the **National Smart Education Platform for Primary and Secondary Schools**:
+
+- Platform: [https://basic.smartedu.cn/elecEdu](https://basic.smartedu.cn/elecEdu)
+- Downloader: the open-source **[tchMaterial-parser](https://github.com/happycola233/tchMaterial-parser)** (MIT, cross-platform) parses and batch-downloads textbook PDFs from the platform, with automatic naming and bookmarks.
+
+After obtaining the PDFs, place them at the repo root (or any path) and follow [`docs/OCR.md`](docs/OCR.md) to regenerate page images, OCR text and merged volumes. See [`NOTICE`](NOTICE) for textbook copyright and usage restrictions.
+
 ## 🖼️ Screenshots
 
 <table>

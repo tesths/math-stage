@@ -12,14 +12,17 @@ Copyright (c) 2026 tesths
 
 2. 教材内容与衍生素材（Textbook content and derived materials）
    ------------------------------------------------------------------
-   以下内容源自中国人民教育出版社 / 江苏凤凰教育出版社出版、依据《义务教育
-   数学课程标准（2022 年版）》编写的现行小学数学教科书，其著作权归原出版方
-   及编写者所有：
+   以下内容源自江苏凤凰教育出版社出版、依据《义务教育数学课程标准（2022 年版）》
+   编写的现行小学数学教科书，其著作权归原出版方及编写者所有：
 
-   - 各年级课本扫描件（*.pdf，仅本地使用，未纳入版本库）
+   - 各年级课本扫描件（*.pdf，未纳入版本库）
    - OCR 识别文字（gX/ocr/**/pages/*.txt）
    - 合订正文与目录（gX/ocr/**/book/*.md）
    - 由课本例题、练习题整理而来的结构化数据与可视化参数（gX/data/**）
+
+   课本原始电子版来源于国家中小学智慧教育平台（https://basic.smartedu.cn/elecEdu），
+   可使用开源工具 tchMaterial-parser
+   （https://github.com/happycola233/tchMaterial-parser）下载；本仓库不随附 PDF 文件。
 
    上述内容仅用于教学研究、技术演示与学习交流，**不随本仓库的 MIT 许可证
    授权**，不得用于任何商业用途或再分发。若你是教材版权方并认为本仓库的
@@ -34,9 +37,12 @@ English summary
 --------------------------------------------------------------------
 The source code in this repository is licensed under the MIT License (see
 LICENSE). Textbook scans, their OCR text, the merged book Markdown, and the
-example/exercise data derived from the textbooks (PEP / Jiangsu Phoenix
-Education Press, 2022 curriculum standards) remain the copyright of their
-respective publishers and authors. They are included solely for educational
-research and demonstration, are NOT covered by the MIT License, and may not be
-used commercially or redistributed. Third-party dependencies keep their own
-licenses.
+example/exercise data derived from the textbooks (Jiangsu Phoenix Education
+Press, 2022 curriculum standards) remain the copyright of their respective
+publishers and authors. They are included solely for educational research and
+demonstration, are NOT covered by the MIT License, and may not be used
+commercially or redistributed. Textbook PDFs are not distributed here; the
+original e-textbooks come from the National Smart Education Platform
+(https://basic.smartedu.cn/elecEdu) and can be downloaded with the open-source
+tchMaterial-parser (https://github.com/happycola233/tchMaterial-parser).
+Third-party dependencies keep their own licenses.
