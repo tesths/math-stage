@@ -41,3 +41,6 @@ npm-debug.log*
 # 生成的多媒体（图片 / 视频工具）
 generated-images/
 generated-videos/
+
+# 编译产物（arm64 二进制，按 ocr.swift 自行编译；勿入库）
+ocr/src/ocr_bin

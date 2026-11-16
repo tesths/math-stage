@@ -13,12 +13,18 @@
 | [DEVELOPMENT.md](DEVELOPMENT.md) | 架构、各年级工程结构、数据格式、新增例题 / Lab / 游戏 / 年级的流程、OCR 管线、测试、命令与排错速查 |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | 单 Cloudflare Pages 部署详解：参数全景表、面板操作、构建/预览、部署后核对清单 |
 
-## 教材核对与质量
+## OCR 与教材数据
 
 | 文档 | 说明 |
 | --- | --- |
+| [OCR.md](OCR.md) | OCR 双引擎方案（macOS Vision / 智谱 GLM-OCR）、数据产物与统计、页面映射、复现步骤、开源与版权范围 |
 | [example-audit.md](example-audit.md) | 一年级例题 ↔ Vision OCR 逐条核对（STRONG / MEDIUM / FIG 三级证据） |
 | [example-audit-glm.md](example-audit-glm.md) | 六册 235 条例题 ↔ GLM-OCR 全量核对报告与数据修正记录 |
+
+## 审计报告（逐 Lab）
+
+| 文档 | 说明 |
+| --- | --- |
 | [audit/g6-circle-ratio-audit.md](audit/g6-circle-ratio-audit.md) | 六年级「圆与比」逐 Lab 数学审查（含坐标复算与行号证据） |
 | [audit/g6-scale-position-number-audit.md](audit/g6-scale-position-number-audit.md) | 六年级「比例尺 / 确定位置 / 数」逐 Lab 审查 |
 | [audit/round4/](audit/round4/) | 第 4 轮全量审计的机器可读结果（各年级 JSON + metrics.json） |

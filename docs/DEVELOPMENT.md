@@ -72,7 +72,7 @@ vitest 侧需用 `#components` 桩（`shared/test/stubs/components.ts`）。为�
 | 三年级 | 苏教版（2022 课标） | `（根据2022年版课程标准修订）义务教育教科书•数学三年级上册.pdf` | 132 | 书页 = PDF页 - 8 |
 | 四年级 | 苏教版（2022 课标，2026 新编） | `最新【苏教版】4年级数学课本•上册.pdf` | 121 | 书页 = PDF页 - 3 |
 | 五年级 | 苏教版（2022 课标） | `最新【苏教版】5年级数学课本•上册.pdf` | 131 | 书页 = PDF页 - 2 |
-| 六年级 | 苏教版（2022 课标） | `最新【苏教版】6年级数学课本•上册.pdf` | 131 | 书页 = PDF页 - 2 |
+| 六年级 | 苏教版（2022 课标） | `最新【苏教版】6年级数学课本•上册.pdf` | 120 | 书页 = PDF页 - 2 |
 
 ---
 
@@ -236,7 +236,7 @@ math/
 ├── g6/
 │   ├── README.md              六年级工程说明
 │   ├── docs/                  课本 OCR 与页面映射说明
-│   ├── ocr/upper/pages/       上册 131 页 OCR 产物（txt + 整页图 + 插图）
+│   ├── ocr/upper/pages/       上册 120 页 OCR 产物（txt + 整页图 + 插图）
 │   ├── ocr/lower/             未来下册 OCR 占位
 │   ├── data/upper/
 │   │   ├── schema/lab.ts      Lab 类型定义（params 滑块/fixed 常量/kind/公式）
@@ -738,6 +738,8 @@ solve-ratio（解比例）/ circle-calc（圆的计算）/ scale-map（比例尺
 
 ## 8. OCR 管线
 
+> 完整方案、双引擎对比、数据统计、页面映射与复现步骤见 [`docs/OCR.md`](OCR.md)。本节保留为速查。
+
 ### 8.1 工具
 
 `ocr/src/ocr.swift`（macOS Vision，编译产物 `ocr/src/ocr_bin`）。用法：
@@ -980,7 +982,7 @@ swiftc -O ocr/src/ocr.swift -o ocr/src/ocr_bin
 ./ocr/src/ocr_bin "pdf路径" 1 132 "g3/ocr/upper/pages"   # 三年级务必带输出目录
 ./ocr/src/ocr_bin "pdf路径" 1 121 "g4/ocr/upper/pages"   # 四年级务必带输出目录
 ./ocr/src/ocr_bin "pdf路径" 1 131 "g5/ocr/upper/pages"   # 五年级务必带输出目录
-./ocr/src/ocr_bin "pdf路径" 1 131 "g6/ocr/upper/pages"   # 六年级同上
+./ocr/src/ocr_bin "pdf路径" 1 120 "g6/ocr/upper/pages"   # 六年级同上
 
 # 六年级练习题候选（合订正文 → candidates.json + briefs/cN.md + docs/练习题候选清单.md）
 python3 scripts/extract_g6_exercises.py

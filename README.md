@@ -105,6 +105,21 @@ math-stage/
 - **部署**：Nitro `cloudflare-pages` preset，聚合静态导出
 - **运行环境**：Node 24（见 `.nvmrc` / `.node-version`）、npm ≥ 11 workspace
 
+## 🔍 OCR 方案与数据
+
+除了互动页面，仓库还附带一套**可复现的课本 OCR 管线**，并开源了识别出的文本数据：
+
+| 引擎 | 说明 |
+| --- | --- |
+| macOS Vision | [`ocr/src/ocr.swift`](ocr/src/ocr.swift)：逐页文字识别 + 整页渲染 + 自动裁剪插图（6×5 网格聚簇） |
+| 智谱 GLM-OCR | [`scripts/glm_ocr_math.py`](scripts/glm_ocr_math.py)：版面感知识别，小号/嵌图文字更准，用于重建合订正文 |
+
+- **已开源数据**：六册 **729 页 OCR 文本** + 12 份合订正文（`gX/ocr/upper/`）；整页图 / 插图因体积与版权不入库，可用脚本从 PDF 重新生成。
+- **质量核对**：235 条例题 ↔ GLM 文本全量核对，**STRONG 200 / MEDIUM 27 / FIG 8**。
+- **相关脚本**：[`ocr/src/ocr.swift`](ocr/src/ocr.swift)、[`ocr/src/merge.py`](ocr/src/merge.py)、[`scripts/glm_ocr_math.py`](scripts/glm_ocr_math.py)、[`scripts/merge_book_glm.py`](scripts/merge_book_glm.py)、[`scripts/verify_glm_examples.py`](scripts/verify_glm_examples.py)。
+
+完整方案、数据统计、页面映射与复现步骤见 [`docs/OCR.md`](docs/OCR.md)；教材文本的版权范围见 [`NOTICE`](NOTICE)。
+
 ## 🚀 快速开始
 
 前置要求：**Node 24**（`>=24 <25`）、**npm ≥ 11**。仓库根开启了 `engine-strict`，版本不符会直接报错。

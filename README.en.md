@@ -106,6 +106,21 @@ Each grade keeps its own project boundary, while dependencies and build entry po
 - **Deploy**: Nitro `cloudflare-pages` preset, aggregated static export
 - **Runtime**: Node 24 (`.nvmrc` / `.node-version`), npm ≥ 11 workspaces
 
+## 🔍 OCR pipeline & data
+
+Besides the interactive pages, the repo ships a **reproducible textbook OCR pipeline** and open-sources the recognized text:
+
+| Engine | Description |
+| --- | --- |
+| macOS Vision | [`ocr/src/ocr.swift`](ocr/src/ocr.swift): per-page text recognition, full-page rendering and automatic figure cropping (6×5 tile clustering) |
+| Zhipu GLM-OCR | [`scripts/glm_ocr_math.py`](scripts/glm_ocr_math.py): layout-aware OCR that handles small/embedded text better; used to rebuild the merged volumes |
+
+- **Open data**: **729 OCR text pages** across six books + 12 merged Markdown volumes under `gX/ocr/upper/`; full-page/figure JPEGs are not committed (size & copyright) and can be regenerated from the PDFs.
+- **Quality check**: all 235 worked examples cross-checked against GLM text — **STRONG 200 / MEDIUM 27 / FIG 8**.
+- **Scripts**: [`ocr/src/ocr.swift`](ocr/src/ocr.swift), [`ocr/src/merge.py`](ocr/src/merge.py), [`scripts/glm_ocr_math.py`](scripts/glm_ocr_math.py), [`scripts/merge_book_glm.py`](scripts/merge_book_glm.py), [`scripts/verify_glm_examples.py`](scripts/verify_glm_examples.py).
+
+See [`docs/OCR.md`](docs/OCR.md) for the full design, data stats, page mapping and reproduction steps; see [`NOTICE`](NOTICE) for the textbook-content copyright scope.
+
 ## 🚀 Getting started
 
 Requirements: **Node 24** (`>=24 <25`) and **npm ≥ 11**. The root enables `engine-strict`, so a mismatch fails fast.
