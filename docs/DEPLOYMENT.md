@@ -3,6 +3,8 @@
 > 本文是 `docs/DEVELOPMENT.md` §10 的**展开版**，逐参数说明如何修改。
 > 目标：**一个 GitHub 仓库（tesths/math-stage）→ 一个 Cloudflare Pages 项目**，
 > 线上结构 `/` 门户、`/g1/*` 一年级、`/g2/*` 二年级、`/g3/*` 三年级、`/g4/*` 四年级、`/g5/*` 五年级、`/g6/*` 六年级。
+>
+> **当前线上实例**：<https://math-stage.dididigu.com/>
 
 ---
 

@@ -6,10 +6,12 @@
 
 <p align="center">
   把一至六年级的数学课本例题做成「可拖动参数、实时联动」的互动可视化 Lab 与小游戏。<br>
-  <sub>苏教版 · 2022 版课标 · Nuxt 4 静态站点 · 单 Cloudflare Pages 聚合部署</sub>
+  <sub>苏教版 · 2022 版课标 · Nuxt 4 静态站点 · 单 Cloudflare Pages 聚合部署</sub><br>
+  🌐 在线体验：<a href="https://math-stage.dididigu.com/">math-stage.dididigu.com</a>
 </p>
 
 <p align="center">
+  <a href="https://math-stage.dididigu.com/"><img src="https://img.shields.io/badge/Live%20Demo-online-2ea44f?logo=cloudflare&logoColor=white" alt="Live Demo"></a>
   <a href="https://github.com/tesths/math-stage/actions/workflows/ci.yml"><img src="https://github.com/tesths/math-stage/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D24%20%3C25-339933?logo=node.js&logoColor=white" alt="Node">
@@ -178,7 +180,7 @@ node scripts/link-audit.mjs --live   # 线上全站链接审计
 | 构建输出目录 | `deploy` |
 | 框架预设 | None |
 
-推送 `main` 即自动构建。完整面板操作、参数详解与排错见 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)。
+推送 `main` 即自动构建。**当前线上实例**：<https://math-stage.dididigu.com/>。完整面板操作、参数详解与排错见 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)。
 
 ## 📚 文档
 

@@ -6,10 +6,12 @@
 
 <p align="center">
   Turning every worked example in the primary-school math textbook into an interactive, parameter-driven Lab and game set.<br>
-  <sub>Jiangsu Phoenix Education Press 路 2022 curriculum standards 路 Nuxt 4 static site 路 one Cloudflare Pages deployment</sub>
+  <sub>Jiangsu Phoenix Education Press 路 2022 curriculum standards 路 Nuxt 4 static site 路 one Cloudflare Pages deployment</sub><br>
+  馃寪 Live demo: <a href="https://math-stage.dididigu.com/">math-stage.dididigu.com</a>
 </p>
 
 <p align="center">
+  <a href="https://math-stage.dididigu.com/"><img src="https://img.shields.io/badge/Live%20Demo-online-2ea44f?logo=cloudflare&logoColor=white" alt="Live Demo"></a>
   <a href="https://github.com/tesths/math-stage/actions/workflows/ci.yml"><img src="https://github.com/tesths/math-stage/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D24%20%3C25-339933?logo=node.js&logoColor=white" alt="Node">
@@ -179,7 +181,7 @@ One GitHub repo, **one** Cloudflare Pages project: the portal at `/`, grades 1鈥
 | Build output directory | `deploy` |
 | Framework preset | None |
 
-Pushing to `main` triggers a build. Full dashboard steps, parameters and troubleshooting: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) (Chinese).
+Pushing to `main` triggers a build. **Current live instance**: <https://math-stage.dididigu.com/>. Full dashboard steps, parameters and troubleshooting: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) (Chinese).
 
 ## 馃摎 Documentation
 
